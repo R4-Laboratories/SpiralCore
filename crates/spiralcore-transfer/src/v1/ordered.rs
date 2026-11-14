@@ -359,7 +359,10 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
                 self.fenced = true;
                 return Err(Error::Integrity);
             }
-            let (bytes, disk) = match self.inner.inner.ordered_cache_read(c, admitted.object) {
+            let (bytes, disk) = match commit_stage!(
+                OrderedReadback,
+                self.inner.inner.ordered_cache_read(c, admitted.object)
+            ) {
                 Ok(meta) => meta,
                 Err(error) => {
                     self.fenced = true;

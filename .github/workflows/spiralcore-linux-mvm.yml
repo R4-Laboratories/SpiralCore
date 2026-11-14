@@ -1,6 +1,11 @@
 name: SpiralCore Linux MVM contracts
 on:
   workflow_dispatch:
+    inputs:
+      genuine_export:
+        description: Verify the signed x86-64 Linux fixture with public release assets
+        type: boolean
+        default: false
   pull_request:
     paths:
       - 'crates/spiralcore-mvm-live/**'
@@ -80,3 +85,290 @@ jobs:
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --all-targets
           bash crates/spiralcore-mvm-live/scripts/test-combined-analysis.sh
+  fixture-producer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record source and pinned compiler
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component clippy
+          mkdir fixture-evidence
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/fixture-target" >> "$GITHUB_ENV"
+          git rev-parse HEAD 'HEAD^{tree}' > fixture-evidence/source-and-tree.txt
+          sha256sum crates/spiralcore-transfer/src/endpoint.rs > fixture-evidence/endpoint.sha256
+          jq -er .mvm_source docs/platforms/mvm-mailbox-portable.json > fixture-evidence/mvm-source.txt
+          rustc +1.97.1 -vV > fixture-evidence/rustc.txt
+      - name: Check the original metadata and exact body fixture
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --lib \
+            endpoint::metadata_tests::metadata_paths_preserve_header_length_missing_and_exact_body_checks \
+            -- --exact 2>&1 | tee fixture-evidence/core-test.txt
+          grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored;' fixture-evidence/core-test.txt
+      - name: Build the fixture producer test executable
+        run: |
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --example installed_flowmux_fixture --no-run \
+            --message-format=json > "$RUNNER_TEMP/fixture-build.jsonl"
+      - name: Run the identified fixture and record its result
+        shell: python
+        run: |
+          import hashlib, json, os, re, subprocess, sys
+          from pathlib import Path
+
+          root = Path.cwd()
+          manifest = root / "crates/spiralcore-mvm-live/Cargo.toml"
+          evidence = root / "fixture-evidence"
+          messages = Path(os.environ["RUNNER_TEMP"]) / "fixture-build.jsonl"
+          with messages.open() as src:
+              matches = [m for m in map(json.loads, src) if m["reason"] == "compiler-artifact"
+                         and m["manifest_path"] == str(manifest) and m["profile"]["test"]
+                         and m["target"]["name"] == "installed_flowmux_fixture"
+                         and m["target"]["kind"] == ["example"] and "canonical-host" in m["features"]
+                         and m.get("executable")]
+          if len(matches) != 1:
+              sys.exit("Expected exactly one fixture producer test executable")
+          exe = Path(matches[0]["executable"]).resolve(strict=True)
+          if not exe.is_relative_to(Path(os.environ["CARGO_TARGET_DIR"]).resolve()):
+              sys.exit("Unexpected fixture executable location")
+
+          def identity():
+              with exe.open("rb") as f:
+                  digest = hashlib.sha256()
+                  for block in iter(lambda: f.read(1 << 20), b""):
+                      digest.update(block)
+                  return {"name": exe.name, "bytes": os.fstat(f.fileno()).st_size, "sha256": digest.hexdigest()}
+
+          before, code = identity(), None
+          (evidence / "executable-before.json").write_text(json.dumps(before) + "\n")
+          try:
+              with (evidence / "fixture-tests.txt").open("w") as log:
+                  proc = subprocess.Popen([exe, "--nocapture", "--color", "never"], cwd=manifest.parent,
+                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                  for line in proc.stdout:
+                      log.write(line)
+                      print(line, end="", flush=True)
+                  code = proc.wait()
+          finally:
+              after = identity()
+              (evidence / "executable-after.json").write_text(json.dumps({**after, "exit": code}) + "\n")
+          if after != before:
+              sys.exit("Fixture executable changed during the run")
+          footer = re.findall(r"^test result: (ok|FAILED)\. (\d+) passed; (\d+) failed; 0 ignored; 0 measured; 0 filtered out;",
+                              (evidence / "fixture-tests.txt").read_text(), re.M)
+          if len(footer) != 1 or int(footer[0][1]) + int(footer[0][2]) != 5:
+              print("Expected one five-test fixture result", file=sys.stderr)
+              sys.exit(code or 1)
+          if code == 0 and footer[0] != ("ok", "5", "0"):
+              sys.exit("Successful fixture must pass all five tests")
+          sys.exit(code)
+      - name: Check fixture producer warnings
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --example installed_flowmux_fixture -- -D warnings \
+            2>&1 | tee fixture-evidence/clippy.txt
+      - name: Qualify private native input handoff
+        run: |
+          set -euo pipefail
+          manifest="$GITHUB_WORKSPACE/crates/spiralcore-mvm-live/Cargo.toml"
+          cargo +1.97.1 test --locked --manifest-path "$manifest" --features canonical-host \
+            --test fixture_native_handoff --no-run --message-format=json > "$RUNNER_TEMP/handoff-build.jsonl"
+          exe=$(jq -ers --arg manifest "$manifest" '
+            [.[] | select(.reason=="compiler-artifact" and .manifest_path==$manifest and .profile.test==true
+              and .target.name=="fixture_native_handoff" and .target.kind==["test"]
+              and (.features|index("canonical-host")) and .executable) | .executable]
+              | select(length==1) | first' "$RUNNER_TEMP/handoff-build.jsonl")
+          [[ "$(realpath "$exe")" == "$CARGO_TARGET_DIR"/debug/deps/* && -x "$exe" ]]
+          sha256sum "$exe" > fixture-evidence/handoff-before.sha256
+          set +e
+          "$exe" --nocapture --color never 2>&1 | tee fixture-evidence/handoff-tests.txt
+          codes=("${PIPESTATUS[@]}")
+          set -e
+          printf 'test_exit=%s capture_exit=%s\n' "${codes[0]}" "${codes[1]}" > fixture-evidence/handoff-exit.txt
+          sha256sum "$exe" > fixture-evidence/handoff-after.sha256
+          cmp fixture-evidence/handoff-before.sha256 fixture-evidence/handoff-after.sha256
+          python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("fixture-evidence/handoff-tests.txt").read_text()
+          rows = re.findall(r"^test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed; 0 ignored; 0 measured; 0 filtered out;", text, re.M)
+          assert len(rows) == 1 and sum(map(int, rows[0])) == 5, "expected exactly five handoff controls"
+          PY
+          test "${codes[1]}" = 0
+          exit "${codes[0]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: fixture-producer-${{ github.run_attempt }}
+          path: fixture-evidence/
+          if-no-files-found: error
+          retention-days: 14
+
+  genuine-export:
+    if: github.event_name == 'workflow_dispatch' && inputs.genuine_export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+      SC_FLOWMUX_FIXTURE_IPV4: 192.0.2.1
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record qualification source and compiler
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component clippy --target x86_64-unknown-linux-musl
+          mkdir -m 700 "$RUNNER_TEMP/export-evidence"
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/export-target" >> "$GITHUB_ENV"
+          {
+            git rev-parse HEAD 'HEAD^{tree}'
+            rustc +1.97.1 -vV
+            jq -er .mvm_source docs/platforms/mvm-mailbox-portable.json
+            sha256sum tools/installed-flowmux-witness/guest/Cargo.lock crates/spiralcore-mvm-live/Cargo.lock
+          } > "$RUNNER_TEMP/export-evidence/source.txt"
+      - name: Test and build the address-pinned static guest
+        run: |
+          set -euo pipefail
+          guest=tools/installed-flowmux-witness/guest/Cargo.toml
+          bin=spiralcore-flowmux-proxy-guest
+          cargo +1.97.1 test --locked --manifest-path "$guest" --bin "$bin"
+          sysroot=$(rustc +1.97.1 --print sysroot)
+          export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER="$sysroot/lib/rustlib/x86_64-unknown-linux-gnu/bin/rust-lld"
+          export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-C linker-flavor=ld.lld"
+          test -x "$CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER"
+          SPIRALCORE_FLOWMUX_FIXTURE_IPV4="$SC_FLOWMUX_FIXTURE_IPV4" cargo +1.97.1 build \
+            --release --locked --manifest-path "$guest" --target x86_64-unknown-linux-musl --bin "$bin"
+          elf="$CARGO_TARGET_DIR/x86_64-unknown-linux-musl/release/$bin"
+          digest=$(sha256sum "$elf" | cut -d' ' -f1)
+          echo "SC_FLOWMUX_GUEST_ELF=$elf" >> "$GITHUB_ENV"
+          echo "SC_FLOWMUX_GUEST_SHA256=$digest" >> "$GITHUB_ENV"
+          echo "$digest  $bin" >> "$RUNNER_TEMP/export-evidence/source.txt"
+      - name: Fetch current public revocation inputs
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          for name in revocations.json revocations.json.bundle; do
+            curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+              --max-time 60 --max-filesize 1048576 --output "$name" \
+              "https://github.com/tinylabscom/mvm-images/releases/download/revocations/$name"
+            test -s "$name"
+            sha256sum "$name" >> export-evidence/source.txt
+          done
+          echo "SC_FLOWMUX_REVOCATIONS=$RUNNER_TEMP/revocations.json" >> "$GITHUB_ENV"
+          echo "SC_FLOWMUX_REVOCATIONS_BUNDLE=$RUNNER_TEMP/revocations.json.bundle" >> "$GITHUB_ENV"
+      - name: Build original main overlay and current producer
+        run: |
+          set -euo pipefail
+          old=2c9c2633e6cf4244947cd2eba819257aa3f9978d
+          src=crates/spiralcore-mvm-live/examples/installed_flowmux_fixture.rs
+          example=(--locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --example installed_flowmux_fixture)
+          evidence="$RUNNER_TEMP/export-evidence/source.txt"
+          cd "$GITHUB_WORKSPACE"
+          git diff --exit-code HEAD -- "$src"
+          cp "$src" "$RUNNER_TEMP/candidate-source.rs"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            --max-time 60 --max-filesize 4096 --output "$RUNNER_TEMP/original-source.rs" \
+            "https://raw.githubusercontent.com/R4-Laboratories/SpiralCore/$old/$src"
+          echo "75e627dde4319c651ed0397aa0ba4a27600f61a6cbd61d0a4b010884a7beff37  $RUNNER_TEMP/original-source.rs" | sha256sum --check
+          original_blob=$(git hash-object "$RUNNER_TEMP/original-source.rs")
+          test "$original_blob" = 877a64ef68aed0cd9ea1d75f93dfe3f7c0ff7636
+          echo "original_main_revision=$old original_blob=$original_blob composition=one_file_overlay" >> "$evidence"
+          trap 'cp "$RUNNER_TEMP/candidate-source.rs" "$src" && git diff --exit-code HEAD -- "$src"' EXIT
+          cp "$RUNNER_TEMP/original-source.rs" "$src"
+          cargo +1.97.1 build "${example[@]}"
+          cp "$CARGO_TARGET_DIR/debug/examples/installed_flowmux_fixture" "$RUNNER_TEMP/original-producer"
+          cp "$RUNNER_TEMP/candidate-source.rs" "$src"
+          git diff --exit-code HEAD -- "$src"
+          trap - EXIT
+          cargo +1.97.1 build "${example[@]}"
+          cp "$CARGO_TARGET_DIR/debug/examples/installed_flowmux_fixture" "$RUNNER_TEMP/candidate-producer"
+          sha256sum "$src" >> "$evidence"
+          git diff --exit-code HEAD --
+      - name: Compile the single positive qualification test
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --no-run --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --test fixture_export --message-format=json > "$RUNNER_TEMP/export-build.jsonl"
+          exe=$(jq -ers --arg manifest "$GITHUB_WORKSPACE/crates/spiralcore-mvm-live/Cargo.toml" '
+            [.[] | select(.reason=="compiler-artifact" and .manifest_path==$manifest and .profile.test==true
+              and .target.name=="fixture_export" and .target.kind==["test"] and (.features|index("canonical-host")) and .executable)
+              | .executable] | select(length==1) | first' "$RUNNER_TEMP/export-build.jsonl")
+          [[ "$(realpath "$exe")" == "$CARGO_TARGET_DIR"/debug/deps/* && -x "$exe" ]]
+          echo "FIXTURE_TEST_EXE=$exe" >> "$GITHUB_ENV"
+      - name: Check qualification and guest warnings
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --test fixture_export -- -D warnings
+          cargo +1.97.1 clippy --locked --manifest-path tools/installed-flowmux-witness/guest/Cargo.toml \
+            --all-targets -- -D warnings
+      - name: Run original refusal and verify the signed candidate export
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          selector=signed_fixture_reopens_with_original_publisher
+          sha256sum "$FIXTURE_TEST_EXE" original-producer candidate-producer > export-evidence/programs.sha256
+          test "$(sha256sum original-producer | cut -d' ' -f1)" != "$(sha256sum candidate-producer | cut -d' ' -f1)"
+          for phase in original candidate; do
+            log="$RUNNER_TEMP/$phase-export.log"
+            sha256sum --check export-evidence/programs.sha256
+            code=0
+            SC_FLOWMUX_FIXTURE_PRODUCER="$RUNNER_TEMP/$phase-producer" \
+              /usr/bin/time -q -f 'setup_export_wall_s=%e user_s=%U system_s=%S max_rss_kib=%M exit=%x' \
+              -o "export-evidence/$phase-time.txt" "$FIXTURE_TEST_EXE" \
+              --ignored --exact "$selector" --nocapture --color never > "$log" 2>&1 || code=$?
+            sha256sum --check export-evidence/programs.sha256
+            echo "$phase exit=$code" >> export-evidence/outcomes.txt
+            if grep -Eq "^(test $selector \.\.\. )?FIXTURE_PRODUCER_START$" "$log"; then
+              echo "$phase: verified inputs reached producer invocation" >> export-evidence/outcomes.txt
+            else
+              echo "$phase: qualification failed before producer invocation" >> export-evidence/outcomes.txt
+              exit 1
+            fi
+            if [[ "$phase" == original ]]; then
+              test "$code" = 101
+              grep -Fq 'fixture producer refused verified inputs (exit status: 1): fixture producer is not implemented' "$log"
+              grep -Eq '^test result: FAILED\. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out;' "$log"
+              echo 'original: producer refused verified inputs with original scaffold error; one test failed' >> export-evidence/outcomes.txt
+            else
+              test "$code" = 0
+              grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;' "$log"
+              sed -n 's/^FIXTURE_EXPORT_RESULT //p' "$log" | jq -esc --arg guest "$SC_FLOWMUX_GUEST_SHA256" '
+                select(length==1) | first |
+                select(.guest_sha256==$guest and (.archive_sha256|type=="string" and test("^[0-9a-f]{64}$"))
+                  and (.publisher_key_id|type=="string" and test("^[0-9a-f]{32}$"))
+                  and (.archive_bytes|type=="number" and .>0 and .==floor)
+                  and (.revocation_publication|type=="number" and .>=0 and .==floor)
+                  and .public_members==7 and .canonical_runtime=="0.28.0-rc.3" and .repeat_refusal==true) |
+                {guest_sha256, archive_sha256, archive_bytes, publisher_key_id, revocation_publication,
+                 public_members, canonical_runtime, repeat_refusal}' > export-evidence/result.json
+              echo 'candidate: signed archive reopened; one test passed' >> export-evidence/outcomes.txt
+            fi
+          done
+          git -C "$GITHUB_WORKSPACE" diff --exit-code HEAD --
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: fixture-export-public-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/export-evidence/source.txt
+            ${{ runner.temp }}/export-evidence/programs.sha256
+            ${{ runner.temp }}/export-evidence/original-time.txt
+            ${{ runner.temp }}/export-evidence/candidate-time.txt
+            ${{ runner.temp }}/export-evidence/outcomes.txt
+            ${{ runner.temp }}/export-evidence/result.json
+          if-no-files-found: error
+          retention-days: 14

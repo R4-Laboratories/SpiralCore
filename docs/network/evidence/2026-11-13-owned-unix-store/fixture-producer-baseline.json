@@ -1,0 +1,31 @@
+{
+  "run": 43496597009,
+  "job": 132131195782,
+  "source_and_tree": [
+    "782d04a3666ae6a4b94bf965bffc36acf04033ce",
+    "ddde55b58a0c40ca722409dc266f1ff17203e442"
+  ],
+  "archive_sha256": "4daf3482e5bf0cb501a8df0b966cc16380f38cc469f93052545c0dd752b8eee8",
+  "original_endpoint_sha256": "c845b85b6ee7277696158871d76086f6f0d9487558212369795a981e31c65d78",
+  "fixture_executable": {
+    "name": "installed_flowmux_fixture-76b6acb1a45dc66f",
+    "bytes": 5715848,
+    "sha256": "051336369d014e99be91e712c8fc3782f4fc5121e95bc45011be80be4bc0a8f6"
+  },
+  "exit": 101,
+  "result": "five expected assertion failures before implementation; original golden passed",
+  "members_sha256": {
+    "endpoint.sha256": "ef9483946854ef46a774650e1f168c56b28965a08a1ac3d2efb04cf5482f4c1e",
+    "executable-after.json": "1eb5dec1d20419d72902916451d8ca56f008b4cac12dd2fd31b0e8c310781cf1",
+    "core-test.txt": "ab451eb4355f7743695271c1cf3c193fdb74d3cac7435191d34c568614688201",
+    "executable-before.json": "e706e7c35f1a2e099d386c4f2f074d9f8efaae2e023691b8e9397c47768df5ed",
+    "fixture-tests.txt": "66acea668e3aaa4d7bddd8f917aa6ef457a7ba7f514df7905764a9fd7cfee00c",
+    "mvm-source.txt": "051e32fbafaf987e603a860e0b53937710d3bce8983e87d2c8087273941cd1bd",
+    "rustc.txt": "b2bdf493bcf6d1dc55181a0efc2774b6d9cf7bf5c8dcc5bed592c994b2ad38c4",
+    "source-and-tree.txt": "a465ba4a8b5de22e865a7093ac26492736a04f6328e06347f7a8938add75d264"
+  },
+  "scope": "Hosted Linux unit-test RED baseline and legacy record golden; no signed export, VM, WAN or performance qualification",
+  "source_head": "2c9c2633e6cf4244947cd2eba819257aa3f9978d",
+  "job_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43496597009/job/132131195782",
+  "fixture_stdout": "\nrunning 5 tests\n\nthread 'tests::noncanonical_ipv4_refuses_publication' (8817) panicked at examples/installed_flowmux_fixture/tests.rs:16:5:\nassertion `left == right` failed\n  left: \"fixture producer absent\"\n right: \"expected canonical IPv4\"\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\nthread 'tests::mismatched_baked_argv_refuses_signing' (8816) panicked at examples/installed_flowmux_fixture/tests.rs:60:5:\nassertion `left == right` failed\n  left: \"sidecar check absent\"\n right: \"baked entrypoint differs\"\n\nthread 'tests::occupied_destination_remains_intact' (8818) panicked at examples/installed_flowmux_fixture/tests.rs:16:5:\nassertion `left == right` failed\n  left: \"fixture producer absent\"\n right: \"output already exists\"\ntest tests::mismatched_baked_argv_refuses_signing ... FAILED\ntest tests::noncanonical_ipv4_refuses_publication ... FAILED\n\nthread 'tests::wrong_staged_elf_digest_refuses_publication' (8820) panicked at examples/installed_flowmux_fixture/tests.rs:16:5:\nassertion `left == right` failed\n  left: \"fixture producer absent\"\n right: \"staged ELF SHA-256 differs\"\n\nthread 'tests::unsafe_parent_refuses_publication' (8819) panicked at examples/installed_flowmux_fixture/tests.rs:16:5:\nassertion `left == right` failed\n  left: \"fixture producer absent\"\n right: \"output parent must be private\"\ntest tests::occupied_destination_remains_intact ... FAILED\ntest tests::unsafe_parent_refuses_publication ... FAILED\ntest tests::wrong_staged_elf_digest_refuses_publication ... FAILED\n\nfailures:\n\nfailures:\n    tests::mismatched_baked_argv_refuses_signing\n    tests::noncanonical_ipv4_refuses_publication\n    tests::occupied_destination_remains_intact\n    tests::unsafe_parent_refuses_publication\n    tests::wrong_staged_elf_digest_refuses_publication\n\ntest result: FAILED. 0 passed; 5 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n"
+}

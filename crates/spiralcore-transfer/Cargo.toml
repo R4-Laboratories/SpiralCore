@@ -6,6 +6,7 @@ rust-version = "1.89"
 description = "Experimental exact object transfer at an authenticated mailbox boundary"
 
 [features]
+witness-stall = []
 # Fixed diagnostic storage-substage counters; no protocol or policy change.
 witness-timing = []
 # Opt-in backend; initial qualification scope: native aarch64-apple-darwin.
@@ -35,3 +36,9 @@ spiralcore-storage-windows = { path = "../spiralcore-storage-windows" }
 
 [build-dependencies]
 sha2 = "0.10.9"
+
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
+rustix = { version = "=1.1.6", features = ["fs", "process"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = { version = "0.2", features = ["extra_traits"] }

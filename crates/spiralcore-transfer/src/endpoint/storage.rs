@@ -7,6 +7,8 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub(crate) mod owned;
 #[cfg(unix)]
 mod unix;
 #[cfg(windows)]

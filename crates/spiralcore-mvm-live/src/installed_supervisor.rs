@@ -72,6 +72,9 @@ impl InstalledConfig {
                 return Err(SupervisorError::Profile);
             }
         }
+        if tenant.codec_store_file_descriptors > host.codec_store_file_descriptors {
+            return Err(SupervisorError::Profile);
+        }
         Ok(Self {
             funded_limits: Some((host, tenant)),
             ..profile
@@ -84,6 +87,10 @@ impl InstalledConfig {
         }
         let mut host = ManagedLimits::host();
         let mut tenant = ManagedLimits::tenant();
+        if !self.canonical {
+            host.codec_store_file_descriptors = 0;
+            tenant.codec_store_file_descriptors = 0;
+        }
         if self.paired_endpoints {
             // These byte ceilings apply to the aggregate. Actual process
             // reservations may exhaust them before both endpoints fit.
@@ -100,6 +107,11 @@ impl InstalledConfig {
             digest.update(value.to_be_bytes());
         }
         if self.canonical {
+            digest.update(b"spiralcore/codec-store-descriptor-budget/v1\0");
+            let (host, tenant) = self.managed_limits();
+            for limits in [host, tenant] {
+                digest.update(limits.codec_store_file_descriptors.to_be_bytes());
+            }
             digest.update(b"spiralcore/canonical-installed-model-definition/v2\0");
             for tag in [
                 b"endpoint-bootstrap-v1".as_slice(),
@@ -148,6 +160,7 @@ impl InstalledConfig {
                     limits.guest_memory_bytes,
                     limits.cache_disk_bytes,
                     limits.staging_disk_bytes,
+                    limits.codec_store_file_descriptors,
                     limits.workers,
                     limits.guests,
                 ] {

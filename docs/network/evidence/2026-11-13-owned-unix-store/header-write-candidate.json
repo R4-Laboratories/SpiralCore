@@ -1,0 +1,248 @@
+{
+  "scope": "Ordered-stream component on one hosted Windows process with both endpoints",
+  "run": "43500008589",
+  "attempt": 1,
+  "pr_head": "a5b24c8a47470a3deeebfa07d62cb1bcb1ad4811",
+  "tested_merge": "e5b01c4b6cd2e453502d983d82995da66e2ef966",
+  "common_tree": "f07027c087985c4b0bbefc91ecf3b8f56af1d052",
+  "endpoint_rs_sha256": "f544a4ec672e5bdd1a1a2bab5974d8c8d104da2d9804b25287d20a26377df550",
+  "baseline_json_sha256": "29f102c7fc52d6c9068db5b15e44f3ef5707de6d66849241344718ddd5674f0f",
+  "lock_sha256": "eda224172e7f53a824d1db84260ce9ed1cbb77bfe12066928c769edfa399d005",
+  "toolchain": "1.97.1-x86_64-pc-windows-msvc",
+  "profile": "release",
+  "target_blocks_each_direction": 4096,
+  "block_bytes": 16384,
+  "max_retained_publications_per_endpoint": 64,
+  "operation_deadline_seconds": 2,
+  "workload_deadline_seconds": 240,
+  "units": "Process CPU covers both endpoints. Snapshot counters were sampled concurrently. Closed timing spans overlap. Null means unavailable.",
+  "rows": [
+    {
+      "job": "132142992756",
+      "runner": "windows-2025",
+      "runner_image": "20261103.298.1",
+      "features": [
+        "default",
+        "witness-timing"
+      ],
+      "result": "fail",
+      "executable": {
+        "name": "ordered_stream-6d6807d891d1495a.exe",
+        "sha256_before_and_after": "7d7bf56fbc51b85ad656f7867d7865f8122c0562d5f3cad7faf36909f352aa46",
+        "length": 3847680,
+        "exit_code": 101
+      },
+      "archive": {
+        "id": "14074405175",
+        "zip_sha256": "9a431ee4c5869090acc21cd2ec8546de2531b40677aa3743499198bcf56d840f",
+        "sha256sums_sha256": "e8179a7c4b129365dc4c9b8c78890b01549e0986d0d8d8917380366ce0b631c8",
+        "verified_members": 5,
+        "tests_txt_sha256": "8ebdfd365da81d546639c0ecae818e2dd9bf9ca810dd0b2654148680b53ed83b"
+      },
+      "acknowledged_blocks_left_right": [
+        1440,
+        1439
+      ],
+      "verified_read_blocks_left_right": [
+        1439,
+        1440
+      ],
+      "verified_read_bytes_left_right": [
+        23576576,
+        23592960
+      ],
+      "tls_snapshot_left_right": [
+        {
+          "received": 1896931,
+          "sent": 1896980
+        },
+        {
+          "received": 1896980,
+          "sent": 1897139
+        }
+      ],
+      "setup_wall_us": 95707,
+      "setup_process_cpu_us": 0,
+      "snapshot_wall_us": 57173213,
+      "snapshot_process_cpu_us": 20359375,
+      "libtest_elapsed_s": 57.52,
+      "lifecycle_wall_us": null,
+      "lifecycle_process_cpu_us": null,
+      "first_failure_per_role": {
+        "0": "site: CallerRead, reason: Timeout, frame_kind: None",
+        "1": "site: SenderReplyWait, reason: Timeout, frame_kind: Some(3)"
+      },
+      "commit_elapsed_spans_left_right": [
+        {
+          "SenderWait": {
+            "count": 1440,
+            "total_ns": 39434419400,
+            "max_ns": 1491648700
+          },
+          "ReceiverHandle": {
+            "count": 1440,
+            "total_ns": 34495309100,
+            "max_ns": 887805100
+          },
+          "ReceiverSend": {
+            "count": 1439,
+            "total_ns": 42392100,
+            "max_ns": 228500
+          },
+          "reply_wait_outcomes": {
+            "WaitOk": 4320,
+            "WaitDisconnected": 1
+          }
+        },
+        {
+          "SenderWait": {
+            "count": 1440,
+            "total_ns": 38620601900,
+            "max_ns": 522282400
+          },
+          "ReceiverHandle": {
+            "count": 1440,
+            "total_ns": 33269432100,
+            "max_ns": 1491537500
+          },
+          "ReceiverSend": {
+            "count": 1440,
+            "total_ns": 39486300,
+            "max_ns": 311200
+          },
+          "reply_wait_outcomes": {
+            "WaitOk": 4319,
+            "WaitTimeout": 1
+          }
+        }
+      ]
+    },
+    {
+      "job": "132142992795",
+      "runner": "windows-2025",
+      "runner_image": "20261103.298.1",
+      "features": [
+        "default",
+        "witness-stall"
+      ],
+      "result": "pass",
+      "executable": {
+        "name": "ordered_stream-5697056f003419f5.exe",
+        "sha256_before_and_after": "449ff765a22b9533a32d6dfaba6a1b249eca1815ce76cbd2efdb2a65d66a3afc",
+        "length": 3859968,
+        "exit_code": 0
+      },
+      "archive": {
+        "id": "14073866661",
+        "zip_sha256": "e2d352086ed7a47c4da1d44630c4e986583c7a886165698387883579647fbf0e",
+        "sha256sums_sha256": "897d7eb331fbf5476d39d90abfe2d706d853344bf8fa4ac0abbcdaf1d3be7a07",
+        "verified_members": 6,
+        "tests_txt_sha256": "ed6c356c84cca6cecf447c1359f983c18fbe1d0b25d1b41eea856c1d04295fed"
+      },
+      "acknowledged_blocks_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_blocks_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_bytes_left_right": [
+        67108864,
+        67108864
+      ],
+      "tls_snapshot_left_right": [
+        {
+          "received": 5395015,
+          "sent": 5395050
+        },
+        {
+          "received": 5395050,
+          "sent": 5395015
+        }
+      ],
+      "setup_wall_us": 89375,
+      "setup_process_cpu_us": 15625,
+      "snapshot_wall_us": 218403873,
+      "snapshot_process_cpu_us": 86671875,
+      "libtest_elapsed_s": 218.55,
+      "lifecycle_wall_us": 218475207,
+      "lifecycle_process_cpu_us": 86703125,
+      "stall_window": {
+        "observed": 6,
+        "retained": 6,
+        "interval_ms": 100,
+        "threshold_ms": 1250,
+        "original_operation_ms": 2000,
+        "observed_commit_handler_ordinals": [
+          245,
+          249,
+          271,
+          271,
+          271,
+          271
+        ]
+      }
+    },
+    {
+      "job": "132142992748",
+      "runner": "windows-2022",
+      "runner_image": "20261112.366.7",
+      "features": [
+        "default",
+        "witness-stall"
+      ],
+      "result": "pass",
+      "executable": {
+        "name": "ordered_stream-5697056f003419f5.exe",
+        "sha256_before_and_after": "19c35e98f80261a3e4fe1511ad6747b325b16a4578a8415b2ac92fed7f942cb4",
+        "length": 3852800,
+        "exit_code": 0
+      },
+      "archive": {
+        "id": "14073707790",
+        "zip_sha256": "6d0d1805c85468b53509250700d1f94b214e918c4f5a4273eba4dff9907c0b81",
+        "sha256sums_sha256": "b48ccd6ab8361141f209937bf3c1e8555fdc9200018d4b3fd2debe3928e13081",
+        "verified_members": 6,
+        "tests_txt_sha256": "af254b2887f98ecb1de89c4139313869402201a7729d397cfb3fb19d9abfc47d"
+      },
+      "acknowledged_blocks_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_blocks_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_bytes_left_right": [
+        67108864,
+        67108864
+      ],
+      "tls_snapshot_left_right": [
+        {
+          "received": 5395015,
+          "sent": 5395050
+        },
+        {
+          "received": 5395050,
+          "sent": 5395015
+        }
+      ],
+      "setup_wall_us": 195871,
+      "setup_process_cpu_us": 0,
+      "snapshot_wall_us": 165960149,
+      "snapshot_process_cpu_us": 73500000,
+      "libtest_elapsed_s": 166.27,
+      "lifecycle_wall_us": 166021610,
+      "lifecycle_process_cpu_us": 73515625,
+      "stall_window": {
+        "observed": 0,
+        "retained": 0,
+        "interval_ms": 100,
+        "threshold_ms": 1250,
+        "original_operation_ms": 2000,
+        "observed_commit_handler_ordinals": []
+      }
+    }
+  ]
+}

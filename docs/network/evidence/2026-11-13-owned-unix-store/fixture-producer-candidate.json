@@ -1,0 +1,60 @@
+{
+  "run": 43500008767,
+  "job": 132142992197,
+  "source_head": "a5b24c8a47470a3deeebfa07d62cb1bcb1ad4811",
+  "source_and_tree": [
+    "e5b01c4b6cd2e453502d983d82995da66e2ef966",
+    "f07027c087985c4b0bbefc91ecf3b8f56af1d052"
+  ],
+  "artifact_id": 14073169570,
+  "archive_sha256": "29faf4247e5fb0d6d02b40e7214554c479718b2bd2b0e7c7a378db995fba4919",
+  "fixture_executable": {
+    "name": "installed_flowmux_fixture-76b6acb1a45dc66f",
+    "bytes": 42889512,
+    "sha256": "6a902c7770fb1de6e65a58bc396a5885100d852b63ce01ed5a1c77756c431537"
+  },
+  "exit": 0,
+  "member_sha256": {
+    "clippy.txt": "843f3f234b78922110b89a428633a0cf15359d3d6ccf99e644081b392653ace4",
+    "endpoint.sha256": "571156c849a707d093a1b13083b8e028dfa8c00f9996ab07ca1a2f9e95bddbab",
+    "core-test.txt": "1e246f9e0050234fee47db5bc7428d033c703f23a0c0f4793a76e9456c72e9ab",
+    "executable-after.json": "65d120acb334cd6a6fa4f369d64df94c71605903bf3860e8392d8bf3e59271cc",
+    "executable-before.json": "f2319c90ddd46473d7349560f60e23a097d636f634a1bfce040f4bd6ab5c8b63",
+    "fixture-tests.txt": "d84fd7a8e5afd356138228df316daffb86cf50c772a00a426a4029efd1798e1f",
+    "mvm-source.txt": "051e32fbafaf987e603a860e0b53937710d3bce8983e87d2c8087273941cd1bd",
+    "rustc.txt": "b2bdf493bcf6d1dc55181a0efc2774b6d9cf7bf5c8dcc5bed592c994b2ad38c4",
+    "source-and-tree.txt": "c1f7a75632fdf5bf02c4f4e8a574116588f4c898d7e5203ec9b22046b3c6c336"
+  },
+  "fixture_stdout": "\nrunning 5 tests\ntest tests::noncanonical_ipv4_refuses_publication ... ok\ntest tests::mismatched_baked_argv_refuses_signing ... ok\ntest tests::occupied_destination_remains_intact ... ok\ntest tests::unsafe_parent_refuses_publication ... ok\ntest tests::wrong_staged_elf_digest_refuses_publication ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s\n\n",
+  "mvm_source": "git+https://github.com/Casey-allard/mvm?rev=31f8a562f19d9eac89cb0d078b507770bb592262#31f8a562f19d9eac89cb0d078b507770bb592262",
+  "compiler": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "golden_result": "1 passed; 0 failed; 0 ignored; 75 filtered out",
+  "strict_clippy": {
+    "exit": 0,
+    "command": "cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --example installed_flowmux_fixture -- -D warnings"
+  },
+  "scope": "Hosted Linux compilation, five refusal controls, strict example Clippy and legacy record golden; signed export, guest execution, WAN and performance remain NOT_RUN",
+  "job_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43500008767/job/132142992197",
+  "linux_contract_job": {
+    "job": 132142992576,
+    "run": 43500008767,
+    "conclusion": "success",
+    "job_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43500008767/job/132142992576",
+    "raw_log_sha256": "b18b3f2ca510e638fd9d9fab04f4aa83c9734c25d860d608d2daf13488c40ea3",
+    "test_groups": {
+      "Linux host, canonical envelope, recovery and packing tests": {
+        "passed": 189,
+        "failed": 0,
+        "ignored": 0,
+        "test_result_footers": 15
+      },
+      "Shared transfer and canonical mailbox conformance": {
+        "passed": 671,
+        "failed": 0,
+        "ignored": 4,
+        "test_result_footers": 88
+      }
+    },
+    "scope": "Workflow Linux host, shared transfer and adapter conformance; not the full MVM dependency workspace or any guest boot"
+  }
+}

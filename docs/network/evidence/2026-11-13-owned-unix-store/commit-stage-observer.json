@@ -1,0 +1,172 @@
+[
+  {
+    "artifact_id": "14080908571",
+    "zip_sha256": "feed3681858f522ded993b09627da6ebc9fd08f7600525f91fc69c57f04808ba",
+    "files_sha256": {
+      "executable-before.json": "90ecad47531da9887754fb10d7443fb19d5673f004d0969da4b78e53d1aee8bc",
+      "executable-after.json": "c7eb4492cc96d331d77ff18d11c6597a59d0585e11deb9ee96cf088e5513476d",
+      "identity.json": "afd80832d2e613545a734bb321a3f4a42b1047d1d94f86f3808cb30668b8f221",
+      "rustc.txt": "20815ee828e9107afea25520937957032db8ca234a25409cc7acffbdfbd4d392",
+      "SHA256SUMS": "2650f555142737f0d05e7fbb20014deb2b1c6b526a83be411a8aa41c9876c8a0",
+      "stall-control.txt": "21f183db09ee720bf2b6ad087aa4c505091886cc92354645a1016beaf4b32c75",
+      "tests.txt": "47110b45950363889ea6fdef98646d69d0b732ead41dd4c74a9317c3b89e1b51"
+    },
+    "members_verified": 6,
+    "source": {
+      "source": "01fd1ae0d5f9d854c11e07d1df5ea3a8c4603e66",
+      "scope": "instrumented native process; both peers on one runner; no MVM backend or WAN",
+      "os": "Windows",
+      "watchdog_seconds": 240,
+      "lock_sha256": "EDA224172E7F53A824D1DB84260CE9ED1CBB77BFE12066928C769EDFA399D005",
+      "tree": "2a2dc2dda5f9f3f5d0fbc71292cef54662689811",
+      "arch": "X64",
+      "blocks_each_direction": 4096,
+      "features": "witness-stall",
+      "attempt": "1",
+      "image": "20261112.366.7",
+      "run": "43516951657"
+    },
+    "executable": {
+      "executable": "ordered_stream-1b49920113840dd5.exe",
+      "length": 3865088,
+      "sha256": "4BE1465C70089355245F35EB0F1E876B16FAF0BE8315E3C2B187586D2F634D9D",
+      "features": [
+        "default",
+        "witness-stall"
+      ]
+    },
+    "tests": [
+      "ORDERED_STALL_WINDOW observed=0 retained=0 fixture=ordered-stream interval_ms=100 threshold_ms=1250 original_operation_ms=2000",
+      "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=132969197 original_gate_us=240000000 setup_wall_us=110479 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(37296875) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+      "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=110479 lifecycle_wall_us=133023343 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(37312500) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 133.04s"
+    ],
+    "control": [
+      "test duplex::stall::tests::sample_is_nonblocking_and_keeps_the_original_deadline ... ok",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.00s"
+    ]
+  },
+  {
+    "artifact_id": "14081067955",
+    "zip_sha256": "50324c9de39ac10686d84065003f41d7301f30cb81db292d5f4a0ebb9b3c99fb",
+    "files_sha256": {
+      "executable-after.json": "ba3421f89fc3df4229823c301b029f7b88869aafbb22652e8015af3f8014a8bb",
+      "identity.json": "3852722209db0b67eafc8718ab3c73ab046bb863afab20462e5fa40f95caf144",
+      "executable-before.json": "2f6a01da084c07d69c64ea7fcf8d32bf6432a90a745e2eeabc8aae2e87fb9cc7",
+      "rustc.txt": "20815ee828e9107afea25520937957032db8ca234a25409cc7acffbdfbd4d392",
+      "SHA256SUMS": "2918dd74f50eec61c769be16daae41abebbd26079b16eeb8cb6fe37cd542c941",
+      "tests.txt": "f143c9913429859b6a4dc327d46862d4f895c80d4d8cceb84cbaa8938ea83939",
+      "stall-control.txt": "01f135e6cd5b0b40243e176d0c2d801244d3d953b029b9a632ce82ab39e2a47f"
+    },
+    "members_verified": 6,
+    "source": {
+      "watchdog_seconds": 240,
+      "arch": "X64",
+      "run": "43516951657",
+      "lock_sha256": "EDA224172E7F53A824D1DB84260CE9ED1CBB77BFE12066928C769EDFA399D005",
+      "scope": "instrumented native process; both peers on one runner; no MVM backend or WAN",
+      "image": "20261103.298.1",
+      "blocks_each_direction": 4096,
+      "tree": "2a2dc2dda5f9f3f5d0fbc71292cef54662689811",
+      "attempt": "1",
+      "source": "01fd1ae0d5f9d854c11e07d1df5ea3a8c4603e66",
+      "features": "witness-stall",
+      "os": "Windows"
+    },
+    "executable": {
+      "executable": "ordered_stream-1b49920113840dd5.exe",
+      "length": 3871744,
+      "sha256": "AD024CF2DCB6EF2E0C8C31F99235B26314F9FC79FE3C9F999AA3AEE237BB2B08",
+      "features": [
+        "default",
+        "witness-stall"
+      ]
+    },
+    "tests": [
+      "ORDERED_STALL_WINDOW observed=0 retained=0 fixture=ordered-stream interval_ms=100 threshold_ms=1250 original_operation_ms=2000",
+      "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=161265904 original_gate_us=240000000 setup_wall_us=87320 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(61265625) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+      "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=87320 lifecycle_wall_us=161331402 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(61265625) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 161.35s"
+    ],
+    "control": [
+      "test duplex::stall::tests::sample_is_nonblocking_and_keeps_the_original_deadline ... ok",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.00s"
+    ]
+  },
+  {
+    "artifact_id": "14081386477",
+    "zip_sha256": "4e55a752c85609ee6b9e1098838fa0cfe78528200b322099ce34c79f4ae05c34",
+    "files_sha256": {
+      "clippy.txt": "c2d7da8eb43b620c4e55cd02f2623f36b146246627bf11e824e95515b2a6c593",
+      "core-test.txt": "e9ad150cdca4b33ebe29931da7ff5efc183373aeab4f32d6059179f1f06d9353",
+      "endpoint.sha256": "1d107f0631b7467aedba61ef53a3b300ff5947c6be065f87be58f9f3ef310b74",
+      "executable-after.json": "87b7447c0926539403fa6f17f24c92021904d76c1a610841716003ba51cc83f6",
+      "executable-before.json": "8c89349384822f7efa7793d614afccbc8c06fc7f8268333edb4246eac37f6ccc",
+      "fixture-tests.txt": "eb9c3b206421942a3d9f6e09760d660c02047163fac0859a688f1a0a5c875626",
+      "handoff-after.sha256": "eed700436f484dec907073cdbe978b382cb4f2780ee276201e8613dc33e046fb",
+      "handoff-before.sha256": "eed700436f484dec907073cdbe978b382cb4f2780ee276201e8613dc33e046fb",
+      "handoff-exit.txt": "591705e2f4f138d2e3686d92c2e805abc918661f58dc92e47c40c76bca898e27",
+      "handoff-tests.txt": "91cffd5682ab89ffcaaee1e088f999266f775b38c36db795a20463c9f9ad1eef",
+      "mvm-source.txt": "051e32fbafaf987e603a860e0b53937710d3bce8983e87d2c8087273941cd1bd",
+      "rustc.txt": "b2bdf493bcf6d1dc55181a0efc2774b6d9cf7bf5c8dcc5bed592c994b2ad38c4",
+      "source-and-tree.txt": "99b96eb5ad05e1ea8161597ff4306907ada2e88516f39f586f3df58fc128bb87"
+    },
+    "source": [
+      "01fd1ae0d5f9d854c11e07d1df5ea3a8c4603e66",
+      "2a2dc2dda5f9f3f5d0fbc71292cef54662689811"
+    ],
+    "tests": {
+      "core-test.txt": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 75 filtered out; finished in 0.00s"
+      ],
+      "fixture-tests.txt": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s"
+      ],
+      "handoff-tests.txt": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    }
+  },
+  {
+    "artifact_id": "14082285259",
+    "zip_sha256": "9cb0b6162ce11655f788bccce55e49c5072851b1e391751dd806dd5eb27ccc8e",
+    "files_sha256": {
+      "executable-after.json": "4b14f69c1a9e4539b60451c4785b8487ab5ffa8ee32edb23cd774b3f9bb8c15d",
+      "identity.json": "0422c49dffddf8f1bade47eb16b6402a36b9cb5065506fcf3a57d365b5a541f5",
+      "executable-before.json": "76a1ab6517eec2c645df6c7f941cc23c22d3dddf8d2a990b07e914395260c34f",
+      "rustc.txt": "20815ee828e9107afea25520937957032db8ca234a25409cc7acffbdfbd4d392",
+      "SHA256SUMS": "288d0d434d03566f0b96a9ca38e9ea809ee74ec9d2cfd96d1b4e938184ab2c20",
+      "tests.txt": "818f106293e30970b923a0596d476d0fdae3c94852c5c2621a5b92bbdb24fd6d"
+    },
+    "members_verified": 5,
+    "source": {
+      "arch": "X64",
+      "watchdog_seconds": 240,
+      "scope": "instrumented native process; both peers on one runner; no MVM backend or WAN",
+      "run": "43516951657",
+      "attempt": "1",
+      "lock_sha256": "EDA224172E7F53A824D1DB84260CE9ED1CBB77BFE12066928C769EDFA399D005",
+      "blocks_each_direction": 4096,
+      "source": "01fd1ae0d5f9d854c11e07d1df5ea3a8c4603e66",
+      "os": "Windows",
+      "tree": "2a2dc2dda5f9f3f5d0fbc71292cef54662689811",
+      "features": "witness-timing",
+      "image": "20261103.298.1"
+    },
+    "executable": {
+      "executable": "ordered_stream-6d6807d891d1495a.exe",
+      "length": 3847680,
+      "sha256": "9DCB729C9728C6D97704DD53AB8FBBAF447D314A4C0A2228245DFAB6A6231FD4",
+      "features": [
+        "default",
+        "witness-timing"
+      ]
+    },
+    "tests": [
+      "ORDERED_WITNESS success=true witness_timing=true snapshot=concurrent wall_us=213484786 original_gate_us=240000000 setup_wall_us=86495 setup_process_cpu_us=Some(0) process_cpu_to_snapshot_us=Some(83671875) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+      "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=86495 lifecycle_wall_us=213574448 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(83687500) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 213.60s"
+    ],
+    "control": []
+  }
+]

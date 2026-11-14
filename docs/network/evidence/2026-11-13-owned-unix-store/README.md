@@ -1,0 +1,26 @@
+# Native SmallV1 owned-store qualification
+
+A raw SmallV1 sender and receiver recovered the same 16 bytes, including the trailing NULs, on macOS arm64 and Linux x86-64. Between opening the store and transferring the object, the test renamed the original parent and placed a sentinel at its former path. Both cold publication and warm lookup used the retained directory. The sentinel was unchanged. [Public test](../../../../crates/spiralcore-transfer/tests/owned_store.rs)
+
+| Host | Operation | Request frames (B) | Reply frames (B) | Send through exact readback (ms) | Process CPU (ms) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| macOS arm64 | Cold publish | 235 | 218 | 9.903 | 2.208 |
+| macOS arm64 | Warm probe | 102 | 88 | 4.493 | 0.716 |
+| Linux x86-64 | Cold publish | 235 | 218 | 1.490 | 1.489 |
+| Linux x86-64 | Warm probe | 102 | 88 | 0.640 | 0.643 |
+
+Each row is one observed operation. The byte counters sum encoded object-v1 frames delivered by an in-process callback. The clock starts after endpoint and sender construction, just before sending, and stops after the matching object ID and entire readback are checked. CPU covers the test process. Other host tests were active during the macOS measurements. The packet contains no network, cross-platform speedup or codec-comparison measurement. [Exact counters, executable identities where captured and log hashes](scoped-results.json)
+
+The separate lifecycle fixture held two prepared stores under one shared parent. On each host the process counted 3 descriptors before capture, 8 with both stores held, and 3 after release. The enumeration descriptor was excluded from each count. A separate open still contended for each original lock after both endpoints dropped. The fixture took 11.024 ms wall and 3.270 ms process CPU on macOS, and 1.995 ms wall and 1.984 ms process CPU on Linux. Iterator allocation estimates and their platform conditions are recorded separately. [Lifecycle test](../../../../crates/spiralcore-transfer/tests/owned_store_resources.rs) · [Iterator accounting](iterator-resources.json)
+
+## Source and test boundaries
+
+The frozen component manifest covers 156 files. Its SHA-256 is `e5b7be7be8e6ac64fe8b3b4f2713a3a634faf1b01138bfd455fbf69c8ae687af`. Earlier test logs in the results carry the phase `implementation-checkpoint`. These include initial missing-API failures, two failing preflight controls, and a failure where a fresh probe produced a positive receipt after a rename whose directory sync failed. The frozen implementation rechecks the original and completes its durability barrier before returning that receipt. The repaired regression passed. [Source manifest](source-manifest.json) · [Test phases and outcomes](scoped-results.json)
+
+The focused primitive suites passed 17/17 on macOS and 18/18 on Linux. The Linux suite included the held-descriptor mount-ID control. The macOS all-target run produced 65 libtest summaries with 519 passes, zero failures and four ignored. Strict Clippy passed. A subsequent crate-wide format check found differences in existing sources and returned status 1. The Linux public suite passed 5/5 and the resource fixture passed 1/1. At this checkpoint the broader Linux all-target command had returned status 101 and remained under investigation. Installed MVM permit integration, native relay acceptance, supported capacity and WAN qualification remain open. [Storage contract](../../owned-unix-store.md) · [Acceptance tracker](https://github.com/R4-Laboratories/SpiralCore/issues/258)
+
+The four newly implemented backend files have **607/637 mapped production lines covered (95.29%)** on macOS. This count excludes exactly 11 mapped `cfg(test)` lines, with the source digests and excluded ranges recorded. The instrumented run passed 80 tests and retained one existing ignored native timing witness. It used the existing build target and LLVM tools. This is neither branch coverage nor whole-crate coverage; Linux-only lines are outside this denominator. [Coverage method and executable hashes](coverage.json) · [Source-relative LCOV](coverage.lcov).
+
+Linux strict Clippy subsequently passed. The broad benchmark had failed at the 16 MiB repeat/raw-CAS seed after 34 successful rows. Its temporary directory was removed on assertion unwind, so the detailed original error was not retained. A read-only post-run quota check found 100,999,168 bytes of user headroom on the original temporary filesystem; the campaign needs at least 113,246,211 bytes at that seed, before filesystem overhead. An isolated replay of the same binary and failing selector passed in 63.002 seconds using an owned disk-backed temporary directory. That is whole-test elapsed time, not transfer latency. The complete-input suite subsequently passed: 65 test summaries, 520 passes, zero failures and four existing ignores, in 436.757 s wall time (760.780 s user CPU and 10.915 s system CPU). The original receipt did not record the compiler version, so this is not attributed to the MVM Rust 1.97.1 closure. No workload, codec, protocol or deadline was relaxed. [Failure, replay and strict-check receipts](linux-validation.json).
+
+The installed host adapter and original-parent funding have a separate [MVM integration report](mvm-integration.md), including the passing original macOS relay controls and remaining native service gates.
