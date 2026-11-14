@@ -1,5 +1,13 @@
 # Networking delivery status
 
+Contributor MVM `0909b7ec` now preserves the exact unused journal preparation
+through early stopped-definition/image resolution refusal. Its opaque handoff
+can use the existing original-parent cancellation API; returning it does not
+itself refund credit. Sixteen focused checks, constructor privacy, final strict
+Clippy, Linux/BDD gated compilation and workspace tests under umask 0022 passed.
+Actual journal-caller cancellation and uncertain/detached recovery remain open.
+[Original-token recovery, retained failures and source identities](evidence/2026-11-14-unused-journal-preparation/README.md).
+
 The current contributor host now refuses unsupported mailbox runtime profiles
 before guest dispatch and checks the exact serialized boot binding against the
 selected runtime. Final source `9394d74f` passed Linux workspace tests and strict
