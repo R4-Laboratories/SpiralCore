@@ -214,9 +214,13 @@ jobs:
           mkdir -m700 "$RUNNER_TEMP/consumer-home" "$RUNNER_TEMP/consumer-tmp"
           cargo +1.97.1 metadata --locked --format-version 1 --filter-platform "$EXPECTED_TARGET" > "$RUNNER_TEMP/consumer-metadata.json"
           expected='git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206'
+          grep -F 'source = "git+https://github.com/R4-Laboratories/SpiralCore?' Cargo.lock > "$evidence/shared-core-lock-sources.txt"
+          test "$(wc -l < "$evidence/shared-core-lock-sources.txt")" -eq 4
+          test "$(sort -u "$evidence/shared-core-lock-sources.txt")" = "source = \"$expected\""
           jq -e --arg expected "$expected" '
             [.packages[] | select(.name | startswith("spiralcore-") or . == "uor-r4-object-store")] as $core |
-            ($core | length) == 4 and all($core[]; .source == $expected)
+            ($core | map(.name) | sort) == ["spiralcore-mvm-flowmux", "spiralcore-transfer", "uor-r4-object-store"] and
+            all($core[]; .source == $expected)
           ' "$RUNNER_TEMP/consumer-metadata.json"
           jq '[.packages[] | select(.name | startswith("spiralcore-") or . == "uor-r4-object-store") | {name, version, source}]' \
             "$RUNNER_TEMP/consumer-metadata.json" > "$evidence/shared-core.json"
