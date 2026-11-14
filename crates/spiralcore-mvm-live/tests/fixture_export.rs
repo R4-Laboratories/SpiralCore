@@ -348,13 +348,13 @@ fn verify_boot(archive: &Path, verified: &VerifiedBundleFile, trust: &FsTrustSto
     ensure!(
         boot.arch == GuestArch::X86_64
             && release.arch == GuestArch::X86_64
-            && runtime.version == "0.28.0-rc.2"
+            && runtime.version == "0.28.0-rc.3"
             && release.version == runtime.version
             && verified
                 .manifest
                 .find_by_name(&runtime.archive_artifact)
                 .is_some_and(|a| a.sha256 == release.archive_sha256),
-        "authenticated rc.2 runtime mismatch"
+        "authenticated rc.3 runtime mismatch"
     );
     Ok(())
 }
@@ -436,7 +436,7 @@ fn signed_fixture_reopens_with_original_publisher() -> Result<()> {
         "FIXTURE_EXPORT_RESULT {}",
         json!({"guest_sha256":inputs.digest,"archive_sha256":digest,
         "archive_bytes":size,"publisher_key_id":key_id.0,"revocation_publication":checkpoint.publication,
-        "public_members":original.len(),"canonical_runtime":"0.28.0-rc.2","repeat_refusal":true})
+        "public_members":original.len(),"canonical_runtime":"0.28.0-rc.3","repeat_refusal":true})
     );
     Ok(())
 }

@@ -352,7 +352,7 @@ jobs:
                   and (.publisher_key_id|type=="string" and test("^[0-9a-f]{32}$"))
                   and (.archive_bytes|type=="number" and .>0 and .==floor)
                   and (.revocation_publication|type=="number" and .>=0 and .==floor)
-                  and .public_members==7 and .canonical_runtime=="0.28.0-rc.2" and .repeat_refusal==true) |
+                  and .public_members==7 and .canonical_runtime=="0.28.0-rc.3" and .repeat_refusal==true) |
                 {guest_sha256, archive_sha256, archive_bytes, publisher_key_id, revocation_publication,
                  public_members, canonical_runtime, repeat_refusal}' > export-evidence/result.json
               echo 'candidate: signed archive reopened; one test passed' >> export-evidence/outcomes.txt
