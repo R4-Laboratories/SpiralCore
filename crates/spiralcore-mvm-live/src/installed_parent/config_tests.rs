@@ -985,3 +985,67 @@ fn probe_original_sdk_driver_holds_the_unpolled_launch_then_refunds_its_exact_pr
     supervisor.close_admission();
     supervisor.try_finish().unwrap();
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn collector_profile_rejects_an_unsupported_policy_before_parent_binding() {
+    mvm_core::util::test_env::isolated_lock_probe(|| {
+        let (home, mut supervisor, mut provider) = endpoint_tests::fixture();
+        let mut env = mvm_core::util::test_env::TestEnv::new();
+        env.set("MVM_HOME", home.path());
+        provider
+            .configure_telemetry_only(&supervisor, collector_tests::limits())
+            .unwrap();
+        let policy = mvm_core::policy::network_policy::NetworkPolicy::deny_all();
+        let admitted = admit_with_network(home.path(), "collector-invalid-policy", Some(&policy));
+        let (grant, mut cfg) = config(&provider, "collector-invalid-policy");
+        cfg.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
+        cfg.network_policy =
+            mvm_core::policy::network_policy::NetworkPolicy::trusted_build_egress();
+        let before = supervisor.managed_resources().snapshot().unwrap().usage;
+        assert!(
+            provider
+                .bind_config(&admitted, &cfg, native_backend())
+                .is_err()
+        );
+        assert_eq!(
+            supervisor.managed_resources().snapshot().unwrap().usage,
+            before
+        );
+        assert!(grant.lifecycle.lock().unwrap().admitted_plan.is_none());
+        drop((cfg, grant, provider));
+        supervisor.close_admission();
+        supervisor.try_finish().unwrap();
+    });
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn collector_profile_binds_the_existing_canonical_signed_deny_all_policy() {
+    mvm_core::util::test_env::isolated_lock_probe(|| {
+        let (home, mut supervisor, mut provider) = endpoint_tests::fixture();
+        let mut env = mvm_core::util::test_env::TestEnv::new();
+        env.set("MVM_HOME", home.path());
+        provider
+            .configure_telemetry_only(&supervisor, collector_tests::limits())
+            .unwrap();
+        let policy = mvm_core::policy::network_policy::NetworkPolicy::deny_all();
+        let admitted = admit_with_network(home.path(), "collector-canonical-policy", Some(&policy));
+        let (grant, mut cfg) = config(&provider, "collector-canonical-policy");
+        cfg.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
+        cfg.network_policy = policy;
+        let permit = provider
+            .bind_config(&admitted, &cfg, native_backend())
+            .unwrap();
+        let state = grant.lifecycle.lock().unwrap();
+        assert_eq!(
+            state.selected_collector.as_deref(),
+            Some(admitted.plan_id().0.as_str())
+        );
+        assert!(state.selected_network.is_none());
+        drop(state);
+        drop((permit, cfg, grant, provider));
+        supervisor.close_admission();
+        supervisor.try_finish().unwrap();
+    });
+}

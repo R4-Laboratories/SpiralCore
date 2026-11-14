@@ -450,6 +450,35 @@ impl ManagedReservation {
         }
         Ok(())
     }
+    /// Retained cleanup may compare actual reservations after admission closes.
+    /// Matching numeric labels or limits from another pool are not ownership.
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn check_same_tenant(&self, original: &Self) -> Result<()> {
+        if !Arc::ptr_eq(&self.owner.shared, &original.owner.shared) {
+            return Err(ManagedResourceError::InvalidClaim);
+        }
+        self.check_retained_identity()?;
+        original.check_retained_identity()?;
+        let ledger = self.owner.shared.ledger()?;
+        let tenant = |owner: &Reservation| {
+            ledger
+                .slots
+                .get(owner.slot)
+                .copied()
+                .flatten()
+                .filter(|slot| slot.serial == owner.serial)
+                .map(|slot| slot.tenant)
+        };
+        match (tenant(&self.owner), tenant(&original.owner)) {
+            (Some(a), Some(b)) if a == b => Ok(()),
+            (Some(_), Some(_)) => Err(ManagedResourceError::InvalidClaim),
+            _ => {
+                self.owner.shared.fence();
+                Err(ManagedResourceError::State)
+            }
+        }
+    }
+
     pub fn check_current(&self) -> Result<()> {
         if !self.owner.shared.open() {
             return Err(ManagedResourceError::Fenced);
