@@ -285,6 +285,7 @@ impl Duplex {
                 timing,
                 tx: shared_tx,
                 routing,
+                last_inbound: None,
                 pending,
                 responses: response_rx,
                 sender,
@@ -322,6 +323,7 @@ impl Duplex {
 
 pub struct DuplexWriter {
     routing: Arc<Routing>,
+    last_inbound: Option<u64>,
     #[cfg(feature = "witness-stall")]
     stall: StallObserver,
     #[cfg(feature = "witness-timing")]
@@ -452,32 +454,41 @@ impl DuplexWriter {
             return Err(Error::Closed);
         }
         self.cancellation.check()?;
+        let admission = self
+            .routing
+            .admit_turn(&mut self.last_inbound, until, &self.cancellation);
         let mut transport_error = None;
         let budget = Arc::new(AtomicUsize::new(0));
         let tx = &self.tx;
         let pending = &self.pending;
         let responses = &self.responses;
-        let result = operation(&mut self.sender, &self.context, &mut |frames| {
-            Self::exchange(
-                tx,
-                pending,
-                responses,
-                &self.routing,
-                frames,
-                purpose,
-                until,
-                &budget,
-                &self.cancellation,
-                #[cfg(feature = "witness-timing")]
-                &self.timing,
-                #[cfg(feature = "witness-stall")]
-                &self.stall,
-            )
-            .map_err(|error| {
+        let result = match admission {
+            Err(error) => {
                 transport_error = Some(error);
-                spiralcore_transfer::Error::Unknown
-            })
-        });
+                Err(spiralcore_transfer::Error::Unknown)
+            }
+            Ok(()) => operation(&mut self.sender, &self.context, &mut |frames| {
+                Self::exchange(
+                    tx,
+                    pending,
+                    responses,
+                    &self.routing,
+                    frames,
+                    purpose,
+                    until,
+                    &budget,
+                    &self.cancellation,
+                    #[cfg(feature = "witness-timing")]
+                    &self.timing,
+                    #[cfg(feature = "witness-stall")]
+                    &self.stall,
+                )
+                .map_err(|error| {
+                    transport_error = Some(error);
+                    spiralcore_transfer::Error::Unknown
+                })
+            }),
+        };
         match result {
             Ok(value) if Instant::now() < until => Ok(value),
             result => {
@@ -981,13 +992,13 @@ impl<A: Authority> Worker<A> {
                     routing.route(purpose, frame)?;
                     continue;
                 }
-                let _inbound = routing.inbound();
+                let _inbound = routing.inbound()?;
                 drop(held);
                 routing.ready();
                 self.request(purpose, frame, until)?;
                 continue;
             }
-            let _inbound = routing.inbound();
+            let _inbound = routing.inbound()?;
             drop(held);
             routing.ready();
             match record {

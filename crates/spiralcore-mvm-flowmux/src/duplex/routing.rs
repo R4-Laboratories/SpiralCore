@@ -17,13 +17,19 @@ impl Wake {
     }
     #[cfg(test)]
     fn wait_for_enrollment(&self) {
-        let until = Instant::now() + Duration::from_secs(2);
+        assert!(self.wait_for_enrollment_after(0, Instant::now() + Duration::from_secs(2)));
+    }
+    #[cfg(test)]
+    fn wait_for_enrollment_after(&self, after: usize, until: Instant) -> bool {
         let mut gate = self.notified.lock().unwrap();
-        while self.enrollments.load(Ordering::Acquire) == 0 {
-            let remaining = until.saturating_duration_since(Instant::now());
-            assert!(!remaining.is_zero(), "original waiter must enroll");
-            gate = self.changed.wait_timeout(gate, remaining).unwrap().0;
+        while self.enrollments.load(Ordering::Acquire) <= after {
+            let left = until.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return false;
+            }
+            gate = self.changed.wait_timeout(gate, left).unwrap().0;
         }
+        true
     }
     fn arm(&self) -> Result<()> {
         *lock(&self.notified)? = false;
@@ -61,6 +67,7 @@ pub(super) struct Routing {
     responses: SyncSender<Frame>,
     wake: Arc<Wake>,
     busy: AtomicBool,
+    generation: std::sync::atomic::AtomicU64,
     fatal: Mutex<Option<Error>>,
 }
 pub(super) struct Inbound(Arc<Routing>);
@@ -85,6 +92,7 @@ impl Routing {
             responses,
             wake,
             busy: AtomicBool::new(false),
+            generation: std::sync::atomic::AtomicU64::new(0),
             fatal: Mutex::new(None),
         }))
     }
@@ -114,10 +122,47 @@ impl Routing {
         }
         Ok(reader)
     }
-    pub(super) fn inbound(self: &Arc<Self>) -> Inbound {
+    pub(super) fn inbound(self: &Arc<Self>) -> Result<Inbound> {
+        self.generation
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |old| {
+                old.checked_add(1)
+            })
+            .map_err(|_| Error::Limit)?;
         self.busy.store(true, Ordering::Release);
         self.wake.notify();
-        Inbound(self.clone())
+        Ok(Inbound(self.clone()))
+    }
+    /// Pace newly admitted operations against the current inbound handler.
+    /// An earlier operation may already be in flight. Waiting consumes the
+    /// caller's original deadline and owns no transport lock.
+    pub(super) fn admit_turn(
+        &self,
+        last: &mut Option<u64>,
+        until: Instant,
+        cancellation: &Cancellation,
+    ) -> Result<()> {
+        loop {
+            self.wake.arm()?;
+            cancellation.check()?;
+            remaining(until)?;
+            if !self.busy.load(Ordering::Acquire) {
+                return Ok(());
+            }
+            let generation = self.generation.load(Ordering::Acquire);
+            if *last != Some(generation) {
+                *last = Some(generation);
+                return Ok(());
+            }
+            self.wake.wait(until, cancellation)?;
+        }
+    }
+    #[cfg(test)]
+    pub(super) fn enrollments(&self) -> usize {
+        self.wake.enrollments.load(Ordering::Acquire)
+    }
+    #[cfg(test)]
+    pub(super) fn wait_for_enrollment_after(&self, after: usize, until: Instant) -> bool {
+        self.wake.wait_for_enrollment_after(after, until)
     }
     /// Only the original worker retires the transport, including unwind paths.
     pub(super) fn retire(&self) {
@@ -331,7 +376,7 @@ mod tests {
     #[test]
     fn deferred_request_is_charged_once_and_cancellation_wakes_original_waiter() {
         let mut pair = pair();
-        let _inbound = pair.routing.inbound();
+        let _inbound = pair.routing.inbound().unwrap();
         send(&mut pair, 1);
         let until = Instant::now() + Duration::from_secs(1);
         assert!(!pair.routing.assist(until).unwrap());
@@ -352,7 +397,7 @@ mod tests {
     #[test]
     fn cancellation_wakes_enrolled_waiter_behind_deferred_input() {
         let mut pair = pair();
-        let _inbound = pair.routing.inbound();
+        let _inbound = pair.routing.inbound().unwrap();
         send(&mut pair, 1);
         assert!(
             !pair
@@ -544,6 +589,49 @@ mod tests {
             ),
             Err(Error::Cancelled)
         ));
+    }
+    #[test]
+    fn paced_wait_preserves_deadline_and_cancel_and_generation_cannot_wrap() {
+        let pair = pair();
+        let inbound = pair.routing.inbound().unwrap();
+        let mut last = None;
+        pair.routing
+            .admit_turn(
+                &mut last,
+                Instant::now() + Duration::from_secs(1),
+                &pair.cancellation,
+            )
+            .unwrap();
+        assert!(matches!(
+            pair.routing.admit_turn(
+                &mut last,
+                Instant::now() + Duration::from_millis(10),
+                &pair.cancellation
+            ),
+            Err(Error::Timeout)
+        ));
+        let enrolled = pair.routing.enrollments();
+        std::thread::scope(|scope| {
+            let owner = scope.spawn(|| {
+                pair.routing.admit_turn(
+                    &mut last,
+                    Instant::now() + Duration::from_secs(1),
+                    &pair.cancellation,
+                )
+            });
+            let waiting = pair
+                .routing
+                .wait_for_enrollment_after(enrolled, Instant::now() + Duration::from_millis(200));
+            pair.cancellation.cancel();
+            let result = owner.join().unwrap();
+            assert!(waiting);
+            assert!(matches!(result, Err(Error::Cancelled)));
+        });
+        drop(inbound);
+        pair.routing.generation.store(u64::MAX, Ordering::Release);
+        assert!(matches!(pair.routing.inbound(), Err(Error::Limit)));
+        assert!(!pair.routing.busy.load(Ordering::Acquire));
+        assert_eq!(pair.routing.generation.load(Ordering::Acquire), u64::MAX);
     }
     #[test]
     fn fixed_control_state_fits_explicit_metadata_reservation() {

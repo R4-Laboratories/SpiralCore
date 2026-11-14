@@ -45,6 +45,19 @@ jobs:
           if ($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64') { throw 'Native Windows x64 required' }
           $source = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }
+          if ($env:RUNNER_OS -eq 'Windows') {
+            $storeRoot = $env:RUNNER_TEMP
+            if (!$storeRoot -or [System.IO.Path]::GetPathRoot($storeRoot) -notmatch '^[A-Za-z]:\\$' -or !(Test-Path -LiteralPath $storeRoot -PathType Container)) { throw 'Explicit native runner scratch root unavailable' }
+            $drive = [System.IO.DriveInfo]::new([System.IO.Path]::GetPathRoot($storeRoot))
+            if (!$drive.IsReady) { throw 'Runner scratch volume is not ready' }
+            @{ selected_store_temp = $storeRoot; original_tmp = $env:TMP; original_temp = $env:TEMP;
+              filesystem = $drive.DriveFormat; drive_type = $drive.DriveType.ToString();
+              size = $drive.TotalSize; available = $drive.AvailableFreeSpace;
+              scope = 'explicit CI scratch volume; OS-default temp failures remain separate'
+            } | ConvertTo-Json | Set-Content timing-evidence/storage.json
+            "TMP=$storeRoot" | Add-Content $env:GITHUB_ENV
+            "TEMP=$storeRoot" | Add-Content $env:GITHUB_ENV
+          }
           $tree = (git rev-parse 'HEAD^{tree}').Trim()
           if ($LASTEXITCODE -ne 0) { throw 'Tree identity failed' }
           @{ source = $source; tree = $tree; run = $env:GITHUB_RUN_ID;
@@ -74,6 +87,15 @@ jobs:
           $code = $LASTEXITCODE
           $log | Set-Content timing-evidence/tests.txt
           $log | Write-Output
+          if ($env:RUNNER_OS -eq 'Windows') {
+            $observed = [regex]::Matches($log, '(?m)^ORDERED_STORAGE_ROOT temp=(.+)\r?$')
+            if ($observed.Count -ne 1) { throw 'Missing actual Rust storage root' }
+            $actual = [System.IO.Path]::GetFullPath($observed[0].Groups[1].Value.Trim()).TrimEnd('\')
+            $selected = [System.IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\')
+            @{ actual = $actual; configured = $selected; matches = ($actual -ieq $selected) } |
+              ConvertTo-Json | Set-Content timing-evidence/storage-observed.json
+            if ($actual -ine $selected) { throw 'Rust fixture did not use the selected scratch root' }
+          }
           if ($env:DIAGNOSTIC_FEATURE -eq 'witness-stall' -and $log -notmatch '(?m)^ORDERED_STALL_WINDOW observed=\d+ retained=[0-8] ') { throw 'Sampling window missing from original workload' }
 
           if ($code -ne 0 -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;') { throw 'Instrumented sustained gate failed; preserve diagnostics' }

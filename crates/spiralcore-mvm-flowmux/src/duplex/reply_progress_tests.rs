@@ -54,6 +54,13 @@ impl Drop for Store {
 
 #[test]
 fn independent_reply_progresses_while_original_inbound_authority_is_held() {
+    reply_progress(false);
+}
+#[test]
+fn held_inbound_turn_paces_the_next_send_without_publishing_it() {
+    reply_progress(true);
+}
+fn reply_progress(pace: bool) {
     let mut context = super::tests::context();
     context.capability = "independent-reply-progress".into();
     let binding = Binding {
@@ -68,7 +75,10 @@ fn independent_reply_progresses_while_original_inbound_authority_is_held() {
     let client = TcpStream::connect(address).unwrap();
     let (server, peer) = listener.accept().unwrap();
     let stores = ["left", "right"].map(|side| {
-        Store(std::env::temp_dir().join(format!("reply-progress-{side}-{}", std::process::id())))
+        Store(std::env::temp_dir().join(format!(
+            "reply-progress-{pace}-{side}-{}",
+            std::process::id()
+        )))
     });
     let (entered, entered_rx) = mpsc::sync_channel(1);
     let (release, released) = mpsc::sync_channel(1);
@@ -120,8 +130,9 @@ fn independent_reply_progresses_while_original_inbound_authority_is_held() {
     let left_cancel = left_tx.cancellation.clone();
     let right_cancel = right_tx.cancellation.clone();
     let wire = right_tx.tx.clone();
+    let local_wire = left_tx.tx.clone();
     let diagnostic_stop = AtomicBool::new(false);
-    let snapshot = || {
+    let snapshot = |wire: &SharedTx| {
         wire.acquire(Instant::now() + Duration::from_secs(2), &diagnostic_stop)
             .ok()
             .map(|tx| tx.counters())
@@ -135,19 +146,42 @@ fn independent_reply_progresses_while_original_inbound_authority_is_held() {
             (result, half_close)
         });
         let entered = entered_rx.recv_timeout(Duration::from_secs(2));
-        let before = snapshot();
+        let before = snapshot(&wire);
         let local_result = if entered.is_ok() {
             left_tx.send_block(vec![0xa1; 1024])
         } else {
             Err(Error::Worker)
         };
-        let after = snapshot();
-        release.fire();
-        let local_half_close = left_tx.half_close();
-        drop(left_tx);
+        let after = snapshot(&wire);
+        let (local_half_close, extra, paced) = if pace && local_result.is_ok() {
+            let routing = left_tx.routing.clone();
+            let enrolled = routing.enrollments();
+            let before_extra = snapshot(&local_wire);
+            let sender = scope.spawn(move || {
+                let extra = left_tx.send_block(vec![0xc3; 1024]);
+                let closed = left_tx.half_close();
+                (extra, closed)
+            });
+            let waited = routing
+                .wait_for_enrollment_after(enrolled, Instant::now() + Duration::from_millis(200));
+            let after_extra = snapshot(&local_wire);
+            release.fire();
+            let (extra, closed) = sender.join().unwrap();
+            (
+                closed,
+                Some(extra),
+                Some((waited, before_extra, after_extra)),
+            )
+        } else {
+            release.fire();
+            let closed = left_tx.half_close();
+            drop(left_tx);
+            (closed, None, None)
+        };
         let peer_result = peer_sender.join();
         let left_data = left_rx.receive();
         let right_data = right_rx.receive();
+        let right_extra = if pace { Some(right_rx.receive()) } else { None };
         let left_fin = left_rx.receive();
         let right_fin = right_rx.receive();
         drop(left_rx);
@@ -186,6 +220,19 @@ fn independent_reply_progresses_while_original_inbound_authority_is_held() {
             local_result.is_ok(),
             "independent reply must progress while inbound is held: {local_result:?}"
         );
+        if pace {
+            let (waited, before_extra, after_extra) = paced.expect("second operation control");
+            assert!(
+                waited,
+                "second caller must enroll while inbound remains held"
+            );
+            assert_eq!(
+                before_extra, after_extra,
+                "paced operation must publish no request bytes"
+            );
+            extra.unwrap().unwrap();
+            assert_eq!(right_extra.unwrap().unwrap(), Event::Data(vec![0xc3; 1024]));
+        }
         local_half_close.unwrap();
         let (sent, closed) = peer_result.unwrap();
         sent.unwrap();
