@@ -1,0 +1,26 @@
+{
+  "head_source": "e03c878e932ea59139e915e56114543d41a5a37c",
+  "run": 43620714331,
+  "jobs": [
+    {
+      "job": 132525657787,
+      "sha256_full_downloaded_job_log": "905a3aacbe59c0c7a528ab41e56efe28ebe4716079832118ebc04ae5d2bf7f14",
+      "selected_original_lines": [
+        "2026-11-14T17:28:56.4327419Z original terminal refusal: Err(Io(Os { code: 10054, kind: ConnectionReset, message: \"An existing connection was forcibly closed by the remote host.\" }))",
+        "2026-11-14T17:28:56.4329289Z test result: FAILED. 44 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.82s"
+      ]
+    },
+    {
+      "job": 132525657756,
+      "sha256_full_downloaded_job_log": "05b4ddcc0455c8aaa390bef8f1484b929dfef27cbd409569c4291d5560e61c5a",
+      "selected_original_lines": [
+        "2026-11-14T17:30:41.7233274Z ORDERED_WITNESS success=false witness_timing=false snapshot=concurrent wall_us=22056598 original_gate_us=240000000 setup_wall_us=82875 setup_process_cpu_us=Some(31250) process_cpu_to_snapshot_us=Some(7968750) progress_write_ack_left_right_read_left_right=[425, 426, 426, 425] actual_tls=[TlsCounters { received: 561940, sent: 561946 }, TlsCounters { received: 561946, sent: 561940 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+        "2026-11-14T17:30:41.7236272Z ORDERED_FIRST_FAILURE role=0 operation=write local=Some(FailureObservation { site: ReceiverDelivery, reason: Timeout, frame_kind: Some(3) })",
+        "2026-11-14T17:30:41.7239046Z block426 read: flowmux mapping: Closed; ORDERED_FIRST_FAILURE role=0 operation=read local=Some(FailureObservation { site: ReceiverDelivery, reason: Timeout, frame_kind: Some(3) })",
+        "2026-11-14T17:30:41.7239848Z ORDERED_FIRST_FAILURE role=1 operation=write local=Some(FailureObservation { site: SenderReplyWait, reason: Io(UnexpectedEof), frame_kind: Some(3) })",
+        "2026-11-14T17:30:41.7243644Z block425 read: flowmux mapping: Closed; ORDERED_FIRST_FAILURE role=1 operation=read local=Some(FailureObservation { site: SenderReplyWait, reason: Io(UnexpectedEof), frame_kind: Some(3) })",
+        "2026-11-14T17:30:41.7244889Z test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.53s"
+      ]
+    }
+  ]
+}
