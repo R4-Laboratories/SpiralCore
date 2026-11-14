@@ -70,3 +70,53 @@ worker authorization/integrity/storage failure keeps its own result. No deadline
 wire format, cache semantics, extra reader or authorization route is introduced.
 PR #278 remains a development checkpoint until final-source and platform checks
 pass. PR #260 and the installed MVM, WAN, scale and FIPS gates remain separate.
+
+
+## Executed successor checkpoint
+
+Linux source `e03c878e932ea59139e915e56114543d41a5a37c` passed the complete
+component suite, including 45 unit tests, strict all-target/all-feature Clippy,
+eight SmallV1 resource tests and 100 held-inbound-work repeats. All 181 archived
+source files (2,764,328 bytes) were independently compared byte for byte with the
+test overlay. [Validation identity, counters and hashes](validation.json),
+[full component output](full.log), [strict warnings](clippy.log),
+[resource checks](resources.log), [compressed repeated-test output](repeats.log.gz)
+and [aggregate repeat time/CPU](repeats-time.txt) retain the executed evidence.
+The [early candidate failure](first-lib-failure.log) remains unqualified because
+its exact uncommitted source identity was not retained; it is not attributed to
+any particular correction.
+
+| Local sustained successor | Observed result |
+|---|---:|
+| Exact application bytes | 64 MiB each direction, 4,096 blocks each |
+| End-to-end workload wall time | 43.387066 s |
+| Process CPU through witness snapshot | 4.668619 s |
+| Setup wall / process CPU | 21.931 ms / 1.329 ms |
+| TLS bytes, both directions counted once | 10,790,065 |
+| Snapshot resident memory | 6,752 KiB |
+| Held-inbound-work repeats | 100/100 passed |
+| Repeat aggregate wall / user+system CPU | 3.65 s / 0.22 s |
+
+The workload time includes encoding, transfer, publication and exact readback.
+The CPU is the whole local component process, not separately measured send-only
+time or individual endpoint CPU. The repeat aggregate includes test-process
+startup and assertions. These are functional local observations, not a matched
+optimization comparison, WAN result or evidence of physical energy savings.
+
+### Retained Windows sustained failure
+
+Source `e03c878e` also failed Windows Server 2025's **instrumented** sustained
+workload in [run 43620714278, job 132525545195](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43620714278/job/132525545195).
+At the failure snapshot: 13.210492 s wall, 4.984375 s process CPU, progress
+`[290,291,291,290]`; no complete 64 MiB fidelity claim is made. Its first recorded
+local failure is `CallerRead / Timeout`; later broken-pipe/EOF errors are
+consequential observations. The timing output records a receiver Commit span
+up to 2.9516094 s, exceeding the unchanged 2 s operation bound. This span is
+elapsed time, not isolated CPU or proof of a particular storage cause.
+The original 240 s workload gate was not relaxed.
+
+The default-feature seven-platform component run was still in progress when
+this report was assembled. PR #278 remains draft and unmerged. A successful
+Linux component checkpoint does not qualify this Windows failure, held PR #260,
+or the installed MVM deliverable. Native result artifacts and the issue tracker
+remain authoritative as qualification continues.

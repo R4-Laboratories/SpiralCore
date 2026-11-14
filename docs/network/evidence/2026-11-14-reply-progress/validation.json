@@ -1,0 +1,75 @@
+{
+  "source": "e03c878e932ea59139e915e56114543d41a5a37c",
+  "production_commit": "a3da1ce0",
+  "source_verification": {
+    "source": "e03c878e932ea59139e915e56114543d41a5a37c",
+    "archive_sha256": "14e90ef4c02be432f19f4dd80fa0457b0d465ea243504341fe1caa87cd98f946",
+    "verified_files": 181,
+    "verified_bytes": 2764328,
+    "comparison": "every regular archived file compared byte for byte to test overlay"
+  },
+  "executable_sha256": "849b99f0a6213b61007f9f52c4d114a6856a77499db45eef14dd074b36a4e73d",
+  "executable_bytes": 6223728,
+  "validation": {
+    "full_component": "passed; 45 unit tests and all integration targets, zero ignored",
+    "strict_clippy": "passed --all-targets --all-features -- -D warnings",
+    "small_resources": "8 passed",
+    "held_inbound_repeats": 100,
+    "repeat_failures": 0,
+    "repeat_cpu_user_seconds": 0.06,
+    "repeat_cpu_system_seconds": 0.16,
+    "repeat_wall_seconds": 3.65,
+    "repeat_max_rss_kib": 8256,
+    "repeat_cpu_scope": "whole test processes and shell/launch overhead; no compile; no send-only or WAN inference"
+  },
+  "ordered_stream": {
+    "logical_bytes_per_direction": 67108864,
+    "blocks_per_direction": 4096,
+    "exact_readbacks": true,
+    "wall_us": 43387066,
+    "process_cpu_to_snapshot_us": 4668619,
+    "setup_wall_us": 21931,
+    "setup_process_cpu_us": 1329,
+    "tls_left_sent": 5395050,
+    "tls_left_received": 5395015,
+    "tls_right_sent": 5395015,
+    "tls_right_received": 5395050,
+    "transmitted_tls_bytes_both_directions_counted_once": 10790065,
+    "snapshot_rss_kib": 6752,
+    "original_gate_us": 240000000,
+    "comparison": "single local sustained functional witness, no matched raw/zstd or WAN claim"
+  },
+  "native_ci": {
+    "run": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43620714331",
+    "state": "in progress at report snapshot; do not infer all-platform acceptance"
+  },
+  "retained_failures": [
+    "baseline deterministic reply timeout at 7cc132d9",
+    "one early uncommitted candidate peer cancellation; exact source identity not retained, cause unresolved",
+    "native f0e28718 32-frame join-refusal mismatch",
+    "e03c878e Windows2025 instrumented sustained CallerRead timeout"
+  ],
+  "limitations": [
+    "trusted TCP held-gate unit is not authenticated MVM/WAN",
+    "TLS totals exclude TCP/IP/lower-layer retransmissions",
+    "source review supports bounded allocations, not a hard RSS ceiling",
+    "no native MVM was booted",
+    "no matched before/after CPU or optimized zstd comparison in this control",
+    "Ari-signed runtime, MVMD transport, installed acceptance, fleet capacity and FIPS qualification remain open"
+  ],
+  "sha256": {
+    "source-verification.json": "6cb9b58f22f351e5abf1eeb4ec1a95b632878a04bfe4291824d3ff758ff9a93c",
+    "full.log": "a151339b183769dd8c8949c7f1af550d82c497717de506cd06ac276e5ed8d0d2",
+    "red.log": "73c3d1f5793b2e78c93443a5d8c9482353f0d474e8782f092d7988dd0fcaf388",
+    "first-lib-failure.log": "b3883c937f516d8ed6423708caec4f0c90425462870f270e7053fec326abe78c",
+    "clippy.log": "bfe8ef1d9bb4f199a60de57113408511e8b01500bab817cf44e10fd6ca203f6d",
+    "execution-identity.txt": "75128a32e6ac08cb7c8fb943c0b95c060fcb0417c6cf13d1e4519db2a42b6000",
+    "resources.log": "fc48bb5bfe59902ad1d0971b6d0fa85e7f666eb138b0ce2e7dec344db45636f8",
+    "README.md": "b69615ee16911df524f841d26ca16017428980e7b2057a60897cc5515e2cdd23",
+    "repeats-time.txt": "47a3d5c8b2a929bfa86d86ad239f1513f74ca8d4747a866f30e99c72a0fc3fc2",
+    "repeats.log.gz": "a24f320f74891107527f2b033a3907e2d8fa38f5c2e2a124781dc4174d4494ee",
+    "native-refusal-failure.json": "966dec6d446c238f5f36cf20099722521c01f72fd62429dcfddcc2d365939d56",
+    "windows-timing-failure.json": "64a8fde544790cfe61e6fdadf437a688e850593364801929b26bc0e5ef4e89d5"
+  },
+  "raw_repeats_uncompressed_sha256": "cce138ca4d897e4fa2e884e821f9a15702d277e5068ee2838112db4383eda92c"
+}
