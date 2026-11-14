@@ -276,8 +276,8 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
     }
     assert_eq!(
         first.site,
-        crate::FailureSite::SenderReplyReceiveTimeout,
-        "the withheld Commit reply must identify the timed-out receive"
+        crate::FailureSite::SenderReplyWait,
+        "the withheld Commit reply must identify the cooperative reply wait"
     );
 }
 

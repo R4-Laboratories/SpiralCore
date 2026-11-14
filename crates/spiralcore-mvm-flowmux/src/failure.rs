@@ -16,9 +16,6 @@ pub enum FailureSite {
     WorkerExit,
     CallerRead,
     CallerWrite,
-    SenderReplyExpiredBeforeReceive,
-    SenderReplyReceiveTimeout,
-    SenderReplyExpiredAfterReceive,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -428,11 +428,7 @@ impl DuplexWriter {
                 cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
             })?;
             remaining(until).inspect_err(|e| {
-                cancellation.observe(
-                    FailureSite::SenderReplyExpiredAfterReceive,
-                    Some(frame.kind),
-                    e,
-                )
+                cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
             })?;
             let terminal = matches!(reply.kind, 103 | 127);
             replies.push(reply);
