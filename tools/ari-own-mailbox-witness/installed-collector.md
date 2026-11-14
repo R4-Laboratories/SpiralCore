@@ -119,3 +119,24 @@ its 2048-byte bound. Current host source permits 8192 bytes. A compatible verifi
 runtime is required; successful artifact verification alone does not establish
 that host/guest contract compatibility. Do not patch a signed runtime in place
 or weaken its bound to label this test passed.
+
+## Explicit failed-start callback-retry witness
+
+The contributor SDK successor `d84741509` adds typed pre-exec refusal custody;
+its subsequent error-conversion and fixture corrections must also be present.
+The new witness mapping is a development checkpoint until native qualification.
+
+```text
+paired-journal --installed-collector --no-helper-callback-retry --backend firecracker A_ROOTFS A_SHA256 B_ROOTFS B_SHA256 FRAME
+```
+
+This flag arms only before any original launch. It does not manufacture a helper
+refusal. Qualification supplies a private, deliberately group-writable helper
+file so canonical trusted-executable validation refuses execution. Recovery is
+selected only by the SDK's creation-boundary `NoExec` proof. Its first publication
+callback deliberately refuses before publishing; the same SDK failure object
+then retries the real original-parent callback under the same deadline. The
+reported retry field is true only after that actual retry and SDK finalization.
+An uncertain helper outcome cannot use this path. No helper exit code is invented.
+An unattempted source remains a failure, so the expected failed-start scenario
+may qualify the destination's recovery while the overall pair still fails.

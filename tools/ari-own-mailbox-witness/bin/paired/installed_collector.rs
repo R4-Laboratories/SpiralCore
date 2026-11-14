@@ -1,12 +1,16 @@
 //! Original installed collector custody for the clean paired journal witness.
 //! Enrollment, transfer and byte meters remain in the existing paired modules.
 use super::*;
-use mvm_client::launch::persistent::journal::{OwnedJournalStart, OwnedJournalStartFailure};
+use mvm_client::launch::persistent::journal::{
+    NoHelperRetirement, OwnedJournalStart, OwnedJournalStartFailure,
+};
 use mvm_core::{
     host_lifetime::EndpointPartitionLimits,
     vm_backend::{BackendKind, VmStartConfig},
 };
-use mvm_hostd::mailbox_process::original_journal::{JournalOwner, JournalStopOutcome};
+use mvm_hostd::mailbox_process::original_journal::{
+    JournalOwner, JournalStartDisposition, JournalStopOutcome,
+};
 use spiralcore_mvm_live::{
     installed_owner::{InstallationKey, InstallationOwner},
     installed_parent::{
@@ -129,6 +133,10 @@ pub fn operator(home: &Path) -> Result<(CollectorPair, Operator)> {
 
 /// Try both original journal owners once; all attempted outcomes are synced.
 pub fn retire(pair: &mut CollectorPair, state: &mut State, home: &Path) -> Result<Value> {
+    enum Retired {
+        Helper(JournalStopOutcome),
+        NoHelper(NoHelperRetirement),
+    }
     let history = fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -145,30 +153,52 @@ pub fn retire(pair: &mut CollectorPair, state: &mut State, home: &Path) -> Resul
     };
     for (i, name) in [A, B].into_iter().enumerate() {
         let until = Instant::now() + Duration::from_secs(20);
-        let result = if !state.attempted[i] {
-            Err(anyhow::anyhow!(
-                "original journal was not attempted; preserve definition"
-            ))
-        } else if i == 0 {
-            state
-                .a
-                .as_mut()
-                .context("original source journal missing")
-                .and_then(|owner| pair.stop(name, &mut JournalOwner::Source(owner), until))
-        } else if let Some(owner) = &state.b {
-            match owner.lock() {
-                Ok(mut held) => pair.stop(name, &mut JournalOwner::Destination(&mut held), until),
-                Err(_) => Err(anyhow::anyhow!("original destination journal poisoned")),
-            }
-        } else {
-            state
-                .b_pending
-                .as_mut()
-                .context("original destination journal missing")
-                .and_then(|owner| pair.stop(name, &mut JournalOwner::Destination(owner), until))
-        };
+        let result =
+            if !state.attempted[i] {
+                Err(anyhow::anyhow!(
+                    "original journal was not attempted; preserve definition"
+                ))
+            } else if pair.slots[i].failed.as_ref().is_some_and(|failed| {
+                failed.helper_disposition() == JournalStartDisposition::NoExec
+            }) {
+                pair.finish_without_helper(name, until)
+                    .map(Retired::NoHelper)
+            } else if pair.slots[i].failed.as_ref().is_some_and(|failed| {
+                failed.helper_disposition() == JournalStartDisposition::Uncertain
+            }) {
+                Err(anyhow::anyhow!(
+                    "original helper construction is uncertain; preserve custody"
+                ))
+            } else if i == 0 {
+                state
+                    .a
+                    .as_mut()
+                    .context("original source journal missing")
+                    .and_then(|owner| pair.stop(name, &mut JournalOwner::Source(owner), until))
+                    .map(Retired::Helper)
+            } else if let Some(owner) = &state.b {
+                match owner.lock() {
+                    Ok(mut held) => pair
+                        .stop(name, &mut JournalOwner::Destination(&mut held), until)
+                        .map(Retired::Helper),
+                    Err(_) => Err(anyhow::anyhow!("original destination journal poisoned")),
+                }
+            } else {
+                state
+                    .b_pending
+                    .as_mut()
+                    .context("original destination journal missing")
+                    .and_then(|owner| pair.stop(name, &mut JournalOwner::Destination(owner), until))
+                    .map(Retired::Helper)
+            };
         let row = match result {
-            Ok(outcome) => {
+            Ok(Retired::NoHelper(_proof)) => {
+                json!({"name":name,"helper_not_executed":true,"native_collected":true,
+                    "collector_parent_published":true,"runtime_state_removed":false,
+                    "no_helper_callback_retry_observed":pair.slots[i].no_helper_callback_retry_observed,
+                    "definitions_removed":false})
+            }
+            Ok(Retired::Helper(outcome)) => {
                 if outcome.assisted || !outcome.helper_status.success() {
                     errors.push(format!(
                         "{name}: assisted or unsuccessful original helper collection"
@@ -219,6 +249,9 @@ struct Slot {
     endpoint: Option<mvm_client::EndpointRetirement>,
     endpoint_transferred: bool,
     stopped: bool,
+    no_helper_callback_retry_injected: bool,
+    no_helper_callback_retry_observed: bool,
+    no_helper_parent_published: bool,
 }
 
 /// One shared host/tenant ledger and one actual backend for both original names.
@@ -228,6 +261,7 @@ pub struct CollectorPair {
     provider: Option<Arc<InstalledParentProvider>>,
     backend: Option<Arc<LocalBackend>>,
     slots: [Slot; 2],
+    no_helper_callback_retry: bool,
 }
 
 fn index(name: &str) -> Result<usize> {
@@ -236,6 +270,27 @@ fn index(name: &str) -> Result<usize> {
         B => Ok(1),
         _ => anyhow::bail!("unexpected paired collector name"),
     }
+}
+
+fn finish_parent(
+    parent: &mut ParentLaunchOwner,
+    endpoint: &mut Option<mvm_client::EndpointRetirement>,
+    endpoint_transferred: &mut bool,
+    receipt: &mut mvm_client::OwnedRetirement,
+) -> Result<()> {
+    if *endpoint_transferred {
+        parent.retry_endpoint_cleanup()?;
+    } else {
+        if endpoint.is_none() {
+            *endpoint = receipt.take_endpoint_retirement();
+        }
+        // Keep any returned receipt even if storage publication fails.
+        let had_receipt = endpoint.is_some();
+        let result = parent.retire_endpoint(endpoint);
+        *endpoint_transferred = had_receipt && endpoint.is_none();
+        result?;
+    }
+    parent.finish_pending_retired(receipt)
 }
 
 impl CollectorPair {
@@ -269,7 +324,22 @@ impl CollectorPair {
             provider: Some(provider),
             backend: Some(backend),
             slots: std::array::from_fn(|_| Slot::default()),
+            no_helper_callback_retry: false,
         })
+    }
+
+    /// Explicit witness fault injection, armed only before any original launch.
+    /// One callback refusal precedes publication; only that deliberate refusal
+    /// permits an immediate retry through the same SDK failure object.
+    pub fn enable_no_helper_callback_retry(&mut self) -> Result<()> {
+        ensure!(
+            self.slots.iter().all(|slot| slot.parent.is_none()
+                && slot.started.is_none()
+                && slot.failed.is_none()),
+            "callback retry witness must be selected before any launch"
+        );
+        self.no_helper_callback_retry = true;
+        Ok(())
     }
 
     pub fn backend(&self) -> &Arc<LocalBackend> {
@@ -356,25 +426,14 @@ impl CollectorPair {
             endpoint,
             endpoint_transferred,
             stopped,
+            ..
         } = slot;
         let parent = parent.as_mut().context("original parent owner missing")?;
         let finish = |_: &mvm_core::plan::ExecutionPlan,
                       _: bool,
                       receipt: &mut mvm_client::OwnedRetirement|
          -> Result<()> {
-            if *endpoint_transferred {
-                parent.retry_endpoint_cleanup()?;
-            } else {
-                if endpoint.is_none() {
-                    *endpoint = receipt.take_endpoint_retirement();
-                }
-                // Keep any returned receipt even if storage publication fails.
-                let had_receipt = endpoint.is_some();
-                let result = parent.retire_endpoint(endpoint);
-                *endpoint_transferred = had_receipt && endpoint.is_none();
-                result?;
-            }
-            parent.finish_pending_retired(receipt)
+            finish_parent(parent, endpoint, endpoint_transferred, receipt)
         };
         let outcome = if let Some(started) = started {
             started.stop_and_collect(journal, until, finish)?
@@ -385,6 +444,65 @@ impl CollectorPair {
         };
         *stopped = true;
         Ok(outcome)
+    }
+
+    /// Recovery is selected by the creation boundary's typed proof, never by
+    /// absence of a journal owner or a PID. The SDK retains its native receipt
+    /// if parent publication fails; retries reuse the same callback custody.
+    pub fn finish_without_helper(
+        &mut self,
+        name: &str,
+        until: Instant,
+    ) -> Result<NoHelperRetirement> {
+        let slot = &mut self.slots[index(name)?];
+        ensure!(!slot.stopped, "original no-helper startup already retired");
+        let failed = slot
+            .failed
+            .as_mut()
+            .context("original failed startup custody missing")?;
+        ensure!(
+            failed.helper_disposition() == JournalStartDisposition::NoExec,
+            "creation-boundary no-exec proof required"
+        );
+        let parent = slot
+            .parent
+            .as_mut()
+            .context("original parent owner missing")?;
+        if self.no_helper_callback_retry && !slot.no_helper_callback_retry_injected {
+            let mut entered = false;
+            let refused = failed.finish_without_helper(until, |_, _| {
+                entered = true;
+                // Deliberately fail before invoking the real parent. The SDK
+                // must keep the positive original native/collector receipt.
+                anyhow::bail!("explicit no-helper callback-retention witness refusal")
+            });
+            ensure!(
+                entered,
+                "no-helper callback-retention witness never reached its callback: {refused:?}"
+            );
+            ensure!(
+                refused.is_err(),
+                "no-helper SDK ignored the deliberate callback refusal"
+            );
+            slot.no_helper_callback_retry_injected = true;
+        }
+        let proof = failed.finish_without_helper(until, |_, receipt| {
+            finish_parent(
+                parent,
+                &mut slot.endpoint,
+                &mut slot.endpoint_transferred,
+                receipt,
+            )?;
+            slot.no_helper_parent_published = true;
+            Ok(())
+        })?;
+        ensure!(
+            slot.no_helper_parent_published,
+            "original parent callback publication was not observed"
+        );
+        slot.no_helper_callback_retry_observed = slot.no_helper_callback_retry_injected;
+        slot.stopped = true;
+        Ok(proof)
     }
 
     pub fn resources(&self) -> Result<Value> {
