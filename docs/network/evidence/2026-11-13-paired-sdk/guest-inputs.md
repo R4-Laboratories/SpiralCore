@@ -36,3 +36,18 @@ Original build, lock-resolution and static-validation records remain in private 
 Before merge, the same guest inputs were checked against the actual SpiralCore main tree `2ec1d65ac3a43aa13d458c3b2ac98b3ae10a8354`. The initial 0941 lock required an update because main does not yet contain that development snapshot's transfer-crate dependency edges. That refusal is retained; the initial static executable results above are not relabelled as main-source builds.
 
 Cargo's offline resolution generated main-source guest lock SHA-256 `3ba5d669084e928a090ef74005476620cfc51cd1a0ab7219624cfd503b4b22ef`, again preserving all 192 original registry identities. Full locked/offline Linux-musl metadata then passed. This branch carries that main-source lock. Main-source static compilation subsequently passed, both sealed images yielded exact independent executable readbacks, and the paired transfer substage recovered 257 bytes exactly. Complete native retirement failed on protected telemetry disposition. [Current native result and retained failures](native-retirement.md).
+
+
+## Hosted source/lock alignment
+
+PR #264's first Linux guest job refused locked resolution because the workflow
+still selected contributor `efaffa969161d7101aef135e70046a7220eca970` (rc.1)
+against the current rc.3 guest lock. The Linux job now selects
+`468661f47e01d0f59c6f1da4e35a968ceccb3ad2`, matching this report's current
+native guest inputs and recorded MVM workspace qualification. Both `--locked`
+commands, exact source assertion, feature/all-target selection, test filter and
+resource limits remain enforced. The separate Windows portable source pin is
+unchanged. A fresh hosted result is required; source/lock alignment alone is
+not a passing test or native-platform acceptance.
+
+[Retained failed Linux job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43567457889/job/132364295642).
