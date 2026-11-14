@@ -16,3 +16,9 @@ The existing MVM `verify_directory(..., "signed")` and `verify_quartet` function
 The tag’s guest source includes the public mailbox reader boot binding and the root-only ACK key. Its `flowmux_drive.rs` (SHA-256 `c7a780ba5fd7a67ac948ad4e97ffad52740445922502f164d341c77c0a0f371f`) requests `0444` at file creation. The contributor’s later file-descriptor permission correction is absent from these signed guest bytes. The effective umask and binding permissions inside this candidate guest still require a native observation. [Tagged guest source](https://github.com/tinylabscom/mvm/blob/ffd90f895d7080629eceb16095d1ca81c0a49b95/crates/mvm-agentd/src/flowmux_drive.rs#L403) · [Reader permission controls](reader-boot-permissions.md)
 
 **SDK admission and guest boot were not run in this preflight.** The next check is the rc.3 SDK’s portable-asset acquisition with the signed quartet, kernel and current revocations before export or boot. The previously measured rc.2 guest remains a separate result.
+
+## Subsequent SDK and installed qualification
+
+Contributor SDK `468661f4` acquired and verified this candidate with signed revocation publication 2 and verified kernel SHA-256 `1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6` (19,995,452 bytes). Image-set manifest SHA-256: `5033520a59514f5d206d76d13db8c9b7e5841f068c83dd8585ef141879a1bb24`. The probe exited 0 in 6.42 s wall / 3.70 s user / 0.17 s system CPU, maximum RSS 61,076 KiB. Both original temporary stages were absent after drop. Acquisition-log SHA-256: `1c43db345417f1eebdbe59e60bf2ff618633c1c396ee85ab730d532d26817b04`.
+
+The same authenticated candidate subsequently completed signed workload export and the installed one-guest transaction. [Current native measurements and limitations](native-rc3-fixture.md). The signature preflight above and this pre-boot acquisition are separate measurements; effective guest file permissions were not independently inspected.
