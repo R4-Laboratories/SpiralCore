@@ -1,17 +1,22 @@
 # Networking delivery status
 
-The independent-reply progress successor is published in draft [PR #278](https://github.com/R4-Laboratories/SpiralCore/pull/278).
-Linux source `e03c878e` passed the full component suite (45 unit tests), strict
-Clippy, resource guards and 100 held-inbound-work repeats. A 64 MiB-per-direction
-exact-byte local run took 43.39 s wall and 4.67 s process CPU. Windows 2025's
-instrumented sustained test failed its unchanged 2 s operation deadline. The
-seven-platform default-feature run has now completed: Ubuntu x64/ARM, macOS
-Intel/ARM and Windows 2022 pass; Windows ARM fails original Limit custody with a
-consequential ConnectionReset, and Windows 2025 fails sustained delivery with a
-timeout. The code remains draft, unmerged and conflicting with current main.
-[Complete restart context and final CI snapshot](handovers/2026-11-14-restart/README.md).
- This is not installed MVM/WAN, customer-scale or FIPS
-acceptance. [Results, bounds and retained failures](evidence/2026-11-14-reply-progress/README.md).
+The independent-reply progress successor remains draft in [PR #278](https://github.com/R4-Laboratories/SpiralCore/pull/278).
+Source `92830ef2` takes the original assisting failure under the decoder lock
+before worker receive reentry. Independent worker errors and the original
+32-interleaved-request Limit assertion remain. Linux passes 48 library plus 37
+integration entries, eight resource controls and strict component Clippy.
+Exact 64 MiB-per-direction local readbacks used 10,790,065 total TLS bytes,
+40.979 s lifecycle wall and 5.019 s both-peer process CPU.
+Native Windows ARM decoder/reply-progress controls pass; full native CI is still
+running at this checkpoint. Windows2025 passes its library controls but fails
+default sustained delivery at 110.993 s with ReceiverDelivery/Timeout. Its
+separate instrumented sustained row passes; the historical timeout is unresolved.
+No deadline/security check is relaxed. PR #278 stays unmerged.
+[New source checks and retained negative](evidence/2026-11-14-receive-reentry/README.md).
+The fixed opt-in storage-substage experiment is published at `15f82498` and
+[native run 43628084284](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43628084284).
+These are component results, not installed MVM/WAN, capacity or FIPS acceptance.
+[Full five-part restart goal and prior failures](handovers/2026-11-14-restart/README.md).
 
 The default-feature Windows direction control passed both Server 2022/2025
 layouts and Windows ARM simultaneous transfer at 64 MiB exact bytes per direction.
