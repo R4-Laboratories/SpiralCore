@@ -128,6 +128,8 @@ impl Enrollment {
             .unwrap();
         ensure!(end > start, "empty signed credential intersection");
         let direction = MailboxJournalDirectionV1 {
+            #[cfg(not(feature = "sender-ordinal-v1"))]
+            sender_settlement: None,
             #[cfg(feature = "sender-ordinal-v1")]
             sender_settlement: self
                 .sender_ordinals
