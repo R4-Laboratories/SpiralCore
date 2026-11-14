@@ -246,6 +246,14 @@ fn run(args: &[String]) -> Result<()> {
             )),
         "installed collector mode requires its Linux feature"
     );
+    let (no_helper_callback_retry, args) = match args {
+        [flag, rest @ ..] if flag == "--no-helper-callback-retry" => (true, rest),
+        _ => (false, args),
+    };
+    ensure!(
+        !no_helper_callback_retry || collector_mode,
+        "no-helper callback retry requires installed collector qualification"
+    );
     let (requested, inputs) = match args {
         [flag, backend, rest @ ..] if flag == "--backend" => (Some(backend.as_str()), rest),
         _ => (None, args),
@@ -328,6 +336,14 @@ fn run(args: &[String]) -> Result<()> {
     } else {
         None
     };
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    if no_helper_callback_retry {
+        collector
+            .as_mut()
+            .context("no-helper callback retry requires original collector")?
+            .0
+            .enable_no_helper_callback_retry()?;
+    }
     #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
     let backend = collector
         .as_ref()
