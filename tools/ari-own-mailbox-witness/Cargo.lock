@@ -264,6 +264,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5d6cac793997bd970000024b2934968efe83b382de4fdcf4fcb46b6ee4ad996"
 dependencies = [
  "find-msvc-tools",
+ "jobserver",
+ "libc",
  "shlex",
 ]
 
@@ -703,6 +705,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29fcf32e6c73d1079f83ab4d782de2d81620346a5f38c6237a86a22f8368980a"
 dependencies = [
+ "pkcs8",
  "signature",
 ]
 
@@ -715,7 +718,8 @@ dependencies = [
  "curve25519-dalek",
  "ed25519",
  "rand_core",
- "sha2",
+ "serde",
+ "sha2 0.11.0",
  "signature",
  "subtle",
  "zeroize",
@@ -2097,6 +2101,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "jobserver"
+version = "0.1.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c00acbd29eabad4a2392fa0e921c874934dbbf4194312ad20f04a0ed67a3cb3"
+dependencies = [
+ "getrandom 0.4.1",
+ "libc",
+]
+
+[[package]]
 name = "js-sys"
 version = "0.3.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2154,7 +2168,7 @@ checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
 name = "libkrun-sys"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "libc",
  "mvm-core",
@@ -2162,6 +2176,12 @@ dependencies = [
  "serde_json",
  "tracing",
 ]
+
+[[package]]
+name = "libm"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "linux-raw-sys"
@@ -2263,7 +2283,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-agentd"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -2288,7 +2308,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-backends"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "ed25519-dalek",
@@ -2309,7 +2329,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-build"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -2334,7 +2354,7 @@ dependencies = [
  "serde_jcs",
  "serde_json",
  "sha1",
- "sha2",
+ "sha2 0.11.0",
  "tar",
  "tempfile",
  "thiserror",
@@ -2346,7 +2366,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-builder-guest"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "hex",
@@ -2356,7 +2376,7 @@ dependencies = [
  "nix",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "tar",
  "tempfile",
  "thiserror",
@@ -2365,7 +2385,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-bundler"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2378,7 +2398,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-client"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2405,7 +2425,7 @@ dependencies = [
  "serde",
  "serde_jcs",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "tar",
  "tempfile",
  "thiserror",
@@ -2417,14 +2437,14 @@ dependencies = [
 
 [[package]]
 name = "mvm-compiler"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "flate2",
  "globset",
  "mvm-contract",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "tar",
  "tempfile",
  "thiserror",
@@ -2437,7 +2457,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-contract"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -2447,14 +2467,14 @@ dependencies = [
  "ipnet",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
 name = "mvm-core"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "aes-gcm",
  "aho-corasick",
@@ -2484,7 +2504,7 @@ dependencies = [
  "serde",
  "serde_jcs",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "sigstore-crypto",
  "sigstore-trust-root",
  "sigstore-types",
@@ -2502,7 +2522,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-fs"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "async-trait",
  "ed25519-dalek",
@@ -2517,7 +2537,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "tar",
  "thiserror",
  "tokio",
@@ -2528,7 +2548,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-host-services"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "mvm-agentd",
  "mvm-core",
@@ -2538,7 +2558,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-hostd"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2573,7 +2593,9 @@ dependencies = [
  "serde",
  "serde_jcs",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
+ "spiralcore-mvm-flowmux",
+ "spiralcore-transfer",
  "sysinfo",
  "tar",
  "thiserror",
@@ -2587,7 +2609,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-http"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "base64",
  "bytes",
@@ -2606,16 +2628,16 @@ dependencies = [
 
 [[package]]
 name = "mvm-macho-sign"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "plist",
  "sha1",
- "sha2",
+ "sha2 0.11.0",
 ]
 
 [[package]]
 name = "mvm-net"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "mvm-contract",
  "mvm-core",
@@ -2623,7 +2645,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-runtime"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2650,7 +2672,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "tempfile",
  "thiserror",
  "tokio",
@@ -2662,7 +2684,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-sdk"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "base64",
  "blake3",
@@ -2675,7 +2697,7 @@ dependencies = [
  "mvm-host-services",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.11.0",
  "tar",
  "tempfile",
  "thiserror",
@@ -2686,14 +2708,14 @@ dependencies = [
 
 [[package]]
 name = "mvm-setpriv"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "mvm-vmm"
-version = "0.28.0-rc.2"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -2712,9 +2734,11 @@ dependencies = [
  "mvm-net",
  "plist",
  "rand",
+ "rustix",
  "security-framework",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "socket2",
  "tempfile",
  "tracing",
@@ -2840,7 +2864,7 @@ dependencies = [
  "elliptic-curve",
  "primefield",
  "primeorder",
- "sha2",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -2854,7 +2878,7 @@ dependencies = [
  "fiat-crypto",
  "primefield",
  "primeorder",
- "sha2",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -2929,6 +2953,12 @@ dependencies = [
  "der 0.8.3",
  "spki 0.8.1",
 ]
+
+[[package]]
+name = "pkg-config"
+version = "0.3.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "plist"
@@ -3215,6 +3245,7 @@ version = "0.23.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
+ "log",
  "once_cell",
  "ring",
  "rustls-pki-types",
@@ -3500,6 +3531,17 @@ checksum = "bbfa15b3dddfee50a0fff136974b3e1bde555604ba463834a7eb7deb6417705d"
 
 [[package]]
 name = "sha2"
+version = "0.10.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.2.17",
+ "digest 0.10.7",
+]
+
+[[package]]
+name = "sha2"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "446ba717509524cb3f22f17ecc096f10f4822d76ab5c0b9822c5f9c284e825f4"
@@ -3740,6 +3782,48 @@ dependencies = [
  "serde_json",
  "tokio",
  "toml",
+]
+
+[[package]]
+name = "spiralcore-mvm-flowmux"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
+dependencies = [
+ "mio",
+ "rustls",
+ "sha2 0.10.9",
+ "spiralcore-transfer",
+]
+
+[[package]]
+name = "spiralcore-storage-windows"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
+dependencies = [
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "spiralcore-transfer"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
+dependencies = [
+ "cpu-time",
+ "httparse",
+ "libc",
+ "libm",
+ "memchr",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "spiralcore-storage-windows",
+ "subtle",
+ "uor-r4-object-store",
+ "ureq",
+ "url",
+ "zstd",
+ "zstd-sys",
 ]
 
 [[package]]
@@ -4196,6 +4280,42 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
+name = "uor-r4-object-store"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
+dependencies = [
+ "sha2 0.10.9",
+]
+
+[[package]]
+name = "ureq"
+version = "3.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ac5cecf619ca81f66a96482db09687c9f7465af65f4300a8c30cca05bd5a59d"
+dependencies = [
+ "base64",
+ "log",
+ "percent-encoding",
+ "rustls",
+ "rustls-pki-types",
+ "ureq-proto",
+ "utf8-zero",
+ "webpki-roots",
+]
+
+[[package]]
+name = "ureq-proto"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "622dce33c252115466d83f63e9744a18f12b4406aae51a01c15ad8fcf1185eb3"
+dependencies = [
+ "base64",
+ "http",
+ "httparse",
+ "log",
+]
+
+[[package]]
 name = "url"
 version = "2.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4206,6 +4326,12 @@ dependencies = [
  "percent-encoding",
  "serde",
 ]
+
+[[package]]
+name = "utf8-zero"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8c0a043c9540bae7c578c88f91dda8bd82e59ae27c21baca69c8b191aaf5a6e"
 
 [[package]]
 name = "utf8_iter"
@@ -4407,6 +4533,15 @@ name = "webpki-root-certs"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58ec80e73fd8baf57bf0d9615554c75348bda990d6d5bbeab964dd068319fecb"
+dependencies = [
+ "rustls-pki-types",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "1.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7265c9301c16a8711c992c2d8da90ee77ef54b1ed51482d6dfeb00dc756b1297"
 dependencies = [
  "rustls-pki-types",
 ]
@@ -4904,6 +5039,34 @@ name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
+
+[[package]]
+name = "zstd"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50adf04cf3ec914b0b9905c9dde90c80fe74bfd701e331fc80a39c512c525278"
+dependencies = [
+ "zstd-safe",
+]
+
+[[package]]
+name = "zstd-safe"
+version = "7.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "498d94ad68720c89b4fbe41b9090850651e68cb2dd9210ce7ffbff3a94653819"
+dependencies = [
+ "zstd-sys",
+]
+
+[[package]]
+name = "zstd-sys"
+version = "2.1.2+zstd.1.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "481ada9c543b2323cbb7bbdbb5249177fbf0188ed959ed2c15e4b22421c84ed3"
+dependencies = [
+ "cc",
+ "pkg-config",
+]
 
 [[patch.unused]]
 name = "am-fs-ext4"

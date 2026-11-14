@@ -5,10 +5,6 @@ pub(super) const NAME: &str = "mailbox-guest-stream-v1.counts";
 
 // A prefix can still identify the last protocol phase. Publish totals only
 // for paired begin/end records, without truncation, overflow or sequence gaps.
-pub(super) fn completed(raw: &str) -> Option<(u64, u64, u64, bool)> {
-    completed_for(raw, SCOPE).map(|(n, r, w, _, _, finished)| (n, r, w, finished))
-}
-
 pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u64, u64, bool)> {
     parse_records(raw, scope, false)
 }
@@ -132,22 +128,25 @@ mod tests {
         let raw = format!(
             "{SCOPE}\nbegin 1\nphase 1 submit_verdict\nend 1 8 15 0 1 false\nbegin 2\nphase 2 reader_frame\nend 2 11 32 1 0 false\n"
         );
-        assert_eq!(completed(&raw), Some((2, 19, 47, false)));
+        assert_eq!(completed_for(&raw, SCOPE), Some((2, 19, 47, 1, 1, false)));
     }
 
     #[test]
     fn only_a_matching_final_record_closes_the_observation() {
         let raw = format!("{SCOPE}\nbegin 1\nend 1 9 8 0 0 false\n");
         assert_eq!(
-            completed(&format!("{raw}finish 1\n")),
-            Some((1, 9, 8, true))
+            completed_for(&format!("{raw}finish 1\n"), SCOPE),
+            Some((1, 9, 8, 0, 0, true))
         );
         assert_eq!(
-            completed(&format!("{SCOPE}\nfinish 0\n")),
-            Some((0, 0, 0, true))
+            completed_for(&format!("{SCOPE}\nfinish 0\n"), SCOPE),
+            Some((0, 0, 0, 0, 0, true))
         );
-        assert_eq!(completed(&format!("{raw}finish 2\n")), None);
-        assert_eq!(completed(&format!("{raw}finish 1\nbegin 2\n")), None);
+        assert_eq!(completed_for(&format!("{raw}finish 2\n"), SCOPE), None);
+        assert_eq!(
+            completed_for(&format!("{raw}finish 1\nbegin 2\n"), SCOPE),
+            None
+        );
     }
 
     #[test]
@@ -162,7 +161,7 @@ mod tests {
             "begin 1\nend 1 1 3 0 0 false\noverflow\n",
             "begin 1\nend 1 18446744073709551615 0 0 0 false\nbegin 2\nend 2 1 0 0 0 false\n",
         ] {
-            assert_eq!(completed(&format!("{SCOPE}\n{rows}")), None);
+            assert_eq!(completed_for(&format!("{SCOPE}\n{rows}"), SCOPE), None);
         }
     }
 }
