@@ -1,0 +1,28 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/duplex-reply-progress/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 5.69s
+     Running unittests src/lib.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_mvm_flowmux-09e29dbf0963c078)
+
+running 1 test
+test duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it ... FAILED
+
+successes:
+
+successes:
+
+failures:
+
+---- duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it stdout ----
+FAILURES left=None right=None
+REPLY_PROGRESS inbound_gate_entered=true before=Some(Counters { wire_bytes: 222, payload_bytes: 102, records: 1, compressed_records: 0 }) after=Some(Counters { wire_bytes: 800, payload_bytes: 320, records: 4, compressed_records: 0 }) local_success=true original_workers_collected=true left_collection=Ok(()) right_collection=Ok(()) peer_result=Ok((Ok(BlockReceipt { index: 0, transfer: [28, 228, 109, 118, 250, 126, 165, 133, 182, 10, 252, 124, 128, 132, 69, 4, 251, 10, 109, 40, 75, 61, 146, 146, 12, 146, 201, 248, 30, 191, 53, 11], object: ObjectReceipt { transfer: Stats { object: [15, 189, 159, 85, 27, 89, 247, 220, 183, 118, 220, 152, 204, 23, 103, 12, 178, 9, 109, 137, 183, 118, 57, 141, 31, 168, 161, 58, 67, 48, 119, 210], mode: ZstdWholeV1, request_bytes: 243, response_bytes: 218, data_bytes: 23, records_sent: 0, requests: 3, elapsed_micros: 219988 }, selection: Fixed } }), Ok(()))) left_semantics=Ok((Counters { wire_bytes: 1904, payload_bytes: 704, records: 10, compressed_records: 0 }, Counters { wire_bytes: 1879, payload_bytes: 679, records: 10, compressed_records: 0 })) right_semantics=Ok((Counters { wire_bytes: 1879, payload_bytes: 679, records: 10, compressed_records: 0 }, Counters { wire_bytes: 1904, payload_bytes: 704, records: 10, compressed_records: 0 }))
+
+thread 'duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it' (979867) panicked at src/duplex/reply_progress_tests.rs:225:13:
+second caller must enroll while inbound remains held
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 48 filtered out; finished in 0.24s
+
+error: test failed, to rerun pass `--lib`

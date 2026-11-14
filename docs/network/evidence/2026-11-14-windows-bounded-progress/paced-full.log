@@ -1,0 +1,364 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/duplex-reply-progress/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 11.20s
+     Running unittests src/lib.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_mvm_flowmux-09e29dbf0963c078)
+
+running 50 tests
+test duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it ... ok
+test duplex::reply_progress_tests::independent_reply_progresses_while_original_inbound_authority_is_held ... ok
+test duplex::routing::tests::assisting_failure_preserves_independent_worker_refusal_and_cannot_make_success ... ok
+test duplex::routing::tests::cancellation_wakes_enrolled_waiter_behind_deferred_input ... ok
+test duplex::routing::tests::deferred_request_is_charged_once_and_cancellation_wakes_original_waiter ... ok
+test duplex::routing::tests::fixed_control_state_fits_explicit_metadata_reservation ... ok
+test duplex::routing::tests::independent_worker_io_is_preserved_even_with_identical_assisting_io ... ok
+test duplex::routing::tests::original_owner_collects_decode_failure_published_after_socket_cancellation ... ok
+test duplex::routing::tests::paced_wait_preserves_deadline_and_cancel_and_generation_cannot_wrap ... ok
+test duplex::routing::tests::prefix_resume_tightens_deadline_and_frame_thirty_three_is_refused ... ok
+test duplex::routing::tests::reply_correlation_and_single_response_slot_remain_mandatory ... ok
+test duplex::routing::tests::retirement_removes_original_rx_even_with_caller_reference ... ok
+test duplex::routing::tests::worker_reentry_refuses_before_polling_a_cancelled_decoder ... ok
+test duplex::routing::tests::worker_reentry_returns_the_owned_assisting_io_context ... ok
+test duplex::tests::artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+test duplex::tests::cancellation_wakes_original_tx_owner_and_conflicting_registration_is_refused ... ok
+test duplex::tests::combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+test duplex::tests::correct_object_published_from_wrong_direction_is_rejected ... ok
+test duplex::tests::full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... ok
+test duplex::tests::guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+test duplex::tests::oversized_application_offer_is_refused_before_shared_core_dispatch ... ok
+test duplex::tests::revocation_after_commit_and_retention_snapshot_exposes_no_application_bytes ... ok
+test duplex::tests::same_role_on_both_peers_refuses_cross_direction_application_identity ... ok
+test duplex::tests::simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+test duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+test lock_wait::tests::cancellation_before_enrollment_cannot_strand_a_waiter ... ok
+test lock_wait::tests::cancellation_wakes_waiter_while_original_owner_remains_held ... ok
+test lock_wait::tests::drop_does_not_panic_when_gate_has_been_poisoned ... ok
+test lock_wait::tests::original_data_poison_is_never_recovered_and_drop_notifies_during_unwind ... ok
+test lock_wait::tests::original_deadline_refuses_held_and_later_uncontended_data ... ok
+test lock_wait::tests::poisoned_gate_refuses_even_uncontended_data ... ok
+test lock_wait::tests::release_before_enrollment_is_observed_without_a_second_notification ... ok
+test lock_wait::tests::release_without_progress_wakes_an_enrolled_waiter ... ok
+test lock_wait::tests::spurious_notification_preserves_predicate_and_multiple_waiters ... ok
+test tcp::fin_tests::fatal_cancel_after_fin_write_counts_bytes_without_completing_the_record ... ok
+test tcp::fin_tests::peer_closes_after_receiving_final_application_fin_before_sender_returns ... ok
+test tcp::prefix_tests::deferred_controls_do_not_read_the_following_frame ... ok
+test tcp::prefix_tests::deferred_prefix_cannot_refresh_deadline_or_bypass_cancellation ... ok
+test tcp::prefix_tests::fragmented_prefix_resumes_once_with_exact_counters_and_sequence ... ok
+test tcp::prefix_tests::truncated_prefix_and_short_inner_frame_refuse_without_committing_record ... ok
+test tcp::timeout_tests::closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline ... ok
+test tls::readiness_tests::competing_peek_readers_preserve_exact_bytes_and_shutdown_wakes_wait_entry ... ok
+test tls::readiness_tests::failed_wake_post_propagates_and_fences_waiting_carrier_without_stuck_flag ... ok
+test tls::readiness_tests::notification_storm_posts_once_until_observed_wake_then_can_post_again ... ok
+test tls::readiness_tests::peek_rechecks_buffered_tls_after_socket_and_internal_hints_are_consumed ... ok
+test tls::readiness_tests::peek_releases_poller_before_waiting_for_session_and_owner_stop_wakes_it ... ok
+test tls::readiness_tests::readiness_one_owner_and_internal_notification_wake_parked_poll ... ok
+test tls::readiness_tests::readiness_preserves_preexisting_wake_data_eof_and_original_deadline ... ok
+test tls::readiness_tests::stopped_waiter_observes_fence_without_socket_or_waker_event ... ok
+test tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile ... ok
+
+successes:
+
+---- duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it stdout ----
+FAILURES left=None right=None
+REPLY_PROGRESS inbound_gate_entered=true before=Some(Counters { wire_bytes: 222, payload_bytes: 102, records: 1, compressed_records: 0 }) after=Some(Counters { wire_bytes: 800, payload_bytes: 320, records: 4, compressed_records: 0 }) local_success=true original_workers_collected=true left_collection=Ok(()) right_collection=Ok(()) peer_result=Ok((Ok(BlockReceipt { index: 0, transfer: [28, 228, 109, 118, 250, 126, 165, 133, 182, 10, 252, 124, 128, 132, 69, 4, 251, 10, 109, 40, 75, 61, 146, 146, 12, 146, 201, 248, 30, 191, 53, 11], object: ObjectReceipt { transfer: Stats { object: [15, 189, 159, 85, 27, 89, 247, 220, 183, 118, 220, 152, 204, 23, 103, 12, 178, 9, 109, 137, 183, 118, 57, 141, 31, 168, 161, 58, 67, 48, 119, 210], mode: ZstdWholeV1, request_bytes: 243, response_bytes: 218, data_bytes: 23, records_sent: 0, requests: 3, elapsed_micros: 23575 }, selection: Fixed } }), Ok(()))) left_semantics=Ok((Counters { wire_bytes: 1904, payload_bytes: 704, records: 10, compressed_records: 0 }, Counters { wire_bytes: 1879, payload_bytes: 679, records: 10, compressed_records: 0 })) right_semantics=Ok((Counters { wire_bytes: 1879, payload_bytes: 679, records: 10, compressed_records: 0 }, Counters { wire_bytes: 1904, payload_bytes: 704, records: 10, compressed_records: 0 }))
+
+---- duplex::reply_progress_tests::independent_reply_progresses_while_original_inbound_authority_is_held stdout ----
+FAILURES left=None right=None
+REPLY_PROGRESS inbound_gate_entered=true before=Some(Counters { wire_bytes: 222, payload_bytes: 102, records: 1, compressed_records: 0 }) after=Some(Counters { wire_bytes: 800, payload_bytes: 320, records: 4, compressed_records: 0 }) local_success=true original_workers_collected=true left_collection=Ok(()) right_collection=Ok(()) peer_result=Ok((Ok(BlockReceipt { index: 0, transfer: [28, 228, 109, 118, 250, 126, 165, 133, 182, 10, 252, 124, 128, 132, 69, 4, 251, 10, 109, 40, 75, 61, 146, 146, 12, 146, 201, 248, 30, 191, 53, 11], object: ObjectReceipt { transfer: Stats { object: [15, 189, 159, 85, 27, 89, 247, 220, 183, 118, 220, 152, 204, 23, 103, 12, 178, 9, 109, 137, 183, 118, 57, 141, 31, 168, 161, 58, 67, 48, 119, 210], mode: ZstdWholeV1, request_bytes: 243, response_bytes: 218, data_bytes: 23, records_sent: 0, requests: 3, elapsed_micros: 16543 }, selection: Fixed } }), Ok(()))) left_semantics=Ok((Counters { wire_bytes: 1301, payload_bytes: 461, records: 7, compressed_records: 0 }, Counters { wire_bytes: 1301, payload_bytes: 461, records: 7, compressed_records: 0 })) right_semantics=Ok((Counters { wire_bytes: 1301, payload_bytes: 461, records: 7, compressed_records: 0 }, Counters { wire_bytes: 1301, payload_bytes: 461, records: 7, compressed_records: 0 }))
+
+---- duplex::tests::combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks stdout ----
+FLOWMUX_COUNTERS duplex-combined wire_tx=2752 wire_rx=2246 peer_wire_tx=2246 peer_wire_rx=2752
+
+---- lock_wait::tests::drop_does_not_panic_when_gate_has_been_poisoned stdout ----
+
+thread 'lock_wait::tests::drop_does_not_panic_when_gate_has_been_poisoned' (982218) panicked at src/lock_wait.rs:146:13:
+poison gate
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- lock_wait::tests::original_data_poison_is_never_recovered_and_drop_notifies_during_unwind stdout ----
+
+thread 'lock_wait::tests::original_data_poison_is_never_recovered_and_drop_notifies_during_unwind' (982219) panicked at src/lock_wait.rs:127:17:
+poison data
+
+---- lock_wait::tests::poisoned_gate_refuses_even_uncontended_data stdout ----
+
+thread 'lock_wait::tests::poisoned_gate_refuses_even_uncontended_data' (982222) panicked at src/lock_wait.rs:27:13:
+poison gate
+
+
+successes:
+    duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it
+    duplex::reply_progress_tests::independent_reply_progresses_while_original_inbound_authority_is_held
+    duplex::routing::tests::assisting_failure_preserves_independent_worker_refusal_and_cannot_make_success
+    duplex::routing::tests::cancellation_wakes_enrolled_waiter_behind_deferred_input
+    duplex::routing::tests::deferred_request_is_charged_once_and_cancellation_wakes_original_waiter
+    duplex::routing::tests::fixed_control_state_fits_explicit_metadata_reservation
+    duplex::routing::tests::independent_worker_io_is_preserved_even_with_identical_assisting_io
+    duplex::routing::tests::original_owner_collects_decode_failure_published_after_socket_cancellation
+    duplex::routing::tests::paced_wait_preserves_deadline_and_cancel_and_generation_cannot_wrap
+    duplex::routing::tests::prefix_resume_tightens_deadline_and_frame_thirty_three_is_refused
+    duplex::routing::tests::reply_correlation_and_single_response_slot_remain_mandatory
+    duplex::routing::tests::retirement_removes_original_rx_even_with_caller_reference
+    duplex::routing::tests::worker_reentry_refuses_before_polling_a_cancelled_decoder
+    duplex::routing::tests::worker_reentry_returns_the_owned_assisting_io_context
+    duplex::tests::artifacts_are_not_application_and_ack_path_survives_application_half_close
+    duplex::tests::cancellation_wakes_original_tx_owner_and_conflicting_registration_is_refused
+    duplex::tests::combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks
+    duplex::tests::correct_object_published_from_wrong_direction_is_rejected
+    duplex::tests::full_delivery_queue_backpressures_then_times_out_without_extra_published_ack
+    duplex::tests::guard_drop_cancels_and_joins_an_idle_owned_reader
+    duplex::tests::oversized_application_offer_is_refused_before_shared_core_dispatch
+    duplex::tests::revocation_after_commit_and_retention_snapshot_exposes_no_application_bytes
+    duplex::tests::same_role_on_both_peers_refuses_cross_direction_application_identity
+    duplex::tests::simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin
+    duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation
+    lock_wait::tests::cancellation_before_enrollment_cannot_strand_a_waiter
+    lock_wait::tests::cancellation_wakes_waiter_while_original_owner_remains_held
+    lock_wait::tests::drop_does_not_panic_when_gate_has_been_poisoned
+    lock_wait::tests::original_data_poison_is_never_recovered_and_drop_notifies_during_unwind
+    lock_wait::tests::original_deadline_refuses_held_and_later_uncontended_data
+    lock_wait::tests::poisoned_gate_refuses_even_uncontended_data
+    lock_wait::tests::release_before_enrollment_is_observed_without_a_second_notification
+    lock_wait::tests::release_without_progress_wakes_an_enrolled_waiter
+    lock_wait::tests::spurious_notification_preserves_predicate_and_multiple_waiters
+    tcp::fin_tests::fatal_cancel_after_fin_write_counts_bytes_without_completing_the_record
+    tcp::fin_tests::peer_closes_after_receiving_final_application_fin_before_sender_returns
+    tcp::prefix_tests::deferred_controls_do_not_read_the_following_frame
+    tcp::prefix_tests::deferred_prefix_cannot_refresh_deadline_or_bypass_cancellation
+    tcp::prefix_tests::fragmented_prefix_resumes_once_with_exact_counters_and_sequence
+    tcp::prefix_tests::truncated_prefix_and_short_inner_frame_refuse_without_committing_record
+    tcp::timeout_tests::closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline
+    tls::readiness_tests::competing_peek_readers_preserve_exact_bytes_and_shutdown_wakes_wait_entry
+    tls::readiness_tests::failed_wake_post_propagates_and_fences_waiting_carrier_without_stuck_flag
+    tls::readiness_tests::notification_storm_posts_once_until_observed_wake_then_can_post_again
+    tls::readiness_tests::peek_rechecks_buffered_tls_after_socket_and_internal_hints_are_consumed
+    tls::readiness_tests::peek_releases_poller_before_waiting_for_session_and_owner_stop_wakes_it
+    tls::readiness_tests::readiness_one_owner_and_internal_notification_wake_parked_poll
+    tls::readiness_tests::readiness_preserves_preexisting_wake_data_eof_and_original_deadline
+    tls::readiness_tests::stopped_waiter_observes_fence_without_socket_or_waker_event
+    tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile
+
+test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.47s
+
+     Running tests/authenticated_stream.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/authenticated_stream-600f9b4e985ba05f)
+
+running 10 tests
+test authenticated_direction_cannot_be_replaced_when_spawning_duplex ... ok
+test authenticated_enrollment_refuses_substituted_core_resource_profile_before_mapping ... ok
+test authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts ... ok
+test authenticated_scope_rejects_changed_exporter_foreign_session_and_reentry_after_revoke ... ok
+test explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress ... ok
+test fatal_cancel_refuses_verified_buffered_bytes_while_clean_half_close_still_drains ... ok
+test revocation_fences_already_buffered_application_bytes ... ok
+test small_profile_sustains_more_than_128_distinct_verified_blocks_in_one_scope ... ok
+test tls_close_with_canonical_publication_reply_pending_remains_fatal ... ok
+test tls_close_without_authenticated_remote_application_fin_remains_fatal ... ok
+
+successes:
+
+---- authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts stdout ----
+TLS_FLOWMUX_COUNTERS logical_tx=20000 logical_rx=4096 cipher_tx=2617 cipher_rx=2557 peer_tx=2557 peer_rx=2617
+
+---- small_profile_sustains_more_than_128_distinct_verified_blocks_in_one_scope stdout ----
+SMALL_SUSTAINED expected_blocks=129 sent_verified_blocks=129 receive=Ok(129) failure=None elapsed_us=819273 left_scope=Ok(()) right_scope=Ok(())
+
+
+successes:
+    authenticated_direction_cannot_be_replaced_when_spawning_duplex
+    authenticated_enrollment_refuses_substituted_core_resource_profile_before_mapping
+    authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts
+    authenticated_scope_rejects_changed_exporter_foreign_session_and_reentry_after_revoke
+    explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress
+    fatal_cancel_refuses_verified_buffered_bytes_while_clean_half_close_still_drains
+    revocation_fences_already_buffered_application_bytes
+    small_profile_sustains_more_than_128_distinct_verified_blocks_in_one_scope
+    tls_close_with_canonical_publication_reply_pending_remains_fatal
+    tls_close_without_authenticated_remote_application_fin_remains_fatal
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.16s
+
+     Running tests/full_scope.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/full_scope-cdc0104b9c601e3a)
+
+running 4 tests
+test exact_ipv6_socket_scope_and_flowinfo_are_not_dropped_from_enrollment ... ok
+test full_actual_facts_bind_context_without_numeric_epoch_authority ... ok
+test general_scope_keeps_published_ipv4_and_unscoped_ipv6_commitments ... ok
+test shared_object_profile_is_an_exact_enrolled_fact_without_epoch_substitution ... ok
+
+successes:
+
+successes:
+    exact_ipv6_socket_scope_and_flowinfo_are_not_dropped_from_enrollment
+    full_actual_facts_bind_context_without_numeric_epoch_authority
+    general_scope_keeps_published_ipv4_and_unscoped_ipv6_commitments
+    shared_object_profile_is_an_exact_enrolled_fact_without_epoch_substitution
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mapped_stream.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/mapped_stream-230bdc4b2e29c590)
+
+running 1 test
+test standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close ... ok
+
+successes:
+
+successes:
+    standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/object_tcp.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/object_tcp-3d3ce8e30935ac22)
+
+running 4 tests
+test object_namespace_is_immutable_and_checked_before_read ... ok
+test runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp ... ok
+test warm_core_published_receipts_over_real_tcp_preserve_exact_object ... ok
+test wrong_published_identity_is_not_a_warm_commit_and_fences_reentry ... ok
+
+successes:
+
+---- runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp stdout ----
+FLOWMUX_COUNTERS runtime combined=false wire_tx=1918 wire_rx=1460 peer_wire_tx=1460 peer_wire_rx=1918
+FLOWMUX_COUNTERS runtime combined=true wire_tx=2530 wire_rx=2038 peer_wire_tx=2038 peer_wire_rx=2530
+
+---- warm_core_published_receipts_over_real_tcp_preserve_exact_object stdout ----
+FLOWMUX_COUNTERS warm target_len=8192 wire_tx=9538 wire_rx=1276 peer_wire_tx=1276 peer_wire_rx=9538
+
+
+successes:
+    object_namespace_is_immutable_and_checked_before_read
+    runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp
+    warm_core_published_receipts_over_real_tcp_preserve_exact_object
+    wrong_published_identity_is_not_a_warm_commit_and_fences_reentry
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/ordered_artifacts.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/ordered_artifacts-5532056ce923d56a)
+
+running 1 test
+test ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_eviction ... ok
+
+successes:
+
+---- ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_eviction stdout ----
+ORDERED_MATH mode=Warm exact_blocks_each_direction=129 block_bytes=8616 state=OrderedSnapshot { attempts: 2, publications: 64, cache_bytes: 545977, pinned: 1, evictions: 66 }
+ORDERED_MATH mode=Runtime exact_blocks_each_direction=129 block_bytes=8616 state=OrderedSnapshot { attempts: 2, publications: 64, cache_bytes: 546278, pinned: 1, evictions: 66 }
+ORDERED_MATH mode=Combined exact_blocks_each_direction=129 block_bytes=8616 state=OrderedSnapshot { attempts: 2, publications: 64, cache_bytes: 537695, pinned: 2, evictions: 67 }
+
+
+successes:
+    ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_eviction
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.75s
+
+     Running tests/ordered_stream.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/ordered_stream-968eb388705fd406)
+
+running 1 test
+test four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention ... ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=40645306 original_gate_us=240000000 setup_wall_us=25562 setup_process_cpu_us=Some(1100) process_cpu_to_snapshot_us=Some(3914235) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=Some(6748) hwm_kib=Some(6748)
+ok
+
+successes:
+
+---- four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention stdout ----
+ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=25562 lifecycle_wall_us=40649653 cpu_process_before=Some((0, 0)) cpu_process_setup=Some((0, 0)) cpu_process_after=Some((226, 165)) lifecycle_process_cpu_us=Some(3918579) cpu_ticks_per_second=Some(100) rss_before_kib=Some(3572) rss_prepared_kib=Some(5620) process_hwm_kib=Some(6748) core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)
+
+
+successes:
+    four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 40.65s
+
+     Running tests/paired_tcp.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/paired_tcp-ef1891410dfbc0e6)
+
+running 8 tests
+test closed_peer_buffered_reverse_data_and_fin_remain_exact_under_original_deadline ... ok
+test exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp ... ok
+test explicit_reset_and_cancel_are_terminal_in_both_directions ... ok
+test invalid_send_sizes_write_nothing_and_valid_maximum_survives ... ok
+test malformed_unavailable_peer_and_cross_binding_fence_without_payload ... ok
+test original_deadline_and_explicit_cancel_bound_idle_receive ... ok
+test raw_entropy_roundtrip_and_corrupted_raw_identity_refusal ... ok
+test sequence_oversize_and_truncation_are_terminal_and_count_actual_bytes ... ok
+
+successes:
+
+---- exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp stdout ----
+FLOWMUX_COUNTERS tcp-whole payload_tx=4096 payload_rx=3072 wire_tx=311 wire_rx=311 peer_wire_tx=311 peer_wire_rx=311
+
+
+successes:
+    closed_peer_buffered_reverse_data_and_fin_remain_exact_under_original_deadline
+    exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp
+    explicit_reset_and_cancel_are_terminal_in_both_directions
+    invalid_send_sizes_write_nothing_and_valid_maximum_survives
+    malformed_unavailable_peer_and_cross_binding_fence_without_payload
+    original_deadline_and_explicit_cancel_bound_idle_receive
+    raw_entropy_roundtrip_and_corrupted_raw_identity_refusal
+    sequence_oversize_and_truncation_are_terminal_and_count_actual_bytes
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/reader_completion.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/reader_completion-f1c0a6a1e7f17580)
+
+running 2 tests
+test join_guard_timeout_keeps_original_reader_and_legacy_result ... ok
+test mapped_alias_timeout_retains_original_reader_until_explicit_completion ... ok
+
+successes:
+
+successes:
+    join_guard_timeout_keeps_original_reader_and_legacy_result
+    mapped_alias_timeout_retains_original_reader_until_explicit_completion
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/scope_policy.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/scope_policy-38491780238e2a44)
+
+running 2 tests
+test bounded_enrollment_and_replacement_never_revive_an_old_authority ... ok
+test explicit_enrollment_refuses_unknown_foreign_changed_expired_and_revoked_scopes ... ok
+
+successes:
+
+successes:
+    bounded_enrollment_and_replacement_never_revive_an_old_authority
+    explicit_enrollment_refuses_unknown_foreign_changed_expired_and_revoked_scopes
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/tls_carrier.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/tls_carrier-178834db2201f796)
+
+running 2 tests
+test mutual_pinned_tls_uses_one_session_for_cloned_bidirectional_io ... ok
+test wrong_pin_and_unavailable_peer_refuse_before_application_bytes ... ok
+
+successes:
+
+successes:
+    mutual_pinned_tls_uses_one_session_for_cloned_bidirectional_io
+    wrong_pin_and_unavailable_peer_refuse_before_application_bytes
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/tls_handshake_eof.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/tls_handshake_eof-a9432b226bba8a00)
+
+running 2 tests
+test acceptor_refuses_physical_eof_before_client_hello_without_waiting_for_timeout ... ok
+test initiator_refuses_physical_eof_during_handshake_without_waiting_for_timeout ... ok
+
+successes:
+
+successes:
+    acceptor_refuses_physical_eof_before_client_hello_without_waiting_for_timeout
+    initiator_refuses_physical_eof_during_handshake_without_waiting_for_timeout
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests spiralcore_mvm_flowmux
+
+running 0 tests
+
+successes:
+
+successes:
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

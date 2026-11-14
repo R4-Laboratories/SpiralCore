@@ -1,0 +1,32 @@
+--- a/crates/spiralcore-mvm-flowmux/src/duplex/routing.rs
++++ b/crates/spiralcore-mvm-flowmux/src/duplex/routing.rs
+@@ -135,26 +135,9 @@
+     /// Pace newly admitted operations against the current inbound handler.
+     /// An earlier operation may already be in flight. Waiting consumes the
+     /// caller's original deadline and owns no transport lock.
+-    pub(super) fn admit_turn(
+-        &self,
+-        last: &mut Option<u64>,
+-        until: Instant,
+-        cancellation: &Cancellation,
+-    ) -> Result<()> {
+-        loop {
+-            self.wake.arm()?;
+-            cancellation.check()?;
+-            remaining(until)?;
+-            if !self.busy.load(Ordering::Acquire) {
+-                return Ok(());
+-            }
+-            let generation = self.generation.load(Ordering::Acquire);
+-            if *last != Some(generation) {
+-                *last = Some(generation);
+-                return Ok(());
+-            }
+-            self.wake.wait(until, cancellation)?;
+-        }
++    pub(super) fn admit_turn(&self, last: &mut Option<u64>, until: Instant, cancellation: &Cancellation) -> Result<()> {
++        let _ = (last, until, cancellation);
++        Ok(())
+     }
+     #[cfg(test)]
+     pub(super) fn enrollments(&self) -> usize {
