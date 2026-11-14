@@ -104,7 +104,7 @@
     "manifest_sha256": "837078db1fac3a7b503b770c31c21c5b1b96e10e69669af8e44bc4d8f9959a0e"
   },
   "spiralcore_witness_revision": "e08ee099f7727599d5af7d22794d6370ead487da",
-  "scope": "Native11 positively qualifies original-owner startup/readiness and clean retirement of both installed Linux/Firecracker journal guests and telemetry collectors. It does not qualify data transfer: canonical SDK entrypoint refused a missing admitted original-owner binding. Earlier failures retained. No WAN, compression, sustained capacity or release claim.",
+  "scope": "Trials11\u201312 positively retire both actual installed Linux/Firecracker guests and original helpers/collectors. Trial12 passes strict original-owner entrypoint admission but source workload refuses incompatible signed guest boot-size bound. Full transfer still unqualified; no WAN/compression/speed claim.",
   "metadata_package_counts": {
     "mvm-client": 1,
     "mvm-core": 1,
@@ -597,5 +597,203 @@
     "finite_device_bytes": 1073741824,
     "host_and_tenant_staging_ceiling_bytes": 2516582400,
     "diagnosis": "Both actual guests passed original-owner startup and readiness; both required meters acquired. SDK entrypoint refused missing admission direct_owner binding before data transfer. Both original helpers collected unassisted exit0 and original endpoint retirement/parent telemetry publication succeeded. No definition/retained-artifact deletion, no forced cleanup. Full transfer acceptance remains open."
+  },
+  "native12": {
+    "result_sha256": "3a83f207c0182a62ec575b2a46d7b11c5a3cce0df321afcd1a332a7af14dda17",
+    "mvm_source": "61f72716470c706c7ba90837d9f0c5b72e8f26c9",
+    "spiralcore_source": "a2513cfba5e65731ce696f156211365f800a455d",
+    "executables": {
+      "mvmctl": {
+        "sha256": "f4ef4bdf8846fcdcfd8d41cbf802ea23bf04c4b9ede8ebc0e1c9065652e10c27",
+        "bytes": 178965920,
+        "mode": "0o755"
+      },
+      "mvm-signer-helper": {
+        "sha256": "87decb3246270059485815ce5b0d41fd30c2a4a8e232aee49937187b8280eab4",
+        "bytes": 20277456,
+        "mode": "0o755"
+      },
+      "paired-journal": {
+        "sha256": "5c39cd7e3359da5657c2ce291451b49bf4f084e27c187e405fa9be914ee8f8f9",
+        "bytes": 101179736,
+        "mode": "0o755"
+      },
+      "mvm-network-endpoint": {
+        "sha256": "8712f3d8ebf3eafeb87458d7e99aadeb4a96e32eefc997a8d37fecc2de48940f",
+        "bytes": 49849072,
+        "mode": "0o755"
+      },
+      "firecracker": {
+        "sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+        "bytes": 3676680,
+        "mode": "0o755"
+      },
+      "mvm-host-agent": {
+        "sha256": "1a27b965d8e111e140bbd749f7586e5b09eab981d0e5457c7c66ff449c3c155e",
+        "bytes": 28752112,
+        "mode": "0o755"
+      },
+      "collector-fixture": {
+        "sha256": "44227fb2a61ca80d98e470842befe8f41cc6ffedbfc0d1215fcfded03cb47306",
+        "bytes": 31272392,
+        "mode": "0o755"
+      },
+      "mvm-mailbox": {
+        "sha256": "48fb38aea67a70d9ee712b88ff1585c2b243326f167586d43a1cc83239510568",
+        "bytes": 22556184,
+        "mode": "0o755"
+      },
+      "collector-install": {
+        "sha256": "e1f9adcfe50e6693b916f9426cccf0aff5e2db365319f040f097964688de612b",
+        "bytes": 18865176,
+        "mode": "0o755"
+      }
+    },
+    "result": {
+      "driver_process_cpu_ns": 17379395010,
+      "installed_collector": {
+        "after_stop_resource_error": null,
+        "after_stop_resources": {
+          "active_reservations": 9,
+          "fenced": true,
+          "peak_host_resident_bytes": 2807848960,
+          "registered_tenants": 4,
+          "scope": "installation-managed-resources",
+          "usage": {
+            "cache_disk_bytes": 18980864,
+            "guest_memory_bytes": 0,
+            "guests": 0,
+            "host_carrier_bytes": 0,
+            "host_codec_bytes": 0,
+            "host_metadata_bytes": 2149093376,
+            "host_plaintext_bytes": 0,
+            "host_stack_bytes": 0,
+            "staging_disk_bytes": 2147491840,
+            "workers": 0
+          },
+          "version": 1
+        },
+        "before_stop_resource_error": null,
+        "before_stop_resources": {
+          "active_reservations": 16,
+          "fenced": false,
+          "peak_host_resident_bytes": 2807848960,
+          "registered_tenants": 4,
+          "scope": "installation-managed-resources",
+          "usage": {
+            "cache_disk_bytes": 18980864,
+            "guest_memory_bytes": 536870912,
+            "guests": 2,
+            "host_carrier_bytes": 402653184,
+            "host_codec_bytes": 0,
+            "host_metadata_bytes": 2350645248,
+            "host_plaintext_bytes": 0,
+            "host_stack_bytes": 54550528,
+            "staging_disk_bytes": 2147622912,
+            "workers": 20
+          },
+          "version": 1
+        },
+        "host_resident_ceiling_bytes": 3221225472,
+        "initial_resources": {
+          "active_reservations": 4,
+          "fenced": false,
+          "peak_host_resident_bytes": 404381696,
+          "registered_tenants": 4,
+          "scope": "installation-managed-resources",
+          "usage": {
+            "cache_disk_bytes": 8192,
+            "guest_memory_bytes": 0,
+            "guests": 0,
+            "host_carrier_bytes": 402653184,
+            "host_codec_bytes": 0,
+            "host_metadata_bytes": 1728512,
+            "host_plaintext_bytes": 0,
+            "host_stack_bytes": 0,
+            "staging_disk_bytes": 131072,
+            "workers": 10
+          },
+          "version": 1
+        },
+        "per_start_disk_ceiling_bytes": 1073741824,
+        "per_start_memory_ceiling_bytes": 1073741824,
+        "requested_guest_memory_bytes": 536870912,
+        "runtime_state_removed": false,
+        "tenant_process_address_space_bytes": 201326592,
+        "wan": null
+      },
+      "meter_errors": [],
+      "native_host": {
+        "architecture": "x86_64",
+        "observed_destination_backend": "firecracker",
+        "observed_source_backend": "firecracker",
+        "os": "linux",
+        "requested_backend": "firecracker"
+      },
+      "original_5257_helper_streams_a_b": [
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 1,
+          "guest_to_host_read_bytes": 0,
+          "host_to_guest_write_accepted_bytes": 0,
+          "read_errors": 0,
+          "write_errors": 1
+        },
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 0,
+          "guest_to_host_read_bytes": 0,
+          "host_to_guest_write_accepted_bytes": 0,
+          "read_errors": 0,
+          "write_errors": 0
+        }
+      ],
+      "original_exits": {
+        "definitions_removed": false,
+        "original_helpers": [
+          {
+            "assisted": false,
+            "collected": true,
+            "exit_code": 0,
+            "name": "sc-journal-a",
+            "success": true
+          },
+          {
+            "assisted": false,
+            "collected": true,
+            "exit_code": 0,
+            "name": "sc-journal-b",
+            "success": true
+          }
+        ],
+        "retained_resources": {
+          "active_reservations": 9,
+          "fenced": true,
+          "peak_host_resident_bytes": 2807848960,
+          "registered_tenants": 4,
+          "scope": "installation-managed-resources",
+          "usage": {
+            "cache_disk_bytes": 18980864,
+            "guest_memory_bytes": 0,
+            "guests": 0,
+            "host_carrier_bytes": 0,
+            "host_codec_bytes": 0,
+            "host_metadata_bytes": 2149093376,
+            "host_plaintext_bytes": 0,
+            "host_stack_bytes": 0,
+            "staging_disk_bytes": 2147491840,
+            "workers": 0
+          },
+          "version": 1
+        },
+        "runtime_state_removed": false
+      },
+      "replacement_5257_helper_streams_a_b": null,
+      "result": null,
+      "teardown_error": null,
+      "transfer_error": "original owned workload failed: Exited { code: 1 }",
+      "whole_wall_ns": 20013807690
+    },
+    "diagnosis": "Original-owner entrypoint dispatch now succeeds, but source workload exits1. Source console reports old signed guest runtime rejects mailbox boot binding length2553; exact signed runtime sourceffd90 limit2048, currenthost limit8192. Both original helpers and collectors againretiredclean. No positive application transfer."
   }
 }
