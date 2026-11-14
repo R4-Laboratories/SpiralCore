@@ -11,11 +11,12 @@ use mvm_core::host_lifetime::{
 
 pub(super) struct QualifiedEndpointProfile {
     limits: EndpointPartitionLimits,
+    profile: u16,
 }
 impl QualifiedEndpointProfile {
     #[cfg(test)]
     pub(super) fn fixture(limits: EndpointPartitionLimits) -> Self {
-        Self { limits }
+        Self { limits, profile: 2 }
     }
     #[cfg(not(target_os = "linux"))]
     fn from_declared(_: EndpointPartitionLimits) -> Result<Self> {
@@ -76,8 +77,44 @@ impl QualifiedEndpointProfile {
             "declared installed endpoint partition is too small"
         );
         limits.host_resident_bytes()?;
-        Ok(Self { limits })
+        Ok(Self { limits, profile: 2 })
     }
+    fn collector_from_declared(limits: EndpointPartitionLimits) -> Result<Self> {
+        ensure!(
+            cfg!(target_os = "linux"),
+            "installed collector requires Linux process enforcement"
+        );
+        let controller = mvm_hostd::installed_endpoint::owned_endpoint_runtime_requirements()?;
+        let collector = mvm_hostd::telemetry_collector::owned_collector_requirements()?;
+        let scanner = mvm_hostd::telemetry_collector::owned_scanner_requested_bytes(
+            &mvm_core::policy::RedactionPolicy::default(),
+        )?;
+        let stack = controller
+            .main_stack_envelope_bytes
+            .checked_add(collector.known_rust_stack_bytes)
+            .ok_or_else(|| anyhow!("collector stack model overflow"))?;
+        let metadata = controller
+            .controller_metadata_bytes
+            .checked_add(mvm_vmm::host::network_endpoint_spawn::INSTALLED_BOOTSTRAP_MIN_BYTES)
+            .and_then(|bytes| bytes.checked_add(collector.known_metadata_bytes))
+            .and_then(|bytes| bytes.checked_add(scanner))
+            .ok_or_else(|| anyhow!("collector metadata model overflow"))?;
+        ensure!(
+            limits.max_streams == 1
+                && limits.workers == 1 + u32::from(collector.threads)
+                && limits.host_plaintext_bytes == 0
+                && limits.host_codec_bytes == 0
+                && limits.host_carrier_bytes == 0
+                && limits.staging_disk_bytes == 0
+                && limits.cache_disk_bytes == RECORD_BYTES + SIDECAR_BYTES
+                && limits.host_stack_bytes >= stack
+                && limits.host_metadata_bytes >= metadata,
+            "declared collector partition is unsupported or too small"
+        );
+        limits.host_resident_bytes()?;
+        Ok(Self { limits, profile: 1 })
+    }
+
     fn claim(&self, binding: &HostLaunchBinding, plan: &str) -> Result<ManagedClaim> {
         let metadata = std::mem::size_of::<RootEndpointOwner>()
             + 2 * std::mem::size_of::<usize>()
@@ -118,6 +155,11 @@ pub(super) struct EndpointOwnerInputs {
     retained: Arc<RetainedTelemetryInventory>,
     profile: QualifiedEndpointProfile,
 }
+impl EndpointOwnerInputs {
+    pub(super) fn selects_collector(&self) -> bool {
+        self.profile.profile == 1
+    }
+}
 impl InstalledParentProvider {
     /// Select the bounded Object-TCP service before the first original VM grant.
     /// Host, tenant and device accounting remain in this supervisor's ledger.
@@ -127,6 +169,19 @@ impl InstalledParentProvider {
         limits: EndpointPartitionLimits,
     ) -> Result<()> {
         self.configure_endpoints(supervisor, QualifiedEndpointProfile::from_declared(limits)?)
+    }
+
+    /// Select a collector-only partition from the same shared host/tenant pool.
+    /// No codec store, staging space or network capability is configured here.
+    pub fn configure_telemetry_only(
+        &mut self,
+        supervisor: &InstalledSupervisor,
+        limits: EndpointPartitionLimits,
+    ) -> Result<()> {
+        self.configure_endpoints(
+            supervisor,
+            QualifiedEndpointProfile::collector_from_declared(limits)?,
+        )
     }
 
     pub(super) fn configure_endpoints(
@@ -249,12 +304,20 @@ impl VmGrant {
                 .admitted_plan
                 .as_ref()
                 .ok_or_else(|| anyhow!("canonical admission missing"))?;
-            ensure!(
-                state
+            let selected = match inputs.profile.profile {
+                1 => {
+                    state.selected_network.is_none()
+                        && state.selected_collector.as_deref() == Some(plan.as_str())
+                }
+                2 => state
                     .selected_network
                     .as_ref()
                     .is_some_and(|network| network.plan_id.0 == *plan),
-                "selected network policy absent from original admitted plan"
+                _ => false,
+            };
+            ensure!(
+                selected,
+                "endpoint profile absent from original admitted plan"
             );
             let session = state
                 .admitted_session
@@ -291,21 +354,34 @@ impl VmGrant {
         )?;
         attempt.effects_possible = true;
         resources.retained = Some((inputs.retained.clone(), retained));
-        let store = inputs.inventory.prepare(
-            &self.reservation,
-            EndpointDiskRequest {
-                tenant: tenant_tag(&self.tenant),
-                session,
-                cache_bytes: inputs
-                    .profile
-                    .limits
-                    .cache_disk_bytes
-                    .checked_sub(RECORD_BYTES + SIDECAR_BYTES)
-                    .ok_or_else(|| anyhow!("original retained disk subdivision missing"))?,
-                staging_bytes: inputs.profile.limits.staging_disk_bytes,
-            },
-        )?;
-        let locator = resources.store.insert(store).binding();
+        let locator = if inputs.profile.profile == 2 {
+            let store = inputs.inventory.prepare(
+                &self.reservation,
+                EndpointDiskRequest {
+                    tenant: tenant_tag(&self.tenant),
+                    session,
+                    cache_bytes: inputs
+                        .profile
+                        .limits
+                        .cache_disk_bytes
+                        .checked_sub(RECORD_BYTES + SIDECAR_BYTES)
+                        .ok_or_else(|| anyhow!("original retained disk subdivision missing"))?,
+                    staging_bytes: inputs.profile.limits.staging_disk_bytes,
+                },
+            )?;
+            let locator = resources.store.insert(store).binding();
+            Some(EndpointStoreLocator {
+                version: 1,
+                path: locator.path.to_owned(),
+                device: locator.device,
+                inode: locator.inode,
+                reservation_serial: locator.reservation_serial,
+                tenant: locator.tenant,
+                session: locator.session,
+            })
+        } else {
+            None
+        };
         let plan = self
             .lifecycle
             .lock()
@@ -320,17 +396,9 @@ impl VmGrant {
             admitted_plan_id: plan,
             session,
             partition_serial: serial,
-            profile: 2,
+            profile: inputs.profile.profile,
             limits: inputs.profile.limits,
-            store: Some(EndpointStoreLocator {
-                version: 1,
-                path: locator.path.to_owned(),
-                device: locator.device,
-                inode: locator.inode,
-                reservation_serial: locator.reservation_serial,
-                tenant: locator.tenant,
-                session: locator.session,
-            }),
+            store: locator,
         };
         let owner = Arc::new(RootEndpointOwner {
             original: self.original.clone(),
@@ -460,11 +528,11 @@ impl EndpointPartitionGuard for RootEndpointOwner {
             .map_err(|_| anyhow!("endpoint resources poisoned"))?;
         ensure!(!resources.cleaned, "endpoint already cleaned");
         resources.vm.check_current()?;
-        resources
-            .store
-            .as_ref()
-            .ok_or_else(|| anyhow!("original endpoint store unavailable"))?
-            .check_current()?;
+        match (self.projection.profile, resources.store.as_ref()) {
+            (1, None) => {}
+            (2, Some(store)) => store.check_current()?,
+            _ => return Err(anyhow!("original endpoint store shape differs")),
+        }
         resources
             .endpoint
             .as_ref()
@@ -545,12 +613,20 @@ impl RootEndpointOwner {
                     .retained
                     .as_ref()
                     .ok_or_else(|| anyhow!("original retained scope missing"))?;
-                inventory.seal_after_endpoint(scope, receipt, &guard, &self.projection)?;
-                resources
-                    .store
-                    .as_mut()
-                    .ok_or_else(|| anyhow!("endpoint store missing"))?
-                    .retire_with_endpoint_receipt(receipt, &guard, &self.projection)?;
+                inventory.seal_after_endpoint(
+                    scope,
+                    receipt,
+                    &guard,
+                    &self.projection,
+                    &resources.vm,
+                )?;
+                match (self.projection.profile, resources.store.as_mut()) {
+                    (1, None) => {}
+                    (2, Some(store)) => {
+                        store.retire_with_endpoint_receipt(receipt, &guard, &self.projection)?
+                    }
+                    _ => return Err(anyhow!("retired endpoint store shape differs")),
+                }
                 resources.cleaned = true;
             }
         }

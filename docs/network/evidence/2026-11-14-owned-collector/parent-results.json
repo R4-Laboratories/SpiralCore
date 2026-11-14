@@ -1,0 +1,112 @@
+{
+  "logs": {
+    "collector-parent-red.log": {
+      "sha256": "7a0824d1f9e5441f5002804e7012a9298d85ee9a5e3e9c7fc0e5c38f4627e6f3",
+      "bytes": 8852,
+      "results": [
+        "error[E0433]: cannot find `OwnedStorePolicy` in `v1`",
+        "error[E0433]: cannot find `OwnedLaneNamespaces` in `v1`",
+        "error[E0433]: cannot find `OwnedStoreLease` in `v1`",
+        "error[E0425]: cannot find type `OwnedStoreLease` in module `spiralcore_transfer::v1`",
+        "error[E0425]: cannot find type `OwnedStorePolicy` in module `spiralcore_transfer::v1`",
+        "error[E0425]: cannot find type `OwnedStoreLease` in module `spiralcore_transfer::v1`",
+        "error[E0599]: no associated function or constant named `open_at_with_resource_profile` found for struct `spiralcore_transfer::v1::ObjectEndpoint<A>` in the current scope",
+        "error: could not compile `mvm-hostd` (lib) due to 7 previous errors"
+      ]
+    },
+    "collector-parent-credit-red.log": {
+      "sha256": "d1a98989ba590233f8b3c398def1ef2bd324af001ecc624262019ba4488acb7a",
+      "bytes": 3726,
+      "results": [
+        "error[E0599]: no method named `check_same_tenant` found for struct `installed_resources::ManagedReservation` in the current scope",
+        "error[E0599]: no method named `check_same_tenant` found for struct `installed_resources::ManagedReservation` in the current scope",
+        "error[E0599]: no method named `check_same_tenant` found for struct `installed_resources::ManagedReservation` in the current scope",
+        "error[E0599]: no method named `check_same_tenant` found for struct `installed_resources::ManagedReservation` in the current scope",
+        "error: could not compile `spiralcore-mvm-live` (lib test) due to 4 previous errors"
+      ]
+    },
+    "collector-policy-red.log": {
+      "sha256": "571033f8111e9b87ae150ab23d89d232595d8b0e9911f69e33375d525c45fa17",
+      "bytes": 3386,
+      "results": [
+        "    Finished `test` profile [unoptimized] target(s) in 9.28s",
+        "test installed_parent::config_tests::collector_profile_rejects_an_unsupported_policy_before_parent_binding ... FAILED",
+        "test installed_parent::config_tests::collector_profile_rejects_an_unsupported_policy_before_parent_binding ... FAILED",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 165 filtered out; finished in 0.01s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 165 filtered out; finished in 0.02s",
+        "error: test failed, to rerun pass `--lib`"
+      ]
+    },
+    "collector-policy-green.log": {
+      "sha256": "0b81ddfe83da440d12a474667e50b15cff117075266c3d9fa9215dca505f34bb",
+      "bytes": 20836,
+      "results": [
+        "    Finished `test` profile [unoptimized] target(s) in 7.94s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 165 filtered out; finished in 0.00s",
+        "test result: ok. 166 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.36s"
+      ]
+    },
+    "collector-policy-clippy.log": {
+      "sha256": "d2d5f0d45f966c097149d87a55bf9974e87254d2fc402188a12642135b586e19",
+      "bytes": 1565,
+      "results": [
+        "    Finished `dev` profile [unoptimized] target(s) in 2.43s"
+      ]
+    },
+    "collector-declared-green.log": {
+      "sha256": "86d2585eb41770c25952fb7f311d48e7df60692448d5c54eb07ada9e10634622",
+      "bytes": 19465,
+      "results": [
+        "    Finished `test` profile [unoptimized] target(s) in 5.60s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 165 filtered out; finished in 0.00s",
+        "test result: ok. 166 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.66s"
+      ]
+    },
+    "collector-declared-clippy.log": {
+      "sha256": "26acfb2166880b7b47bf8814e595e0ee13fb3733646341808473a692f5209f5c",
+      "bytes": 3341,
+      "results": [
+        "    Finished `dev` profile [unoptimized] target(s) in 42.06s"
+      ]
+    },
+    "collector-parent-all-targets.log": {
+      "sha256": "29f3e5217d7dc1b0e7ee73a8f9d51ec408de070d5f3d113824e68e215b7b768d",
+      "bytes": 2272,
+      "results": [
+        "    Finished `dev` profile [unoptimized] target(s) in 36.66s"
+      ]
+    },
+    "collector-parent-all-targets-clippy.log": {
+      "sha256": "d4f8a23759629ce6ce23465f070cdd1172595fa9ea34e6c66828fe8530e69a86",
+      "bytes": 194,
+      "results": [
+        "    Finished `dev` profile [unoptimized] target(s) in 3.79s"
+      ]
+    }
+  },
+  "qualified_files": {
+    "src/installed_parent.rs": "ee3dbe5e4411d0e76210b65b5cb3f4065baea1c50e57e302f717277c3d506858",
+    "src/installed_parent/config_tests.rs": "4fb7e2688e9be6b72a0a6f5ec911cf4ca92cdab6da43c166d293eb349b65b64d",
+    "src/installed_parent/endpoint.rs": "32a54d0233d7ec313653e714cf3d59ee9f4aeea47a89be18dd22c14131c0abe5",
+    "src/installed_parent/collector_tests.rs": "4eb29ccc488cc217a3a4d865fac50014f1a7977b99acd1046a8896a9fb82fe52",
+    "src/installed_resources.rs": "2d6cff4dd3e33f1327af542848e7e1544392ba082471376d46fc8a64f1bc48ce",
+    "src/installed_retained.rs": "e7f33281c4d401f56bb0e812973d5d3f4e386b91cd2fa765485ed28f2df2839c",
+    "Cargo.toml": "fe38a160d69ae6ed470cbae958fd1d16a1d33c4144852a125ad1574edc7aec43",
+    "Cargo.lock": "1f180b1929ff7647ec6c9f814cba66ca4bad61e14a7d7a64a2229d911cc2b63f"
+  },
+  "base_revision": "5f825e0fed8244bfb6fff44d93f1e69b24d6b85b",
+  "scope": "Linux component tests and compilation; no guest, WAN, shutdown or performance result",
+  "declared_mvm_revision": "7b22454077530e96146d68204b711de53e3d05a8",
+  "commands": [
+    "cargo +1.97.1 test --locked --offline --no-default-features --features canonical-host --lib",
+    "cargo +1.97.1 clippy --locked --offline --no-default-features --features canonical-host --lib -- -D warnings",
+    "cargo +1.97.1 check --locked --offline --no-default-features --features canonical-host --all-targets",
+    "cargo +1.97.1 clippy --locked --offline --no-default-features --features canonical-host --all-targets -- -D warnings"
+  ],
+  "worker_limits": {
+    "jobs": 2,
+    "cpu_quota_percent": 200,
+    "memory_max_gib": 6,
+    "target": "existing shared target; no local build"
+  }
+}
