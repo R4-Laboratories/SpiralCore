@@ -196,6 +196,13 @@ jobs:
           ref: ${{ steps.consumer.outputs.revision }}
           path: consumer
           persist-credentials: false
+      - name: Install the declared Linux linker
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y lld
+          ld.lld --version
       - name: Bind native consumer source and exact shared core
         working-directory: consumer
         run: |
@@ -230,8 +237,14 @@ jobs:
           set -euo pipefail
           source scripts/dev-env.sh
           evidence="$GITHUB_WORKSPACE/consumer-evidence"
-          cargo +1.97.1 test --locked -p mvm-hostd --lib --no-run --message-format=json > "$RUNNER_TEMP/consumer-build.jsonl" 2> "$evidence/build.stderr"
-          executable=$(jq -ers '[.[] | select(.reason == "compiler-artifact" and .target.name == "mvm_hostd" and .target.kind == ["lib"] and .profile.test and .executable) | .executable] | select(length == 1) | first' "$RUNNER_TEMP/consumer-build.jsonl")
+          if cargo +1.97.1 test --locked -p mvm-hostd --lib --no-run --message-format=json > "$evidence/build.jsonl" 2> "$evidence/build.stderr"; then
+            :
+          else
+            cat "$evidence/build.stderr" >&2
+            jq -r 'select(.reason == "compiler-message") | .message.rendered // empty' "$evidence/build.jsonl" >&2
+            exit 1
+          fi
+          executable=$(jq -ers '[.[] | select(.reason == "compiler-artifact" and .target.name == "mvm_hostd" and .target.kind == ["lib"] and .profile.test and .executable) | .executable] | select(length == 1) | first' "$evidence/build.jsonl")
           [[ "$(realpath "$executable")" == "$(realpath "$CARGO_TARGET_DIR")"/debug/deps/* ]]
           shasum -a 256 "$executable" > "$evidence/executable-before.sha256"
           "$executable" --list --format terse > "$evidence/test-list.txt"
