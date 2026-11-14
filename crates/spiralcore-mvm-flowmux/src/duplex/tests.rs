@@ -21,7 +21,7 @@ impl Drop for Store {
         let _ = std::fs::remove_dir_all(&self.0);
     }
 }
-fn context() -> Context {
+pub(super) fn context() -> Context {
     Context {
         tenant: "duplex-test".into(),
         domain: "cooperating".into(),

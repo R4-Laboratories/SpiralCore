@@ -1011,6 +1011,8 @@ impl<A: Authority> Worker<A> {
     }
 }
 #[cfg(test)]
+mod reply_progress_tests;
+#[cfg(test)]
 mod tests;
 
 impl<A: Authority> Drop for Worker<A> {
