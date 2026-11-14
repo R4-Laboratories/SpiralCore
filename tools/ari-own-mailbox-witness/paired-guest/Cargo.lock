@@ -360,7 +360,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -732,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-agentd"
-version = "0.28.0-rc.1"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -757,7 +757,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-contract"
-version = "0.28.0-rc.1"
+version = "0.28.0-rc.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-core"
-version = "0.28.0-rc.1"
+version = "0.28.0-rc.3"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-macho-sign"
-version = "0.28.0-rc.1"
+version = "0.28.0-rc.3"
 dependencies = [
  "plist",
  "sha1",
@@ -814,7 +814,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-setpriv"
-version = "0.28.0-rc.1"
+version = "0.28.0-rc.3"
 dependencies = [
  "libc",
 ]
@@ -993,7 +993,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1262,8 +1262,10 @@ version = "0.1.0"
 dependencies = [
  "cpu-time",
  "httparse",
+ "libc",
  "libm",
  "memchr",
+ "rustix",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -1331,7 +1333,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
