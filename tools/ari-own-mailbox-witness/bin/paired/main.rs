@@ -41,6 +41,9 @@ pub const A: &str = "sc-journal-a";
 pub const B: &str = "sc-journal-b";
 #[path = "../../paired-guest/src/fixture.rs"]
 mod fixture;
+#[cfg(any(feature = "sender-ordinal-v1", test))]
+#[path = "../../paired-guest/src/ordinal_fixture.rs"]
+mod ordinal_fixture;
 #[cfg(not(feature = "large-object-fixture"))]
 const BODY: &[u8; fixture::BODY_LEN] = include_bytes!("../../fixtures/workload-body.bin");
 #[cfg(feature = "large-object-fixture")]
@@ -254,6 +257,18 @@ fn run(args: &[String]) -> Result<()> {
         !no_helper_callback_retry || collector_mode,
         "no-helper callback retry requires installed collector qualification"
     );
+    let (unused_definition_refusal, args) = match args {
+        [flag, rest @ ..] if flag == "--unused-definition-refusal" => (true, rest),
+        _ => (false, args),
+    };
+    ensure!(
+        !unused_definition_refusal || collector_mode,
+        "unused definition refusal requires installed collector qualification"
+    );
+    ensure!(
+        !unused_definition_refusal || !no_helper_callback_retry,
+        "unused preparation and helper callback retry are separate failure campaigns"
+    );
     let (requested, inputs) = match args {
         [flag, backend, rest @ ..] if flag == "--backend" => (Some(backend.as_str()), rest),
         _ => (None, args),
@@ -373,6 +388,9 @@ fn run(args: &[String]) -> Result<()> {
             s
         };
         for (i, name, path) in [(1, B, bi.clone()), (0, A, ai.clone())] {
+            if unused_definition_refusal && i == 1 {
+                continue;
+            }
             let r =
                 LaunchRequest::builder(LifecycleMode::Persistent, RootfsSource::LocalPath(path))
                     .name(name)
@@ -616,7 +634,23 @@ fn run(args: &[String]) -> Result<()> {
     #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
     let exit = if let Some((pair, _)) = &mut collector {
         drop(backend);
-        installed_collector::retire(pair, &mut state, &home)
+        if unused_definition_refusal {
+            match measured.as_ref() {
+                Err(refusal) => installed_collector::qualify_unused_refusal(
+                    pair,
+                    &state,
+                    collector_before
+                        .as_ref()
+                        .expect("original collector snapshot"),
+                    refusal,
+                ),
+                Ok(_) => Err(anyhow::anyhow!(
+                    "expected unused definition refusal was not observed"
+                )),
+            }
+        } else {
+            installed_collector::retire(pair, &mut state, &home)
+        }
     } else {
         state.retire(&backend, &rt, &home)
     };
@@ -677,12 +711,14 @@ fn run(args: &[String]) -> Result<()> {
     let row = json!({"native_host":{"os":env::consts::OS,"architecture":env::consts::ARCH,
     "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
     "original_5257_helper_streams_a_b":streams,"replacement_5257_helper_streams_a_b":restart_helpers.then_some(successor_streams),"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
-        "original_exits":exit.as_ref().ok(),"teardown_error":exit.as_ref().err().map(|e|format!("{e:#}")),"meter_errors":meter_errors,"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,
+        "original_exits":(!unused_definition_refusal).then_some(exit.as_ref().ok()).flatten(),
+        "unused_preparation_recovery":unused_definition_refusal.then_some(exit.as_ref().ok()).flatten(),
+        "teardown_error":exit.as_ref().err().map(|e|format!("{e:#}")),"meter_errors":meter_errors,"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,
     "whole_wall_ns":begin.elapsed().as_nanos() as u64,
     "installed_collector":collector_mode.then_some(collector_limits).flatten().map(|(memory,disk,resident,tenant)|json!({
         "per_start_memory_ceiling_bytes":memory,"per_start_disk_ceiling_bytes":disk,
         "host_resident_ceiling_bytes":resident,"tenant_process_address_space_bytes":tenant,
-        "requested_guest_memory_bytes":512u64<<20,
+        "requested_guest_memory_bytes":if unused_definition_refusal {256u64<<20} else {512u64<<20},
         "initial_resources":collector_before,
         "before_stop_resources":collector_before_stop.as_ref().and_then(|r|r.as_ref().ok()),
         "before_stop_resource_error":collector_before_stop.as_ref().and_then(|r|r.as_ref().err()).map(|e|format!("{e:#}")),
@@ -766,12 +802,37 @@ fn main() -> Result<()> {
 mod tests {
     use super::run;
 
+    #[test]
+    fn unused_definition_refusal_requires_collector_before_opening_inputs() {
+        let args = ["--unused-definition-refusal"].map(str::to_owned);
+        let error = run(&args).expect_err("unused refusal requires the installed caller");
+        assert!(error.to_string().contains("requires installed collector"));
+    }
+
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    #[test]
+    fn unused_definition_refusal_cannot_mix_with_helper_callback_retry() {
+        let args = [
+            "--installed-collector",
+            "--no-helper-callback-retry",
+            "--unused-definition-refusal",
+        ]
+        .map(str::to_owned);
+        let error = run(&args).expect_err("failure campaigns must stay separate");
+        assert!(error.to_string().contains("separate failure campaigns"));
+    }
+
     #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
     #[test]
     fn collector_rejects_series_before_opening_operator_inputs() {
         let args = ["--installed-collector", "--objects", "2"].map(str::to_owned);
         let error = run(&args).expect_err("collector series must refuse before setup");
-        assert!(error.to_string().contains("clean 257-byte profile"));
+        let expected = if cfg!(feature = "receipt-loss-qualification") {
+            "series and recovery are separate measurements"
+        } else {
+            "clean 257-byte profile"
+        };
+        assert!(error.to_string().contains(expected));
     }
 
     #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
@@ -798,10 +859,11 @@ mod tests {
     fn helper_restart_refuses_a_campaign_before_preparing_guests() {
         let args = ["--restart-helpers", "--sender-ordinals", "2"].map(str::to_owned);
         let error = run(&args).expect_err("multi-ordinal restart must refuse before setup");
-        assert!(
-            error
-                .to_string()
-                .contains("requires one Linux sender ordinal")
-        );
+        let expected = if cfg!(feature = "receipt-loss-qualification") {
+            "invalid ordinal campaign"
+        } else {
+            "requires one Linux sender ordinal"
+        };
+        assert!(error.to_string().contains(expected));
     }
 }

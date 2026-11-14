@@ -1,5 +1,5 @@
 //! Run a bounded campaign on the same originally admitted A and B.
-use super::{A, B, fixture, verify_return, workload::Call};
+use super::{A, B, fixture, ordinal_fixture, verify_return, workload::Call};
 use anyhow::{Context, Result, ensure};
 use mvm_contract::protocol::mailbox::MailboxJournalDirectionV1;
 use mvm_core::mailbox::sender_ordinal::{SenderOrdinalV1, SenderSettlementV1};
@@ -143,7 +143,7 @@ fn one(
         b["role"] == "received_and_acknowledged" && b["message_id"] == id,
         "missing B signed ACK"
     );
-    let expected = fixture::ordinal_frame(n).context("ordinal outside fixture range")?;
+    let expected = ordinal_fixture::ordinal_frame(n).context("ordinal outside fixture range")?;
     let hex = b
         .as_object_mut()
         .context("missing destination result")?
