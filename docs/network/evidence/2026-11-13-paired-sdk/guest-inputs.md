@@ -20,3 +20,9 @@ The successful command used Cargo 1.97.1 `zigbuild --release --locked --offline`
 Original build, lock-resolution and static-validation records remain in private Linux directory `paired-0941-468661.ra3f9xwc`. Runtime preparation through the existing source-runtime builder is the next separate step. A contributor-built runtime is distinct from the signed official rc.3 candidate used by the earlier FlowMux witness. No current-source paired guest, recovery, WAN, sustained-session, fleet or FIPS acceptance is claimed here.
 
 [Machine-readable build attempts, CPU/time, source identities and static-check hashes](guest-inputs.json) include the failed preparations and final successful command separately. These are build costs; no send-only, application-transfer or energy timing is inferred.
+
+## Main-source lock verification
+
+Before merge, the same guest inputs were checked against the actual SpiralCore main tree `2ec1d65ac3a43aa13d458c3b2ac98b3ae10a8354`. The initial 0941 lock required an update because main does not yet contain that development snapshot's transfer-crate dependency edges. That refusal is retained; the initial static executable results above are not relabelled as main-source builds.
+
+Cargo's offline resolution generated main-source guest lock SHA-256 `3ba5d669084e928a090ef74005476620cfc51cd1a0ab7219624cfd503b4b22ef`, again preserving all 192 original registry identities. Full locked/offline Linux-musl metadata then passed. This branch carries that main-source lock. Main-source static compilation and native execution remain separate gates; compilation is next after the bounded runtime build releases its resources.
