@@ -14,19 +14,18 @@ The correction selects `None` for the basic arbitrary-message-ID mode and preser
 
 All commands used Rust 1.97.1, the locked offline graph and the shared Linux target. The source verifier matched **38 host-input entries** against the published SpiralCore source; this is not a claim that every file in both repositories was requalified by this harness run.
 
-| Target | Actual result | Complete command wall |
-| --- | --- | ---: |
-| Basic paired, image and preparation executables | Build exit 0 | 9.32 s |
-| Basic paired component tests | 21 passed, 0 failed or ignored | 8.91 s |
-| Ordinal paired component tests | 22 passed, 0 failed or ignored | 2.12 s |
-| Legacy own-mailbox meter tests | 5 passed, 0 failed or ignored | 0.74 s |
-| All-features paired target check | Exit 0 | 0.73 s |
-| All-features paired target Clippy, `-D warnings` | Exit 0 | 0.62 s |
-| Enclosing bounded runner | Exit 0 | 22.482 s service runtime |
+| Target | Actual result | Complete command wall | User + system CPU |
+| --- | --- | ---: | ---: |
+| Basic paired, image and preparation executables | Build exit 0 | 9.32 s | 11.33 + 1.57 s |
+| Basic paired component tests | 21 passed, 0 failed or ignored | 8.91 s | 9.70 + 1.06 s |
+| Ordinal paired component tests | 22 passed, 0 failed or ignored | 2.12 s | 2.11 + 0.61 s |
+| Legacy own-mailbox meter tests | 5 passed, 0 failed or ignored | 0.74 s | 0.71 + 0.25 s |
+| All-features paired target check | Exit 0 | 0.73 s | 0.39 + 0.11 s |
+| All-features paired target Clippy, `-D warnings` | Exit 0 | 0.62 s | 0.47 + 0.11 s |
 
 Commands were `cargo +1.97.1 build --locked --offline --features paired-journal-qualification --bin paired-journal --bin image --bin prepare`, the three corresponding `cargo test` invocations with `--test-threads=1`, and `cargo check` / `cargo clippy` with `--all-features --bin paired-journal`. Clippy included `-- -D warnings`. Cargo JSON output was enabled for the build to retain executable provenance. The [machine-readable receipt](qualification.json) pins every stage's log, stderr and time record.
 
-These are per-target reported counts, with overlapping shared parser tests. The 0.24 s / 0.25 s / 0.00 s test-runner times exclude compilation; the table uses complete command time. The service's total CPU was 28.494 s and peak memory 1.3 GiB as reported by systemd. Resource limits were two CPU cores, 6 GiB memory and 1,500 seconds. These are qualification costs, not application transfer timings or energy measurements.
+These are per-target reported counts, with overlapping shared parser tests. The 0.24 s / 0.25 s / 0.00 s test-runner times exclude compilation; the table uses complete command time. The enclosing runner also exited 0. Resource limits were two CPU cores, 6 GiB memory and 1,500 seconds. These are qualification costs, not application transfer timings or energy measurements.
 
 Three pre-existing Cargo unused-patch warnings remain. Basic-profile normal compilation also reports three pre-existing unused items in feature-specific research helpers. The strict success is specifically the **all-features paired target**; it does not establish warning-free compilation of every feature combination or every binary.
 
