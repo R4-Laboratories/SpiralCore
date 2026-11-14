@@ -1,0 +1,20 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/duplex-reply-progress/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 3.40s
+     Running tests/ordered_stream.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/ordered_stream-968eb388705fd406)
+
+running 1 test
+ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=42649286 original_gate_us=240000000 setup_wall_us=24913 setup_process_cpu_us=Some(1279) process_cpu_to_snapshot_us=Some(3771787) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=Some(6528) hwm_kib=Some(6528)
+test four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention ... ok
+
+successes:
+
+---- four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention stdout ----
+ORDERED_STORAGE_ROOT temp=/var/tmp/sc-direct-flowmux.iptmjZre/duplex-reply-progress/tmp
+ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=24913 lifecycle_wall_us=42653418 cpu_process_before=Some((0, 0)) cpu_process_setup=Some((0, 0)) cpu_process_after=Some((219, 157)) lifecycle_process_cpu_us=Some(3775914) cpu_ticks_per_second=Some(100) rss_before_kib=Some(3616) rss_prepared_kib=Some(5512) process_hwm_kib=Some(6592) core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)
+
+
+successes:
+    four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 42.65s
+
