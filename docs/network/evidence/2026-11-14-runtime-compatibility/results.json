@@ -1,0 +1,114 @@
+{
+  "source": "9394d74f26d13424afeaade1ace9ece0f7a29dd8",
+  "files": 4673,
+  "bytes": 64833785,
+  "source_manifest_sha256": "0b86a392256148f708fd9baa7c7682001c0d15b14ec0892c8b2fcdba0f8e76be",
+  "mismatches": [],
+  "logs": {
+    "runtime-compat-assembly.log": {
+      "bytes": 2726,
+      "sha256": "e4bd7013331b7a6f7ebfddae1ca33ece68e4a7faefcce1e1d4c18a29eacd5892"
+    },
+    "runtime-compat-core.log": {
+      "bytes": 1026,
+      "sha256": "9f435e3cbd8695a82b161a675cb66057ec52ccf075a7d29b32c914dce1dd08da"
+    },
+    "runtime-compat-fixture-key-red.log": {
+      "bytes": 2609,
+      "sha256": "5921c3eb75c779a566fd7d9a910cbdf155384e3801357668e54cd1a88c840ceb"
+    },
+    "runtime-compat-gated.log": {
+      "bytes": 21430,
+      "sha256": "d370cfe98264456f83f6aa4c6d1925df026f7c5a4ae418f121348ee60517a1e7"
+    },
+    "runtime-compat-gpu-present.log": {
+      "bytes": 998,
+      "sha256": "283fe32fbaa1bf641dd0e022367e068b9beadcef5257357ff0b338001f96d1ec"
+    },
+    "runtime-compat-inherited_baseline_reader_is_preserved_but_new_extensions_require_rekey.log": {
+      "bytes": 437,
+      "sha256": "40ca76020acfc2aa5c2ffc84304f132306c09f7a1b357f7020f3e943c3f87ca2"
+    },
+    "runtime-compat-original_selected_reader_is_the_boot_written_to_its_single_cold_drive.log": {
+      "bytes": 435,
+      "sha256": "a20c7e334458fc452c9706f0344b849220fbfc68bd427cd9e8d71a3676e97bbe"
+    },
+    "runtime-compat-runtime.log": {
+      "bytes": 845,
+      "sha256": "0a61312ada106f9f580820fd6879df500583678e69f6c3bd5d33665e5fab11fc"
+    },
+    "runtime-compat-source.log": {
+      "bytes": 7221,
+      "sha256": "6c472b592c1dea7701c40169a0784d7097030aa2f613d8561fd397ef6d64b8eb"
+    },
+    "runtime-compat-unsupported_mailbox_profile_refuses_before_any_spawner_call.log": {
+      "bytes": 415,
+      "sha256": "a30454b750573917f0d37a41f5255025bf208bd17056bb5205929e07ef758400"
+    },
+    "runtime-compat-workspace-clippy2.log": {
+      "bytes": 3531,
+      "sha256": "d17736051656d82e18448155d2965215201eb665fcbfb2a2e76ef64f589763e8"
+    },
+    "runtime-compat-workspace-clippy3.log": {
+      "bytes": 2651,
+      "sha256": "852ccd4f8fb6d88a9137ca57f32b3d6db929816a8af4c22b1bd14e84312582aa"
+    },
+    "runtime-compat-workspace-tests.log": {
+      "bytes": 1256735,
+      "sha256": "a732c5d2bbfad02918f7b4f6190d2b0f9be9a68d241365a4ce12e5a30a7f3ea0"
+    },
+    "runtime-compat-workspace-tests2.log": {
+      "bytes": 1969792,
+      "sha256": "9f955f1bec96ff08549b81908e285f667499c6d462fa2a384ae805121cc2374e"
+    },
+    "runtime-compat-workspace-tests3.log": {
+      "bytes": 1970346,
+      "sha256": "506b81ee69c40a2a036516e9495b4093958789b483e2bd6bb5a78987dd5a9361"
+    }
+  },
+  "schema_version": 1,
+  "status": "host implementation qualified; unsigned guest producer running; signed runtime and native delivery open",
+  "issue": 268,
+  "upstream_base": "50b1a239b75855150fa7fc2fd185b202c733ccdd",
+  "contributor_branch": "https://github.com/Casey-allard/mvm/tree/fix/spiralcore-runtime-compatibility-20261114",
+  "checks": [
+    {
+      "command": "cargo +1.97.1 clippy --locked --offline --workspace --all-targets -- -D warnings",
+      "result": "pass",
+      "source": "9394d74f26d13424afeaade1ace9ece0f7a29dd8"
+    },
+    {
+      "command": "cargo +1.97.1 test --locked --offline --workspace",
+      "environment": {
+        "MVM_GPU_TEST_EXPECT_NATIVE": "1",
+        "RUST_TEST_THREADS": "2"
+      },
+      "result": "pass",
+      "source": "9394d74f26d13424afeaade1ace9ece0f7a29dd8"
+    },
+    {
+      "command": "just check::gated",
+      "result": "pass",
+      "source": "92f86e6c1fdddfa86d8285fd1e2dab3526a2295e",
+      "subsequent_change": "Only collapsible-if style correction in the inherited-reader guard."
+    }
+  ],
+  "focused_checks": {
+    "passed": 86,
+    "existing_ignored": 1
+  },
+  "retained_failures": [
+    "Invalid Ed25519 test fixture corrected using a real verifying key; production authority unchanged.",
+    "Driverless GPU probe expectation failed on Wick with its installed NVIDIA GPU; documented native expectation then passed.",
+    "Strict Clippy rejected a nested if; fixed without suppression.",
+    "Fork guest-bins workflow dispatch returned HTTP 422 Actions disabled; no run created."
+  ],
+  "open_acceptance": [
+    "Canonical accepted signed guest runtime with declared capabilities.",
+    "Actual feature-specific guest and paired delivery/recovery using that runtime.",
+    "Snapshot rekey for the new extensions; legacy baseline warm behavior preserved.",
+    "Platform, WAN, capacity and security qualification."
+  ],
+  "transfer_measurements": null,
+  "transfer_measurement_reason": "No new accepted-runtime application transfer was executed in this checkpoint."
+}
