@@ -192,6 +192,26 @@ pub(crate) struct OrderedEviction {
     pub(crate) disk: u64,
 }
 
+fn write_publication_header(
+    output: &mut impl Write,
+    offer: &Offer,
+    manifest: Option<Id>,
+) -> Result<()> {
+    let mut header = [0u8; 81];
+    header[..8].copy_from_slice(b"SCPUB001");
+    header[8..16].copy_from_slice(&offer.len.to_le_bytes());
+    header[16..48].copy_from_slice(&offer.object);
+    header[48] = u8::from(manifest.is_some());
+    let len = if let Some(id) = manifest {
+        header[49..].copy_from_slice(&id);
+        81
+    } else {
+        49
+    };
+    output.write_all(&header[..len])?;
+    Ok(())
+}
+
 impl<A: Authority> Endpoint<A> {
     pub(crate) fn authorize(&self, context: &Context) -> Result<()> {
         self.authority.authorize(context)
@@ -1253,13 +1273,7 @@ impl<A: Authority> Endpoint<A> {
             let diagnostic_create_write = commit_timing::span(commit_timing::Stage::CreateWrite);
             let mut f = storage::create_new_file(&tmp)?;
             created = true;
-            f.write_all(b"SCPUB001")?;
-            f.write_all(&offer.len.to_le_bytes())?;
-            f.write_all(&offer.object)?;
-            f.write_all(&[u8::from(mid.is_some())])?;
-            if let Some(m) = mid {
-                f.write_all(&m)?;
-            }
+            write_publication_header(&mut f, offer, mid)?;
             f.write_all(bytes)?;
             #[cfg(feature = "witness-timing")]
             drop(diagnostic_create_write);
