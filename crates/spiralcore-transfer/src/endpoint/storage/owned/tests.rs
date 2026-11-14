@@ -414,6 +414,50 @@ fn checked_walk_holds_four_transient_fds_at_file_verification() {
     assert_eq!(at_check, Some(4));
     assert_eq!(count(), baseline);
     println!("OWNED_SCAN_FD_DELTA=4");
+    drop(store);
+    let stores: Vec<_> = (0..2).map(|_| {
+        let store = Store::new();
+        store.claim();
+        let dir = store.lease.open_namespace(ns, true).unwrap();
+        drop(super::create_new_at(dir.as_fd(), "entry".as_ref()).unwrap());
+        drop(dir);
+        store
+    }).collect();
+    let persistent = count();
+    let wall = std::time::Instant::now();
+    let cpu = cpu_time::ProcessTime::now();
+    let (peak, results, ready) = std::thread::scope(|scope| {
+        let (arrived, arrivals) = std::sync::mpsc::sync_channel(2);
+        let mut releases = Vec::new();
+        let mut workers = Vec::new();
+        for store in &stores {
+            let arrived = arrived.clone();
+            let (release, released) = std::sync::mpsc::sync_channel(1);
+            releases.push(release);
+            workers.push(scope.spawn(move || store.lease.visit(None, |parent, dir, name| {
+                if parent == Some(ns) && name == "entry" {
+                    let file = super::open_read_at(dir, name)?;
+                    arrived.send(()).map_err(|_| Error::Storage)?;
+                    // This bounded fixture gate holds the actual four transient FDs.
+                    let outcome = released.recv_timeout(std::time::Duration::from_secs(5));
+                    drop(file);
+                    outcome.map_err(|_| Error::Storage)?;
+                }
+                Ok(())
+            })));
+        }
+        let ready = (0..2).all(|_| arrivals.recv_timeout(std::time::Duration::from_secs(5)).is_ok());
+        let peak = count();
+        // Always release and collect both original threads before assertions.
+        for release in releases { let _ = release.send(()); }
+        let results: Vec<_> = workers.into_iter().map(|worker| worker.join()).collect();
+        (peak, results, ready)
+    });
+    assert!(ready);
+    assert!(results.into_iter().all(|result| matches!(result, Ok(Ok(_)))));
+    assert_eq!(peak - persistent, 8);
+    assert_eq!(count(), persistent);
+    println!("OWNED_CONCURRENT_SCAN stores=2 transient_fds=8 persistent_fds={persistent} observed_fds={peak} observer_fds=1 wall_ns={} process_cpu_ns={}", wall.elapsed().as_nanos(), cpu.elapsed().as_nanos());
 }
 
 fn two_publications_and_stage(root: &std::path::Path) -> (PathBuf, Vec<PathBuf>) {

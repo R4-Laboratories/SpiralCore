@@ -162,7 +162,11 @@ impl QualifiedEndpointProfile {
         Ok(ManagedClaim {
             host_plaintext_bytes: self.limits.host_plaintext_bytes,
             host_codec_bytes: self.limits.host_codec_bytes,
-            codec_store_file_descriptors: StoreFunding::for_serial_endpoint()?.file_descriptors,
+            codec_store_file_descriptors: if self.profile == 2 {
+                StoreFunding::for_serial_endpoint()?.file_descriptors
+            } else {
+                0
+            },
             host_carrier_bytes: self.limits.host_carrier_bytes,
             host_metadata_bytes: self.limits.host_metadata_bytes,
             host_stack_bytes: self.limits.host_stack_bytes,

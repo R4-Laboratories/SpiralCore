@@ -38,7 +38,13 @@ fn collector_partition_draws_shared_credit_without_a_codec_store() {
 }
 
 fn probe_collector_partition() {
-    let (_home, mut supervisor, mut provider) = endpoint_tests::fixture();
+    let config = crate::installed_supervisor::InstalledConfig::two_endpoint_witness_profile();
+    let (mut host, mut tenant) = config.managed_limits();
+    host.codec_store_file_descriptors = 0;
+    tenant.codec_store_file_descriptors = 0;
+    let config = crate::installed_supervisor::InstalledConfig::with_funded_pair_limits(host, tenant)
+        .unwrap();
+    let (_home, mut supervisor, mut provider) = endpoint_tests::fixture_with_config(config);
     provider
         .configure_telemetry_only(&supervisor, limits())
         .unwrap();
@@ -68,6 +74,7 @@ fn probe_collector_partition() {
     );
     assert_eq!(after.staging_disk_bytes, before.staging_disk_bytes);
     assert_eq!(after.host_codec_bytes, before.host_codec_bytes);
+    assert_eq!(after.codec_store_file_descriptors, before.codec_store_file_descriptors);
     assert_eq!(after.host_carrier_bytes, before.host_carrier_bytes);
     assert_eq!(after.host_plaintext_bytes, before.host_plaintext_bytes);
     assert!(

@@ -9,11 +9,15 @@ pub(super) fn fixture() -> (
     InstalledSupervisor,
     InstalledParentProvider,
 ) {
+    fixture_with_config(crate::installed_supervisor::InstalledConfig::canonical_native_profile())
+}
+pub(super) fn fixture_with_config(
+    config: crate::installed_supervisor::InstalledConfig,
+) -> (tempfile::TempDir, InstalledSupervisor, InstalledParentProvider) {
     let home = tempfile::Builder::new()
         .permissions(fs::Permissions::from_mode(0o700))
         .tempdir()
         .unwrap();
-    let config = crate::installed_supervisor::InstalledConfig::canonical_native_profile();
     let owner = crate::installed_owner::InstallationOwner::initialize(
         &home.path().join("installation"),
         crate::installed_owner::InstallationKey {

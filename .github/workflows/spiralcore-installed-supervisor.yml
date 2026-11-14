@@ -127,6 +127,18 @@ jobs:
             -- --test-threads=1 2>&1 | tee endpoint-evidence/tests.txt
           grep -E '^test result: ok\. 8 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/tests.txt
           shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after.txt
+      - name: Collector-only profile keeps zero codec-store debit
+        if: runner.os == 'Linux'
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/canonical-endpoint-target
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --lib installed_parent::collector_tests:: \
+            -- --test-threads=1 2>&1 | tee endpoint-evidence/collector-tests.txt
+          grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/collector-tests.txt
+          shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after-collector.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
