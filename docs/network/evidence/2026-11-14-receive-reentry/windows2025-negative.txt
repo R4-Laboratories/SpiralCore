@@ -1,0 +1,26 @@
+2026-11-14T18:35:42.5387638Z [36;1mif ($code -ne 0 -or $log -notmatch 'test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;') { throw 'Native reply-progress controls failed' }[0m
+2026-11-14T18:37:05.1955591Z test duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+2026-11-14T18:37:05.1991139Z     duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation
+2026-11-14T18:37:05.2000360Z test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.07s
+2026-11-14T18:37:05.2238932Z [36;1m$summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')[0m
+2026-11-14T18:38:13.8769141Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 52 filtered out; finished in 5.43s
+2026-11-14T18:38:14.4581357Z [36;1m$summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')[0m
+2026-11-14T18:38:18.6312280Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.92s
+2026-11-14T18:38:21.1439545Z [36;1mif ($code -ne 0 -or $log -notmatch 'ORDERED_SINGLE_EVICTION bytes=16384 full_reads=1' -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored;') { throw 'Original single-victim read, expected charge and preflight controls failed' }[0m
+2026-11-14T18:38:21.6407546Z [36;1mif ($code -ne 0 -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored;' -or [regex]::Matches($log, '(?m)^ORDERED_COMMIT_EXACT ').Count -ne 3) {[0m
+2026-11-14T18:38:34.1747296Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 54 filtered out; finished in 12.16s
+2026-11-14T18:38:51.5772906Z [36;1m$summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')[0m
+2026-11-14T18:41:33.2775178Z test duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+2026-11-14T18:41:33.2825222Z     duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation
+2026-11-14T18:41:33.2833291Z test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.67s
+2026-11-14T18:41:33.2842583Z test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.96s
+2026-11-14T18:41:33.2845875Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-14T18:41:33.2847542Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+2026-11-14T18:41:33.2852570Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+2026-11-14T18:41:33.2856774Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.79s
+2026-11-14T18:41:33.2858940Z ORDERED_WITNESS success=false witness_timing=false snapshot=concurrent wall_us=110993144 original_gate_us=240000000 setup_wall_us=68960 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(40406250) progress_write_ack_left_right_read_left_right=[2737, 2743, 2743, 2737] actual_tls=[TlsCounters { received: 3610200, sent: 3610061 }, TlsCounters { received: 3610061, sent: 3610200 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None
+2026-11-14T18:41:33.2861122Z ORDERED_FIRST_FAILURE role=1 operation=write local=Some(FailureObservation { site: ReceiverDelivery, reason: Timeout, frame_kind: Some(3) })
+2026-11-14T18:41:33.2861656Z ORDERED_FIRST_FAILURE role=0 operation=write local=Some(FailureObservation { site: SenderReplyWait, reason: Io(UnexpectedEof), frame_kind: Some(3) })
+2026-11-14T18:41:33.2865003Z block2737 read: flowmux mapping: Closed; ORDERED_FIRST_FAILURE role=1 operation=read local=Some(FailureObservation { site: ReceiverDelivery, reason: Timeout, frame_kind: Some(3) })
+2026-11-14T18:41:33.2866655Z block2743 read: flowmux mapping: Closed; ORDERED_FIRST_FAILURE role=0 operation=read local=Some(FailureObservation { site: SenderReplyWait, reason: Io(UnexpectedEof), frame_kind: Some(3) })
+2026-11-14T18:41:33.2867600Z test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 113.21s
