@@ -1,4 +1,14 @@
-# Current-source paired guest role inputs
+# Paired guest role inputs
+
+The latest main-source roles use SpiralCore `2ec1d65a` and contributor MVM `468661f4`. Both passed static validation and independent exact readback from their sealed images. The paired transfer substage recovered 257 bytes exactly; complete retirement remains failed. [Native results and lifecycle failure](native-retirement.md).
+
+| Latest main-source role | Bytes | SHA-256 |
+| --- | ---: | --- |
+| Source | 1,950,736 | `9151e2e2a289b217971796cff665ed8f18d49e6356a93d19760dcc3b088dd820` |
+| Destination | 1,950,736 | `90a435a51e3e73fe24d0d961bc230a6efd81ebb145c390692224c835f698e64c` |
+
+## Initial development-snapshot build
+
 
 The two static x86-64 Linux musl role executables now build against contributor MVM `468661f47e01d0f59c6f1da4e35a968ceccb3ad2`. The role source and SpiralCore path dependencies were staged from `0941abea5e1122bd594477931288eda9d7c556c7`; the host driver retains its separately qualified source identity from the [paired SDK report](README.md).
 
