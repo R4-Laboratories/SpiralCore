@@ -71,6 +71,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Toolchain install failed' }
           rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object flowmux-evidence/rustc.txt
           if ($LASTEXITCODE -ne 0 -or !(Select-String -Path flowmux-evidence/rustc.txt -SimpleMatch -Pattern "host: $env:NATIVE_TARGET")) { throw 'Toolchain is not native' }
+      - name: Execute native decoder and reply-progress controls
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-mvm-flowmux/Cargo.toml', '--lib')
+          $log = (& cargo @cargoArgs -- --show-output --test-threads=1 --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/reply-progress-controls.txt
+          $log | Write-Output
+          if ($code -ne 0 -or $log -notmatch 'test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;') { throw 'Native reply-progress controls failed' }
       - name: Execute checked metadata guards and native paired comparison
         run: |
           $ErrorActionPreference = 'Stop'

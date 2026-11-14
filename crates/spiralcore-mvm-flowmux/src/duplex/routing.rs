@@ -6,12 +6,24 @@ use std::sync::{Condvar, TryLockError, mpsc::TryRecvError};
 pub(crate) struct Wake {
     notified: Mutex<bool>,
     changed: Condvar,
+    #[cfg(test)]
+    enrollments: AtomicUsize,
 }
 impl Wake {
     pub(crate) fn notify(&self) {
         let mut notified = self.notified.lock().unwrap_or_else(|e| e.into_inner());
         *notified = true;
         self.changed.notify_all();
+    }
+    #[cfg(test)]
+    fn wait_for_enrollment(&self) {
+        let until = Instant::now() + Duration::from_secs(2);
+        let mut gate = self.notified.lock().unwrap();
+        while self.enrollments.load(Ordering::Acquire) == 0 {
+            let remaining = until.saturating_duration_since(Instant::now());
+            assert!(!remaining.is_zero(), "original waiter must enroll");
+            gate = self.changed.wait_timeout(gate, remaining).unwrap().0;
+        }
     }
     fn arm(&self) -> Result<()> {
         *lock(&self.notified)? = false;
@@ -25,6 +37,11 @@ impl Wake {
                 drop(notified);
                 cancellation.check()?;
                 return Err(Error::Closed);
+            }
+            #[cfg(test)]
+            {
+                self.enrollments.fetch_add(1, Ordering::Release);
+                self.changed.notify_all();
             }
             notified = self
                 .changed
@@ -273,6 +290,33 @@ mod tests {
                 .wait_reply(&pair.responses, until, &pair.cancellation),
             Err(Error::Cancelled)
         ));
+    }
+    #[test]
+    fn cancellation_wakes_enrolled_waiter_behind_deferred_input() {
+        let mut pair = pair();
+        let _inbound = pair.routing.inbound();
+        send(&mut pair, 1);
+        assert!(
+            !pair
+                .routing
+                .assist(Instant::now() + Duration::from_secs(1))
+                .unwrap()
+        );
+        let routing = pair.routing.clone();
+        let cancellation = pair.cancellation.clone();
+        std::thread::scope(|scope| {
+            let responses = pair.responses;
+            let waiter = scope.spawn(move || {
+                routing.wait_reply(
+                    &responses,
+                    Instant::now() + Duration::from_secs(2),
+                    &cancellation,
+                )
+            });
+            pair.routing.wake.wait_for_enrollment();
+            pair.cancellation.cancel();
+            assert!(matches!(waiter.join().unwrap(), Err(Error::Cancelled)));
+        });
     }
     #[test]
     fn prefix_resume_tightens_deadline_and_frame_thirty_three_is_refused() {
