@@ -1,0 +1,58 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/duplex-reply-progress/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 5.34s
+     Running unittests src/lib.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_mvm_flowmux-09e29dbf0963c078)
+
+running 50 tests
+test duplex::reply_progress_tests::held_inbound_turn_paces_the_next_send_without_publishing_it ... ok
+test duplex::reply_progress_tests::independent_reply_progresses_while_original_inbound_authority_is_held ... ok
+test duplex::routing::tests::assisting_failure_preserves_independent_worker_refusal_and_cannot_make_success ... ok
+test duplex::routing::tests::cancellation_wakes_enrolled_waiter_behind_deferred_input ... ok
+test duplex::routing::tests::deferred_request_is_charged_once_and_cancellation_wakes_original_waiter ... ok
+test duplex::routing::tests::fixed_control_state_fits_explicit_metadata_reservation ... ok
+test duplex::routing::tests::independent_worker_io_is_preserved_even_with_identical_assisting_io ... ok
+test duplex::routing::tests::original_owner_collects_decode_failure_published_after_socket_cancellation ... ok
+test duplex::routing::tests::paced_wait_preserves_deadline_and_cancel_and_generation_cannot_wrap ... ok
+test duplex::routing::tests::prefix_resume_tightens_deadline_and_frame_thirty_three_is_refused ... ok
+test duplex::routing::tests::reply_correlation_and_single_response_slot_remain_mandatory ... ok
+test duplex::routing::tests::retirement_removes_original_rx_even_with_caller_reference ... ok
+test duplex::routing::tests::worker_reentry_refuses_before_polling_a_cancelled_decoder ... ok
+test duplex::routing::tests::worker_reentry_returns_the_owned_assisting_io_context ... ok
+test duplex::tests::artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+test duplex::tests::cancellation_wakes_original_tx_owner_and_conflicting_registration_is_refused ... ok
+test duplex::tests::combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+test duplex::tests::correct_object_published_from_wrong_direction_is_rejected ... ok
+test duplex::tests::full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... ok
+test duplex::tests::guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+test duplex::tests::oversized_application_offer_is_refused_before_shared_core_dispatch ... ok
+test duplex::tests::revocation_after_commit_and_retention_snapshot_exposes_no_application_bytes ... ok
+test duplex::tests::same_role_on_both_peers_refuses_cross_direction_application_identity ... ok
+test duplex::tests::simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+test duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+test lock_wait::tests::cancellation_before_enrollment_cannot_strand_a_waiter ... ok
+test lock_wait::tests::cancellation_wakes_waiter_while_original_owner_remains_held ... ok
+test lock_wait::tests::drop_does_not_panic_when_gate_has_been_poisoned ... ok
+test lock_wait::tests::original_data_poison_is_never_recovered_and_drop_notifies_during_unwind ... ok
+test lock_wait::tests::original_deadline_refuses_held_and_later_uncontended_data ... ok
+test lock_wait::tests::poisoned_gate_refuses_even_uncontended_data ... ok
+test lock_wait::tests::release_before_enrollment_is_observed_without_a_second_notification ... ok
+test lock_wait::tests::release_without_progress_wakes_an_enrolled_waiter ... ok
+test lock_wait::tests::spurious_notification_preserves_predicate_and_multiple_waiters ... ok
+test tcp::fin_tests::fatal_cancel_after_fin_write_counts_bytes_without_completing_the_record ... ok
+test tcp::fin_tests::peer_closes_after_receiving_final_application_fin_before_sender_returns ... ok
+test tcp::prefix_tests::deferred_controls_do_not_read_the_following_frame ... ok
+test tcp::prefix_tests::deferred_prefix_cannot_refresh_deadline_or_bypass_cancellation ... ok
+test tcp::prefix_tests::fragmented_prefix_resumes_once_with_exact_counters_and_sequence ... ok
+test tcp::prefix_tests::truncated_prefix_and_short_inner_frame_refuse_without_committing_record ... ok
+test tcp::timeout_tests::closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline ... ok
+test tls::readiness_tests::competing_peek_readers_preserve_exact_bytes_and_shutdown_wakes_wait_entry ... ok
+test tls::readiness_tests::failed_wake_post_propagates_and_fences_waiting_carrier_without_stuck_flag ... ok
+test tls::readiness_tests::notification_storm_posts_once_until_observed_wake_then_can_post_again ... ok
+test tls::readiness_tests::peek_rechecks_buffered_tls_after_socket_and_internal_hints_are_consumed ... ok
+test tls::readiness_tests::peek_releases_poller_before_waiting_for_session_and_owner_stop_wakes_it ... ok
+test tls::readiness_tests::readiness_one_owner_and_internal_notification_wake_parked_poll ... ok
+test tls::readiness_tests::readiness_preserves_preexisting_wake_data_eof_and_original_deadline ... ok
+test tls::readiness_tests::stopped_waiter_observes_fence_without_socket_or_waker_event ... ok
+test tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile ... ok
+
+test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.57s
+

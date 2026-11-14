@@ -1,0 +1,20 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/duplex-reply-progress/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 5.22s
+     Running unittests src/lib.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_mvm_flowmux-09e29dbf0963c078)
+
+running 1 test
+test duplex::reply_progress_tests::independent_reply_progresses_while_original_inbound_authority_is_held ... REPLY_PROGRESS inbound_gate_entered=true before=Some(Counters { wire_bytes: 222, payload_bytes: 102, records: 1, compressed_records: 0 }) after=Some(Counters { wire_bytes: 408, payload_bytes: 168, records: 2, compressed_records: 0 }) local_success=false original_workers_collected=true left_collection=Ok(()) right_collection=Ok(())
+
+thread 'duplex::reply_progress_tests::independent_reply_progresses_while_original_inbound_authority_is_held' (182271) panicked at src/duplex/reply_progress_tests.rs:178:9:
+independent reply must progress while inbound is held: Err(Timeout)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    duplex::reply_progress_tests::independent_reply_progresses_while_original_inbound_authority_is_held
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.52s
+
+error: test failed, to rerun pass `--lib`

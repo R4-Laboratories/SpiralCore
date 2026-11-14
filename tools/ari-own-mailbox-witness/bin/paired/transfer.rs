@@ -13,10 +13,28 @@ pub fn one(
     helper: &mut OriginalJournalSourceHost,
     ordinal: Option<usize>,
 ) -> Result<Value> {
+    one_with_calls(
+        raw,
+        direction,
+        commitment,
+        helper,
+        ordinal,
+        &mut workload::ProcessCalls,
+    )
+}
+
+pub fn one_with_calls(
+    raw: &[u8],
+    direction: &MailboxJournalDirectionV1,
+    commitment: [u8; 32],
+    helper: &mut OriginalJournalSourceHost,
+    ordinal: Option<usize>,
+    calls: &mut dyn workload::CallBoundary,
+) -> Result<Value> {
     let transaction = Instant::now();
     let until = transaction + Duration::from_secs(50);
     let source_request = json!({"frame_hex":hex::encode(raw),"recipient":hex::encode(direction.address.recipient.as_bytes()),"direction":hex::encode(commitment)});
-    let mut source_call = workload::Call::start(A, &source_request, until)?;
+    let mut source_call = calls.start(A, &source_request, until)?;
     let mut staged = None;
     let mut relay = None;
     let mut first_receipt: Option<receipt_retry::FirstReceipt<MailboxEnvelope>> = None;
@@ -107,7 +125,7 @@ pub fn one(
     if ordinal.is_some() {
         b_request["ephemeral_readback"] = json!(true);
     }
-    let mut bcall = workload::Call::start(B, &b_request, until)?;
+    let mut bcall = calls.start(B, &b_request, until)?;
     let mut destination = loop {
         if let Some(v) = bcall.completed()? {
             break v;
@@ -166,7 +184,7 @@ pub fn one(
     );
     let mut row = json!({
         "guest_a":source,"guest_b":destination,"sealed_a_to_b_bytes":counts.sealed_to_destination,"signed_b_to_a_bytes":counts.reply_to_source,
-        "sdk_call_application_io":{"source_request":source_call.input_bytes,"source_reply":source_call.output_bytes,"destination_request":bcall.input_bytes,"destination_reply_with_readback":bcall.output_bytes},
+        "sdk_call_application_io":{"source_request":source_call.input_bytes(),"source_reply":source_call.output_bytes(),"destination_request":bcall.input_bytes(),"destination_reply_with_readback":bcall.output_bytes()},
         "through_observed_v2_ns":verified_ns,"through_verified_destination_call_ns":transaction.elapsed().as_nanos() as u64,
         "receipt_recovery":recovery, "verified_body_bytes":bytes.len(),"receipt_outcome":"AcceptedLocalDurable","guest_a_observed_receipt":null,"wan_bytes":null});
     if let Some(control) = control {

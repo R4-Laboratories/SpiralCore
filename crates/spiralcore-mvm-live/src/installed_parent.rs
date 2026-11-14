@@ -46,6 +46,9 @@ pub struct ObservedFlowMuxGuest {
 #[path = "installed_parent/startup_bounds.rs"]
 mod startup_bounds;
 
+#[cfg(all(test, target_os = "linux"))]
+#[path = "installed_parent/collector_tests.rs"]
+mod collector_tests;
 #[cfg(test)]
 #[path = "installed_parent/config_tests.rs"]
 mod config_tests;
@@ -102,6 +105,7 @@ struct GrantLifecycle {
     admitted_plan: Option<String>,
     admitted_session: Option<[u8; 32]>,
     selected_network: Option<mvm_vmm::host::network_endpoint_spawn::AdmittedNetworkPlan>,
+    selected_collector: Option<String>,
     registration: Option<Arc<host_agent::RegistrationBinding>>,
     startup: Option<startup::StartupWorkspace>,
     endpoint: EndpointIssuance,
@@ -701,6 +705,33 @@ impl InstalledParentProvider {
                     )
                 })
                 .transpose()?;
+        let selected_collector = if self
+            .shared
+            .endpoint_inputs
+            .as_ref()
+            .is_some_and(endpoint::EndpointOwnerInputs::selects_collector)
+        {
+            let cfg = config.ok_or_else(|| anyhow!("collector requires original launch config"))?;
+            ensure!(
+                cfg.network_policy == mvm_core::policy::network_policy::NetworkPolicy::deny_all()
+                    && plan.secrets.is_empty()
+                    && plan.ingress.is_empty(),
+                "collector profile does not serve requested network, secrets or ingress"
+            );
+            // Reuse the canonical signed-policy projection. This books only
+            // resources; the runtime independently admits its selected service.
+            Some(
+                mvm_vmm::host::network_endpoint_spawn::AdmittedNetworkPlan::from_plan(
+                    plan,
+                    &cfg.name,
+                    &cfg.network_policy,
+                )?
+                .plan_id
+                .0,
+            )
+        } else {
+            None
+        };
         if let Some(config) = config {
             ensure!(
                 config.name == binding.vm_name
@@ -751,6 +782,7 @@ impl InstalledParentProvider {
             nonce: plan.nonce.clone(),
         });
         lifecycle.selected_network = selected_network;
+        lifecycle.selected_collector = selected_collector;
         lifecycle.registration = registration;
         drop(lifecycle);
         grant.check_current(binding)?;

@@ -8,11 +8,63 @@ use std::{
     process::{Child, Command, Stdio},
     time::{Duration, Instant},
 };
-const CALL_OUTPUT_LIMIT: usize = if cfg!(feature = "large-object-fixture") {
+pub(super) const CALL_OUTPUT_LIMIT: usize = if cfg!(feature = "large-object-fixture") {
     2 * BODY_LEN + 4096
 } else {
     4096
 };
+
+/// The data operation shares one call boundary across ordinary process dispatch
+/// and the opt-in retained native owner. Neither boundary handles mailbox data.
+pub trait CallBoundary {
+    fn start(
+        &mut self,
+        name: &str,
+        payload: &Value,
+        until: Instant,
+    ) -> Result<Box<dyn PendingCall>>;
+}
+
+pub trait PendingCall {
+    fn completed(&mut self) -> Result<Option<Value>>;
+    fn wait(&mut self) -> Result<Value>;
+    fn input_bytes(&self) -> usize;
+    fn output_bytes(&self) -> usize;
+}
+
+pub struct ProcessCalls;
+impl CallBoundary for ProcessCalls {
+    fn start(
+        &mut self,
+        name: &str,
+        payload: &Value,
+        until: Instant,
+    ) -> Result<Box<dyn PendingCall>> {
+        Ok(Box::new(Call::start(name, payload, until)?))
+    }
+}
+
+#[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+pub struct CompletedCall {
+    pub value: Option<Value>,
+    pub input_bytes: usize,
+    pub output_bytes: usize,
+}
+#[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+impl PendingCall for CompletedCall {
+    fn completed(&mut self) -> Result<Option<Value>> {
+        Ok(self.value.take())
+    }
+    fn wait(&mut self) -> Result<Value> {
+        self.value.take().context("owned call already observed")
+    }
+    fn input_bytes(&self) -> usize {
+        self.input_bytes
+    }
+    fn output_bytes(&self) -> usize {
+        self.output_bytes
+    }
+}
 pub fn dispatch(name: &str) -> Result<()> {
     ensure!([super::A, super::B].contains(&name), "invalid workload");
     let mut input = Vec::new();
@@ -170,6 +222,20 @@ impl Drop for Call {
             let _ = self.child.kill();
             let _ = self.child.wait();
         }
+    }
+}
+impl PendingCall for Call {
+    fn completed(&mut self) -> Result<Option<Value>> {
+        Call::completed(self)
+    }
+    fn wait(&mut self) -> Result<Value> {
+        Call::wait(self)
+    }
+    fn input_bytes(&self) -> usize {
+        self.input_bytes
+    }
+    fn output_bytes(&self) -> usize {
+        self.output_bytes
     }
 }
 

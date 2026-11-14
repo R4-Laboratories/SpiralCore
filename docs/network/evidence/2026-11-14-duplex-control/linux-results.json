@@ -1,0 +1,45 @@
+{
+  "classification": "Linux paired local diagnostic controls; no MVM or WAN or optimization acceptance",
+  "source": "13ff238d2ff013bd33012a8140003f058c48f20b",
+  "results": [
+    {
+      "mode": "simultaneous",
+      "exit_code": 0,
+      "passed": true,
+      "executable_sha256": "b662c83ed00962c3cc6035895813c5b76b6e05be741df0c4fe734d7da9b7c476",
+      "reported_bulk_line": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=28394 lifecycle_wall_us=45826980 cpu_process_before=Some((0, 0)) cpu_process_setup=Some((0, 0)) cpu_process_after=Some((266, 215)) lifecycle_process_cpu_us=Some(4821633) cpu_ticks_per_second=Some(100) rss_before_kib=Some(3648) rss_prepared_kib=Some(5612) process_hwm_kib=Some(6796) core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+      "raw_log_sha256": "56faa649543c185b222779d361cac2457a92157237a6d7915e5be4a18f093ecb",
+      "raw_time_sha256": "a8f13fc09cfa7ab4a0924f1eccefe505ffe66ce2c17e6bb60f797062aaf41523",
+      "exact_bytes_each_direction": 67108864,
+      "actual_tls_a_sent": 5395050,
+      "actual_tls_a_received": 5395015,
+      "setup_wall_us": 28394,
+      "lifecycle_wall_us": 45826980,
+      "lifecycle_process_cpu_us": 4821633,
+      "process_hwm_kib": 6796
+    },
+    {
+      "mode": "alternating",
+      "exit_code": 0,
+      "passed": true,
+      "executable_sha256": "b662c83ed00962c3cc6035895813c5b76b6e05be741df0c4fe734d7da9b7c476",
+      "reported_bulk_line": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=20890 lifecycle_wall_us=58385668 cpu_process_before=Some((0, 0)) cpu_process_setup=Some((0, 0)) cpu_process_after=Some((295, 221)) lifecycle_process_cpu_us=Some(5165151) cpu_ticks_per_second=Some(100) rss_before_kib=Some(3600) rss_prepared_kib=Some(5708) process_hwm_kib=Some(6876) core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+      "raw_log_sha256": "722a1c7e468a02ee243cb3fce4ad890f11e70f57458af847090435b2a56f5881",
+      "raw_time_sha256": "1a683b114171196264bdb9504d9383e7b98d986ec4c582cd29fe82a1501336cd",
+      "exact_bytes_each_direction": 67108864,
+      "actual_tls_a_sent": 5395050,
+      "actual_tls_a_received": 5395015,
+      "setup_wall_us": 20890,
+      "lifecycle_wall_us": 58385668,
+      "lifecycle_process_cpu_us": 5165151,
+      "process_hwm_kib": 6876
+    }
+  ],
+  "validation": {
+    "strict_release_clippy": "PASS",
+    "same_executable_both_modes": "PASS",
+    "fixture_gates": "4096 distinct 16384-byte blocks each direction; exact bytes; 2s operation / 240s workload / 270s enrollment; existing retention limits",
+    "windows_run": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43612000640",
+    "windows_status_at_publication": "IN_PROGRESS; no Windows outcome inferred"
+  }
+}

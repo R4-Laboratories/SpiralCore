@@ -1,0 +1,80 @@
+{
+  "qualified_files": {
+    "crates/mvm-client/src/launch/detached.rs": "17c89da4b6b8bf71212e5d06e0cc54a75cab5c7cffc013205a5a01b5f0641d91",
+    "crates/mvm-client/src/launch/grants_report.rs": "de270b7b40d48a7bc46caf76896709e60544793eafe600365688a6bafedce39c",
+    "crates/mvm-client/src/launch/machine_start.rs": "9c3c94c7aa0438342498b288dd8c68f03d5264428971813a91d4e1f1f4a90b5c",
+    "crates/mvm-client/src/launch/persistent.rs": "ff672b352a962de3328cd9911a72081be0c410c877392418c43fdd2063a95e0a",
+    "crates/mvm-client/src/launch/persistent/journal.rs": "22ac5de4a0497a26cadff2f8989df5186330fceadc6f0b94e0ef57fa982d0139",
+    "crates/mvm-client/src/launch/persistent/journal/owned.rs": "4117bc4d54c65a70acc99c8150e0363ee9801263c214fb5be9e5e6acf3c7f856",
+    "crates/mvm-client/tests/persistent_journal_host_lifetime.rs": "172eeac5a06aa45ce9f4404bf20138f65254cc409d7383bd79b87ec60c107c7a",
+    "crates/mvm-hostd/src/mailbox_process/original_journal/stop.rs": "c4beba480e2b0653df65e3a906df27e6f5cc0570008279756b34c9f34c24905e",
+    "crates/mvm-hostd/src/mailbox_process/original_journal/stop/owned_stop_tests.rs": "4e80402de4fe24994122cd01417563f1d579d852bc695efc6af8405c5f0a55bc",
+    "crates/mvm-hostd/src/plan_admission.rs": "fab00a6c6f0e06116a075caaeca8f7d63f58d649fd28418541a1c892513b212d",
+    "crates/mvm-hostd/src/plan_admission/installed_journal.rs": "5a22295d54e566d65443630846b366db92e0799cacdc99880883cf4ec3acd77f",
+    "specs/contracts/installed-collector-lifetime.md": "579f4a1f9e7cd7b1184dfef8230755d0644334391311d510b6150195aa1c1f68"
+  },
+  "logs": {
+    "sdk-owned-api-final.log": {
+      "sha256": "156b77f5487a96d018408e4cb9febe32790dded4112ef1daea9fa64126a37f14",
+      "bytes": 725,
+      "results": [
+        "    Finished `test` profile [unoptimized] target(s) in 22.43s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    "sdk-owned-journal-final.log": {
+      "sha256": "a88470bdd5ed76529c710230f646b90a67bfe9547c8baf46c9e2ba5032b15a9a",
+      "bytes": 1022,
+      "results": [
+        "    Finished `test` profile [unoptimized] target(s) in 15.14s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 1480 filtered out; finished in 0.10s"
+      ]
+    },
+    "sdk-owned-stop-final.log": {
+      "sha256": "17997aae4678bb49cf7608d0f8154d014b45eebd30c5001b17b270b7c510e19b",
+      "bytes": 4683,
+      "results": [
+        "    Finished `test` profile [unoptimized] target(s) in 28.94s",
+        "test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 2480 filtered out; finished in 1.78s"
+      ]
+    },
+    "sdk-owned-clippy-final.log": {
+      "sha256": "6ee25926ebfe06051cd554d8fa503f83eb0dd948e540965362632a7e6cffda06",
+      "bytes": 277,
+      "results": [
+        "    Finished `dev` profile [unoptimized] target(s) in 26.27s"
+      ]
+    },
+    "sdk-owned-arc-unit.log": {
+      "sha256": "55c75c717b13cf42d9a62f5414b9150b91ab3a878f4fcbc7805c6a242dec57fa",
+      "bytes": 1830,
+      "results": [
+        "    Finished `test` profile [unoptimized] target(s) in 15.08s",
+        "test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 1482 filtered out; finished in 0.00s",
+        "error: test failed, to rerun pass `-p mvm-client --lib`"
+      ]
+    },
+    "sdk-owned-clippy3.log": {
+      "sha256": "8dcab4a8baf71e35e3eb11b037ce3a2a11454a054a48fe03e669f210b04d4cf1",
+      "bytes": 4242,
+      "results": [
+        "error: the `Err`-variant returned from this function is very large",
+        "error: could not compile `mvm-client` (lib) due to 1 previous error"
+      ]
+    }
+  },
+  "revision": "0835ef0ad63c107cf876805da9aa739fd333716e",
+  "scope": "Linux API/refusal/journal component tests and strict all-targets Clippy; native owned collector pair not executed",
+  "validation_unit": {
+    "wall_seconds": 94.962,
+    "cpu_seconds": 133.028,
+    "memory_peak_gib_reported": 3.6,
+    "note": "Build and test costs, not transfer CPU"
+  },
+  "retained_failures": [
+    "Initial AnyBackend Clone compilation failed; actual Arc<LocalBackend> now retained",
+    "Mock status fixture incorrectly expected missing VM to error; now verifies actual empty backend list",
+    "Initial hostd command selected a nonexistent test-support feature; corrected command used existing package features",
+    "Clippy rejected oversized error; private unused preparation boxed without lint suppression"
+  ]
+}

@@ -10,6 +10,7 @@ object-ack-loss-qualification = ["installed-object-pair"]
 large-object-fixture = []
 paired-journal-qualification = []
 installed-object-pair = ["paired-journal-qualification", "large-object-fixture"]
+installed-collector-pair = ["paired-journal-qualification", "dep:spiralcore-mvm-live"]
 receipt-loss-qualification = ["paired-journal-qualification"]
 [dependencies]
 libc = "=0.2.186"
@@ -24,9 +25,11 @@ mvm-build = { path = "../source/crates/mvm-build" }
 mvm-core = { path = "../source/crates/mvm-core", features = ["host-state"] }
 mvm-hostd = { path = "../source/crates/mvm-hostd" }
 mvm-contract = { path = "../source/crates/mvm-contract", features = ["protocol"] }
+tempfile = "3"
 hex = "0.4"
 rand = "0.10"
 ed25519-dalek = "3"
+spiralcore-mvm-live = { path = "../../crates/spiralcore-mvm-live", features = ["canonical-host"], optional = true }
 [dev-dependencies]
 mvm-core = { path = "../source/crates/mvm-core", features = ["test-support"] }
 
@@ -37,6 +40,21 @@ gix = { path = "../source/third_party/gix-0.87.1" }
 gix-object = { path = "../source/third_party/gix-object-0.64.1" }
 notify = { path = "../source/third_party/notify-8.2.0" }
 io-extras = { path = "../source/third_party/io-extras-0.19.0" }
+
+# The optional shared parent must use the same MVM type/authority family as
+# this standalone witness. Cargo does not inherit dependency-root patches.
+[patch."https://github.com/Casey-allard/mvm"]
+mvm-agentd = { path = "../source/crates/mvm-agentd" }
+mvm-backends = { path = "../source/crates/mvm-backends" }
+mvm-build = { path = "../source/crates/mvm-build" }
+mvm-client = { path = "../source/crates/mvm-client" }
+mvm-contract = { path = "../source/crates/mvm-contract" }
+mvm-core = { path = "../source/crates/mvm-core" }
+mvm-fs = { path = "../source/crates/mvm-fs" }
+mvm-hostd = { path = "../source/crates/mvm-hostd" }
+mvm-net = { path = "../source/crates/mvm-net" }
+mvm-runtime = { path = "../source/crates/mvm-runtime" }
+mvm-vmm = { path = "../source/crates/mvm-vmm" }
 [[bin]]
 name = "prepare"
 path = "bin/prepare.rs"
@@ -51,3 +69,34 @@ path = "bin/launch.rs"
 name = "paired-journal"
 path = "bin/paired/main.rs"
 required-features = ["paired-journal-qualification"]
+
+[[bin]]
+name = "collector-fixture"
+path = "bin/collector_fixture.rs"
+
+[[bin]]
+name = "collector-install"
+path = "bin/collector_install.rs"
+
+# Standalone tools do not inherit MVM's workspace profiles. Preserve the same
+# optimized admission and cryptographic callers used by the canonical host.
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
+
+[profile.dev.package.mvm-core]
+opt-level = 2
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.ring]
+opt-level = 3
+[profile.dev.package.zeroize]
+opt-level = 3
+[profile.dev.package.curve25519-dalek]
+opt-level = 3
+[profile.dev.package.ed25519-dalek]
+opt-level = 3

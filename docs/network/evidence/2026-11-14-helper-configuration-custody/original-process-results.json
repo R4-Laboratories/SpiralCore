@@ -1,0 +1,72 @@
+{
+  "source": "639cdc36ed1a29a85a37e2606075894776747d54",
+  "classification": "Linux original-helper component fixtures; real mailbox helper processes; fixture guest streams and VMM-lifetime processes; zero booted MVMs",
+  "command": "cargo test --locked --offline -p mvm-hostd --features durable-guest-io-witness mailbox_process::original_journal::paired_process_tests --lib -- --ignored --nocapture --test-threads=1",
+  "passed_top_level_cases": 3,
+  "fixture_runtime_seconds": 0.95,
+  "compilation_inclusive_command": {
+    "wall_seconds": 27.54,
+    "user_cpu_seconds": 32.06,
+    "system_cpu_seconds": 2.2,
+    "max_rss_kib": 2577612
+  },
+  "per_transaction_process_cpu": null,
+  "wan": null,
+  "zstd_comparison": null,
+  "cases": [
+    {
+      "name": "lost_guest_reply",
+      "exact_plaintext_bytes": 257,
+      "relay_sealed_to_b_bytes_per_attempt": 5534,
+      "relay_b_reply_to_a_bytes_per_attempt": 1136,
+      "recorded_relay_turns": [
+        0,
+        1,
+        2
+      ],
+      "first_connection_through_b_ack_ns": 57697110,
+      "a_unassisted_exit_ns": 207747211,
+      "b_unassisted_exit_ns": 10345594,
+      "b_reader_guest_to_helper_receive_bytes": 362,
+      "b_reader_helper_to_guest_receive_bytes": 5693,
+      "b_reader_guest_to_helper_ack_bytes": 2217,
+      "b_reader_helper_to_guest_ack_bytes": 2221
+    },
+    {
+      "name": "helper_reconnect",
+      "exact_plaintext_bytes": 257,
+      "relay_sealed_to_b_bytes_per_attempt": 5513,
+      "relay_b_reply_to_a_bytes_per_attempt": 1139,
+      "recorded_relay_turns": [
+        0,
+        1,
+        2
+      ],
+      "first_connection_through_b_ack_ns": 81900514,
+      "a_unassisted_exit_ns": 222934545,
+      "b_unassisted_exit_ns": 15342701,
+      "both_predecessors_collected": true,
+      "current_revocation_refused": true,
+      "b_reader_guest_to_helper_receive_bytes": 348,
+      "b_reader_helper_to_guest_receive_bytes": 5717,
+      "b_reader_guest_to_helper_ack_bytes": 2217,
+      "b_reader_helper_to_guest_ack_bytes": 2221
+    },
+    {
+      "name": "signed_ordinal_settlement",
+      "exact_plaintext_bytes": 257,
+      "relay_written_bytes": 5550,
+      "relay_read_bytes": 1145,
+      "contiguous_retired": 1,
+      "a_unassisted_exit_ns": 222874792,
+      "b_unassisted_exit_ns": 10330796,
+      "first_connection_through_b_ack_ns": null,
+      "b_reader_guest_to_helper_receive_bytes": 349,
+      "b_reader_helper_to_guest_receive_bytes": 5690,
+      "b_reader_guest_to_helper_ack_bytes": 2222,
+      "b_reader_helper_to_guest_ack_bytes": 2226
+    }
+  ],
+  "meter_scope": "original relay user-space I/O and separate B guest-reader I/O; no IP/kernel overhead or total-WAN-byte measurement; no codec-saving comparison",
+  "final_workspace_status": "PASS: final serial workspace suite and doctests, native-driver expectation set; earlier failures retained"
+}

@@ -129,6 +129,7 @@ struct Control {
     socket: Carrier,
     stopped: AtomicBool,
     tx_wake: Mutex<Option<Weak<crate::lock_wait::Gate>>>,
+    reply_wake: Mutex<Option<Weak<crate::duplex::routing::Wake>>>,
 }
 impl Control {
     fn observe(&self, site: FailureSite, kind: Option<u8>, error: &Error) {
@@ -157,6 +158,15 @@ impl Control {
             .as_ref()
             .and_then(Weak::upgrade);
         if let Some(wake) = wake {
+            wake.notify();
+        }
+        if let Some(wake) = self
+            .reply_wake
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .and_then(Weak::upgrade)
+        {
             wake.notify();
         }
         let _ = self.socket.shutdown(Shutdown::Both);
@@ -222,6 +232,18 @@ impl Cancellation {
         drop(binding);
         if stopped {
             gate.notify();
+        }
+        Ok(())
+    }
+    pub(crate) fn bind_reply_wake(&self, wake: &Arc<crate::duplex::routing::Wake>) -> Result<()> {
+        let mut binding = self.control.reply_wake.lock().map_err(|_| Error::Worker)?;
+        if binding.is_some() {
+            return Err(Error::Protocol);
+        }
+        *binding = Some(Arc::downgrade(wake));
+        drop(binding);
+        if self.stopped().load(Ordering::Acquire) {
+            wake.notify();
         }
         Ok(())
     }
@@ -322,6 +344,7 @@ impl TcpMapping {
             socket: socket.try_clone()?,
             stopped: AtomicBool::new(false),
             tx_wake: Mutex::new(None),
+            reply_wake: Mutex::new(None),
         });
         let cap = if object {
             spiralcore_transfer::MAX_FRAME
@@ -345,6 +368,7 @@ impl TcpMapping {
                 control: control.clone(),
             },
             rx: Rx {
+                object_prefix: None,
                 role: remote_role,
                 socket: read,
                 binding,
@@ -548,7 +572,16 @@ impl Drop for Tx {
     }
 }
 
+struct ObjectPrefix {
+    kind: u8,
+    len: usize,
+    bytes: [u8; 9],
+    used: usize,
+    until: Instant,
+}
+
 pub struct Rx {
+    object_prefix: Option<ObjectPrefix>,
     socket: Carrier,
     pub(crate) role: u8,
     binding: Binding,
@@ -642,6 +675,9 @@ impl Rx {
     }
     pub(crate) fn poll_input(&mut self) -> Result<bool> {
         self.control.check()?;
+        if self.object_prefix.is_some() {
+            return Ok(true);
+        }
         self.socket
             .set_read_timeout(Some(Duration::from_millis(20)))?;
         match self.socket.peek(&mut [0; 1]) {
@@ -651,12 +687,18 @@ impl Rx {
             Err(error) => Err(error.into()),
         }
     }
-    pub(crate) fn receive_object(&mut self, until: Instant) -> Result<crate::ObjectRecord> {
+    pub(crate) fn object_deadline(&self) -> Option<Instant> {
+        self.object_prefix.as_ref().map(|prefix| prefix.until)
+    }
+    /// Retain only a fixed prefix of the next record; never cross a control record.
+    pub(crate) fn prepare_object(&mut self, until: Instant) -> Result<bool> {
         if self.ended {
             return Err(Error::Closed);
         }
+        if self.object_prefix.is_some() {
+            return Err(Error::Protocol);
+        }
         let result = (|| {
-            let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
             let mut header = [0; HEADER_LEN];
             self.fill(&mut header, until)?;
             let (kind, len) = record::parse_header(
@@ -667,9 +709,46 @@ impl Rx {
                 record::OBJECT,
                 self.role,
             )?;
+            let mut bytes = [0; 9];
+            let used = if matches!(kind, record::OBJECT | record::ARTIFACT) {
+                len.min(bytes.len())
+            } else {
+                0
+            };
+            self.fill(&mut bytes[..used], until)?;
+            let reply = used == 9 && matches!(bytes[8], 101..=105 | 127);
+            self.object_prefix = Some(ObjectPrefix {
+                kind,
+                len,
+                bytes,
+                used,
+                until,
+            });
+            Ok(reply)
+        })();
+        if let Err(error) = &result {
+            self.control.observe(FailureSite::ObjectRead, None, error);
+            self.control.stop();
+        }
+        result
+    }
+    pub(crate) fn receive_object(&mut self, until: Instant) -> Result<crate::ObjectRecord> {
+        if self.ended {
+            return Err(Error::Closed);
+        }
+        let result = (|| {
+            let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
+            if self.object_prefix.is_none() {
+                self.prepare_object(until)?;
+            }
+            let prefix = self.object_prefix.take().ok_or(Error::Protocol)?;
+            let until = until.min(prefix.until);
+            poll_budget(until)?;
+            let (kind, len) = (prefix.kind, prefix.len);
             let frame = if matches!(kind, record::OBJECT | record::ARTIFACT) {
                 let mut body = vec![0; len];
-                self.fill(&mut body, until)?;
+                body[..prefix.used].copy_from_slice(&prefix.bytes[..prefix.used]);
+                self.fill(&mut body[prefix.used..], until)?;
                 let frame = spiralcore_transfer::protocol::Frame::decode(&body)?;
                 poll_budget(until)?;
                 self.counters.complete(body.len(), false)?;
@@ -749,3 +828,6 @@ mod timeout_tests {
 
 #[cfg(test)]
 mod fin_tests;
+
+#[cfg(test)]
+mod prefix_tests;

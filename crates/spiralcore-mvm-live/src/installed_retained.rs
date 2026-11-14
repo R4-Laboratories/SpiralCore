@@ -316,6 +316,7 @@ impl RetainedTelemetryInventory {
         receipt: &mvm_client::EndpointRetirement,
         guard: &Arc<dyn mvm_core::host_lifetime::EndpointPartitionGuard>,
         projection: &mvm_core::host_lifetime::EndpointPartitionProjection,
+        original_vm: &ManagedReservation,
     ) -> Result<()> {
         use sha2::{Digest, Sha256};
         use std::os::unix::fs::FileExt;
@@ -329,14 +330,26 @@ impl RetainedTelemetryInventory {
             return Err(SupervisorError::Profile);
         }
         self.metadata.check_retained_identity()?;
+        // Capture only a clone of the actual reserved credit, then release the
+        // inventory lock before consulting its original resource ledger.
+        let retained = {
+            let mut entries = self.entries.lock().map_err(|_| SupervisorError::State)?;
+            Self::entry(&mut entries, scope)?.reservation.clone()
+        };
+        if original_vm.serial() != projection.binding.grant_serial {
+            return Err(SupervisorError::Profile);
+        }
+        retained.check_same_tenant(original_vm)?;
         let mut entries = self.entries.lock().map_err(|_| SupervisorError::State)?;
         let entry = Self::entry(&mut entries, scope)?;
+        let store_matches = match (projection.profile, projection.store.as_ref()) {
+            (1, None) => true,
+            (2, Some(store)) => store.tenant == entry.tenant,
+            _ => false,
+        };
         if entry.session != projection.session
             || entry.parent != projection.binding.grant_serial
-            || projection
-                .store
-                .as_ref()
-                .is_none_or(|store| store.tenant != entry.tenant)
+            || !store_matches
         {
             return Err(SupervisorError::Profile);
         }

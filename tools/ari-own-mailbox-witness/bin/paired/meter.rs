@@ -1,4 +1,4 @@
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
 use serde_json::{Value, json};
 use std::{
     fs::{File, OpenOptions},
@@ -40,16 +40,26 @@ impl OriginalMeter {
         let file = OpenOptions::new()
             .read(true)
             .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
-            .open(&path)?;
-        let m = file.metadata()?;
-        let path_meta = std::fs::symlink_metadata(&path)?;
+            .open(&path)
+            .with_context(|| format!("open original {name} helper meter {}", path.display()))?;
+        let m = file.metadata().with_context(|| {
+            format!(
+                "stat opened original {name} helper meter {}",
+                path.display()
+            )
+        })?;
+        let path_meta = std::fs::symlink_metadata(&path).with_context(|| {
+            format!("stat original {name} helper meter path {}", path.display())
+        })?;
+        let base_meta = std::fs::metadata(&base)
+            .with_context(|| format!("stat original {name} state directory {}", base.display()))?;
         ensure!(
             m.is_file()
                 && m.nlink() == 1
                 && m.mode() & 0o777 == 0o600
                 && path_meta.dev() == m.dev()
                 && path_meta.ino() == m.ino()
-                && m.uid() == std::fs::metadata(&base)?.uid(),
+                && m.uid() == base_meta.uid(),
             "unverified original helper meter"
         );
         Ok(Self {

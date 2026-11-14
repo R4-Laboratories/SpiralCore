@@ -2,7 +2,7 @@
 
 The installed Linux x86-64/Firecracker runner passed on MVM contributor host `468661f47e01d0f59c6f1da4e35a968ceccb3ad2`, tree `ceea5a0d51e37394f256f365e7abb66ef66566cb`, and SpiralCore `0941abea5e1122bd594477931288eda9d7c556c7`. The workload sent and recovered **5,804 exact application bytes each way**, including zero bytes. The unauthorized destination received zero application bytes. The original SDK retired the guest and the tenant owner stopped its workers.
 
-This is **one single-host functional and lifecycle trial**, without a matched zstd control. It is not WAN, sustained-session, capacity, FIPS/CUI or energy qualification. The [earlier rc.2 trial](native-signed-fixture.md) retains its separate source and measurements. [Current host workspace](mvm-workspace-qualification.md) · [Authenticated rc.3 assets](runtime-rc3-preflight.md)
+This is **one single-host functional and lifecycle trial**, without a matched zstd control. It is not WAN, sustained-session, capacity, FIPS/CUI or energy qualification. The [earlier rc.2 trial](https://github.com/R4-Laboratories/SpiralCore/blob/515b87bb9d26b8e4dca1036bef6437a191cf7aaa/docs/network/evidence/2026-11-13-owned-unix-store/native-signed-fixture.md) retains its separate source and measurements. [Current host workspace](mvm-workspace-qualification.md) · [Authenticated rc.3 assets](https://github.com/R4-Laboratories/SpiralCore/blob/515b87bb9d26b8e4dca1036bef6437a191cf7aaa/docs/network/evidence/2026-11-13-owned-unix-store/runtime-rc3-preflight.md)
 
 ## Signed export and execution
 

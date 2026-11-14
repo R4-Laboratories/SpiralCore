@@ -23,7 +23,7 @@ pub(super) fn run(input: &Value, until: Instant) -> Result<Value> {
     let request = match mode {
         "stage" if fields == 3 => ApplicationSenderRequestV1::Stage {
             handle,
-            payload: super::fixture::ordinal_frame(ordinal).context("fixture bounds")?,
+            payload: super::ordinal_fixture::ordinal_frame(ordinal).context("fixture bounds")?,
         },
         "status" if fields == 3 => ApplicationSenderRequestV1::Status { handle },
         "settle" if fields == 4 => ApplicationSenderRequestV1::Settle {

@@ -1,5 +1,20 @@
 # Native MVM own-mailbox witness
 
+## Current contributor SDK qualification
+
+The current harness targets contributor MVM `468661f47e01d0f59c6f1da4e35a968ceccb3ad2`. Place that source at the adjacent `source` path described below. Its journal direction always carries an optional settlement profile: the ordinary paired mode selects `None`, while an explicitly selected ordinal campaign retains `OrdinalV1`. A basic paired run does not qualify sustained ordinal operation.
+
+Check both configurations against that same pinned source:
+
+```sh
+cargo test --locked --manifest-path "$work/prep/Cargo.toml" --features paired-journal-qualification --bin paired-journal
+cargo test --locked --manifest-path "$work/prep/Cargo.toml" --features sender-ordinal-v1 --bin paired-journal
+```
+
+The older commands and measurements below describe historical trials with their original MVM versions. Reproduce those trials with the immutable SpiralCore source linked by their reports; do not mix the current harness and lockfile with the old MVM pin.
+
+## Historical own-mailbox trial
+
 These three Rust executables exercised a signed production mailbox and a normal warm-worker Call in an isolated Linux/x86-64 Firecracker guest. The checked-in 313-byte input was generated with the project's ordinary `Frame::encode` and independently decoded. The `fixtures` directory also contains its original 257-byte body, including the trailing zero. [Results and exact executable digests](../../docs/network/evidence/2026-11-12-paired-mailbox/own-mailbox-native/results.json)
 
 Use a Linux KVM host with working user systemd, a verified Firecracker 1.17.0 executable, the upstream runtime build dependencies (including Rust's musl targets, cargo-zigbuild, Zig and ext4/verity tools), and the normal MVM guest-build toolchain. Run as the non-root VM owner with authorized KVM device access. Use a fresh mode-0700 work directory and private MVM home on every attempt. Keep compiled artifacts outside the repository.

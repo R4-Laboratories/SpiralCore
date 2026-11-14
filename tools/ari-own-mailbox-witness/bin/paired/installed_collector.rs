@@ -1,0 +1,839 @@
+//! Original installed collector custody for the clean paired journal witness.
+//! Enrollment, transfer and byte meters remain in the existing paired modules.
+use super::*;
+use mvm_client::launch::persistent::journal::{
+    NoHelperRetirement, OwnedJournalStart, OwnedJournalStartFailure,
+};
+use mvm_core::{
+    host_lifetime::EndpointPartitionLimits,
+    vm_backend::{BackendKind, VmStartConfig},
+};
+use mvm_hostd::mailbox_process::original_journal::{
+    JournalOwner, JournalStartDisposition, JournalStopOutcome,
+};
+use spiralcore_mvm_live::{
+    installed_owner::{InstallationKey, InstallationOwner},
+    installed_parent::{
+        InstalledParentProvider, ParentLaunchOwner, PortableStartupQuote, TenantHelperLimits,
+    },
+    installed_resources::ManagedSnapshot,
+    installed_supervisor::{InstalledConfig, InstalledSupervisor},
+};
+use std::{io::Read, num::NonZeroU64};
+
+pub(super) const HOST_RESIDENT_BYTES: u64 = 3 << 30;
+pub(super) const START_MEMORY_BYTES: u64 = 1 << 30;
+pub(super) const START_DISK_BYTES: u64 = 1 << 30;
+pub(super) const STAGING_DISK_BYTES: u64 = 2400 << 20;
+pub(super) const TENANT_PROCESS_AS: u64 = 192 << 20;
+
+struct Role {
+    pin: mvm_core::plan::PlanArtifact,
+    archive: NonZeroU64,
+}
+
+pub struct Operator {
+    roles: [Role; 2],
+}
+
+impl Operator {
+    pub fn quote(&self, name: &str) -> Result<PortableStartupQuote> {
+        let role = &self.roles[index(name)?];
+        let additional = |ceiling: u64| {
+            ceiling
+                .checked_sub(role.archive.get())
+                .and_then(NonZeroU64::new)
+                .context("operator archive exceeds startup ceiling")
+        };
+        PortableStartupQuote::new(
+            role.pin.clone(),
+            role.archive,
+            additional(START_MEMORY_BYTES)?,
+            additional(START_DISK_BYTES)?,
+        )
+    }
+}
+
+/// Bounded private input; the canonical preparer authenticates the supplied pin.
+pub fn operator(home: &Path) -> Result<(CollectorPair, Operator)> {
+    const CAP: u64 = 256 << 10;
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(home.join("collector-operator.json"))?;
+    let meta = file.metadata()?;
+    mvm_core::private_fs::require_current_owner(&meta)?;
+    ensure!(
+        meta.is_file() && meta.nlink() == 1 && meta.mode() & 0o077 == 0 && meta.len() <= CAP,
+        "expected private bounded collector operator input"
+    );
+    let mut bytes = Vec::new();
+    file.take(CAP + 1).read_to_end(&mut bytes)?;
+    ensure!(
+        bytes.len() as u64 == meta.len(),
+        "collector operator length changed"
+    );
+    let mut value: Value = serde_json::from_slice(&bytes)?;
+    let object = value
+        .as_object_mut()
+        .context("collector operator must be an object")?;
+    let roles = object.remove("roles").context("operator roles missing")?;
+    let roles = roles.as_array().context("operator roles must be [A, B]")?;
+    ensure!(
+        roles.len() == 2,
+        "operator requires exactly two role bundles"
+    );
+    let parse = |value: &Value| -> Result<Role> {
+        let mut role = value.as_object().context("role must be an object")?.clone();
+        let parsed = Role {
+            pin: serde_json::from_value(role.remove("bundle_pin").context("bundle pin missing")?)?,
+            archive: NonZeroU64::new(
+                role.remove("decoded_archive_bytes")
+                    .and_then(|n| n.as_u64())
+                    .context("archive bytes missing")?,
+            )
+            .context("empty operator archive")?,
+        };
+        ensure!(role.is_empty(), "unknown collector role fields");
+        Ok(parsed)
+    };
+    let packet = Operator {
+        roles: [parse(&roles[0])?, parse(&roles[1])?],
+    };
+    ensure!(
+        packet.roles[0].pin.bundle_sha256 != packet.roles[1].pin.bundle_sha256,
+        "collector roles require distinct signed bundles"
+    );
+    ensure!(object.is_empty(), "unknown collector operator fields");
+    // Validate both quote ceilings before creating installation/tenant effects.
+    packet.quote(A)?;
+    packet.quote(B)?;
+    let (mut host, mut tenant) = InstalledConfig::two_endpoint_witness_profile().managed_limits();
+    host.host_resident_bytes = HOST_RESIDENT_BYTES;
+    tenant.host_resident_bytes = HOST_RESIDENT_BYTES;
+    host.staging_disk_bytes = STAGING_DISK_BYTES;
+    tenant.staging_disk_bytes = STAGING_DISK_BYTES;
+    let config = InstalledConfig::with_funded_pair_limits(host, tenant)?;
+    let partition = EndpointPartitionLimits {
+        host_plaintext_bytes: 0,
+        host_codec_bytes: 0,
+        host_carrier_bytes: 0,
+        host_metadata_bytes: 96 << 20,
+        host_stack_bytes: 24 << 20,
+        cache_disk_bytes: (8 << 20) + (32 << 10),
+        staging_disk_bytes: 0,
+        workers: 4,
+        max_streams: 1,
+    };
+    let helper = TenantHelperLimits {
+        process_address_space_bytes: NonZeroU64::new(TENANT_PROCESS_AS).unwrap(),
+        audit_chain_bytes: NonZeroU64::new(1 << 20).unwrap(),
+    };
+    Ok((CollectorPair::new(home, config, partition, helper)?, packet))
+}
+
+/// Try both original journal owners once; all attempted outcomes are synced.
+pub fn retire(pair: &mut CollectorPair, state: &mut State, home: &Path) -> Result<Value> {
+    enum Retired {
+        Helper(JournalStopOutcome),
+        NoHelper(NoHelperRetirement),
+        Unused,
+    }
+    let history = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(home.join("paired-collector-retirement.jsonl"));
+    let mut rows = Vec::new();
+    let mut errors = Vec::new();
+    let mut history = match history {
+        Ok(file) => Some(file),
+        Err(error) => {
+            errors.push(format!("opening retirement evidence: {error}"));
+            None
+        }
+    };
+    for (i, name) in [A, B].into_iter().enumerate() {
+        let until = Instant::now() + Duration::from_secs(20);
+        let result =
+            if !state.attempted[i] {
+                Err(anyhow::anyhow!(
+                    "original journal was not attempted; preserve definition"
+                ))
+            } else if pair.slots[i].unused.is_some() {
+                pair.cancel_unused(name).map(|()| Retired::Unused)
+            } else if pair.slots[i].failed.as_ref().is_some_and(|failed| {
+                failed.helper_disposition() == JournalStartDisposition::NoExec
+            }) {
+                pair.finish_without_helper(name, until)
+                    .map(Retired::NoHelper)
+            } else if pair.slots[i].failed.as_ref().is_some_and(|failed| {
+                failed.helper_disposition() == JournalStartDisposition::Uncertain
+            }) {
+                Err(anyhow::anyhow!(
+                    "original helper construction is uncertain; preserve custody"
+                ))
+            } else if i == 0 {
+                state
+                    .a
+                    .as_mut()
+                    .context("original source journal missing")
+                    .and_then(|owner| pair.stop(name, &mut JournalOwner::Source(owner), until))
+                    .map(Retired::Helper)
+            } else if let Some(owner) = &state.b {
+                match owner.lock() {
+                    Ok(mut held) => pair
+                        .stop(name, &mut JournalOwner::Destination(&mut held), until)
+                        .map(Retired::Helper),
+                    Err(_) => Err(anyhow::anyhow!("original destination journal poisoned")),
+                }
+            } else {
+                state
+                    .b_pending
+                    .as_mut()
+                    .context("original destination journal missing")
+                    .and_then(|owner| pair.stop(name, &mut JournalOwner::Destination(owner), until))
+                    .map(Retired::Helper)
+            };
+        let row = match result {
+            Ok(Retired::Unused) => json!({"name":name,"preparation_not_entered":true,
+                "workload_not_dispatched":true,"unused_parent_cancelled":true,
+                "runtime_state_removed":false,"definitions_removed":false}),
+            Ok(Retired::NoHelper(_proof)) => {
+                json!({"name":name,"helper_not_executed":true,"native_collected":true,
+                    "collector_parent_published":true,"runtime_state_removed":false,
+                    "no_helper_callback_retry_observed":pair.slots[i].no_helper_callback_retry_observed,
+                    "definitions_removed":false})
+            }
+            Ok(Retired::Helper(outcome)) => {
+                if outcome.assisted || !outcome.helper_status.success() {
+                    errors.push(format!(
+                        "{name}: assisted or unsuccessful original helper collection"
+                    ));
+                }
+                json!({"name":name,"collected":true,"assisted":outcome.assisted,
+                    "success":outcome.helper_status.success(),"exit_code":outcome.helper_status.code()})
+            }
+            Err(error) => {
+                errors.push(format!("{name}: {error:#}"));
+                json!({"name":name,"collected":false,"error":format!("{error:#}")})
+            }
+        };
+        // A recording error must not prevent the other owner being attempted.
+        if let Err(error) = (|| -> Result<()> {
+            let history = history
+                .as_mut()
+                .context("retirement evidence unavailable")?;
+            serde_json::to_writer(&mut *history, &row)?;
+            history.write_all(b"\n")?;
+            history.sync_all()?;
+            Ok(())
+        })() {
+            errors.push(format!("recording {name} retirement: {error:#}"));
+        }
+        rows.push(row);
+    }
+    ensure!(
+        errors.is_empty(),
+        "installed collector retirement: {}",
+        errors.join("; ")
+    );
+    drop(state.a.take());
+    drop(state.b_pending.take());
+    drop(state.b.take());
+    let retained = pair.close()?;
+    Ok(
+        json!({"original_helpers":rows,"retained_resources":retained,
+        "runtime_state_removed":false,"definitions_removed":false}),
+    )
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum Disposition {
+    #[default]
+    Fresh,
+    Attempted,
+    UnusedCancelled,
+    Retired,
+}
+impl Disposition {
+    fn complete(self) -> bool {
+        matches!(self, Self::UnusedCancelled | Self::Retired)
+    }
+    fn never_dispatched(self) -> bool {
+        matches!(self, Self::Fresh | Self::UnusedCancelled)
+    }
+}
+
+#[derive(Default)]
+struct Slot {
+    parent: Option<ParentLaunchOwner>,
+    started: Option<OwnedJournalStart>,
+    failed: Option<OwnedJournalStartFailure>,
+    unused: Option<mvm_client::UnusedHostLifetimePreparation>,
+    endpoint: Option<mvm_client::EndpointRetirement>,
+    endpoint_transferred: bool,
+    disposition: Disposition,
+    no_helper_callback_retry_injected: bool,
+    no_helper_callback_retry_observed: bool,
+    no_helper_parent_published: bool,
+}
+impl Slot {
+    fn permits_no_dispatch_close(&self) -> bool {
+        self.disposition.never_dispatched()
+            && self.parent.is_none()
+            && self.started.is_none()
+            && self.failed.is_none()
+            && self.unused.is_none()
+            && self.endpoint.is_none()
+            && !self.endpoint_transferred
+    }
+}
+
+/// One shared host/tenant ledger and one actual backend for both original names.
+/// The caller supplies funded ceilings and authenticated canonical-startup quotes.
+pub struct CollectorPair {
+    supervisor: Option<InstalledSupervisor>,
+    provider: Option<Arc<InstalledParentProvider>>,
+    backend: Option<Arc<LocalBackend>>,
+    slots: [Slot; 2],
+    no_helper_callback_retry: bool,
+    services_closed: bool,
+}
+
+fn index(name: &str) -> Result<usize> {
+    match name {
+        A => Ok(0),
+        B => Ok(1),
+        _ => anyhow::bail!("unexpected paired collector name"),
+    }
+}
+
+fn finish_parent(
+    parent: &mut ParentLaunchOwner,
+    endpoint: &mut Option<mvm_client::EndpointRetirement>,
+    endpoint_transferred: &mut bool,
+    receipt: &mut mvm_client::OwnedRetirement,
+) -> Result<()> {
+    if *endpoint_transferred {
+        parent.retry_endpoint_cleanup()?;
+    } else {
+        if endpoint.is_none() {
+            *endpoint = receipt.take_endpoint_retirement();
+        }
+        // Keep any returned receipt even if storage publication fails.
+        let had_receipt = endpoint.is_some();
+        let result = parent.retire_endpoint(endpoint);
+        *endpoint_transferred = had_receipt && endpoint.is_none();
+        result?;
+    }
+    parent.finish_pending_retired(receipt)
+}
+
+impl CollectorPair {
+    pub fn new(
+        home: &Path,
+        config: InstalledConfig,
+        partition: EndpointPartitionLimits,
+        helper: TenantHelperLimits,
+    ) -> Result<Self> {
+        ensure!(
+            cfg!(target_os = "linux"),
+            "installed collector witness requires Linux"
+        );
+        let owner = InstallationOwner::initialize(
+            &home.join("installation"),
+            InstallationKey {
+                installation: rand::random(),
+                profile: config.profile_hash(),
+            },
+        )?;
+        let supervisor = InstalledSupervisor::start(owner, config)?;
+        let mut provider = InstalledParentProvider::new(&supervisor)?;
+        provider.configure_telemetry_only(&supervisor, partition)?;
+        provider.start_tenant_helper("local", helper)?;
+        let backend = Arc::new(LocalBackend::with_hypervisor("firecracker"));
+        provider.install_sdk_registrar(&backend, "local")?;
+        let provider = Arc::new(provider);
+        mvm_hostd::host_lifetime_parent::install(provider.clone())?;
+        Ok(Self {
+            supervisor: Some(supervisor),
+            provider: Some(provider),
+            backend: Some(backend),
+            slots: std::array::from_fn(|_| Slot::default()),
+            no_helper_callback_retry: false,
+            services_closed: false,
+        })
+    }
+
+    /// Explicit witness fault injection, armed only before any original launch.
+    /// One callback refusal precedes publication; only that deliberate refusal
+    /// permits an immediate retry through the same SDK failure object.
+    pub fn enable_no_helper_callback_retry(&mut self) -> Result<()> {
+        ensure!(
+            self.slots
+                .iter()
+                .all(|slot| slot.disposition == Disposition::Fresh
+                    && slot.parent.is_none()
+                    && slot.started.is_none()
+                    && slot.failed.is_none()),
+            "callback retry witness must be selected before any launch"
+        );
+        self.no_helper_callback_retry = true;
+        Ok(())
+    }
+
+    pub fn backend(&self) -> &Arc<LocalBackend> {
+        self.backend.as_ref().expect("original backend retained")
+    }
+
+    /// Definitions are created by the existing paired LaunchRequest path first.
+    /// No ordinary persistent-start fallback is permitted after this invocation.
+    pub async fn start(
+        &mut self,
+        name: &str,
+        quote: PortableStartupQuote,
+        rootfs: &Path,
+        grant: mvm_contract::protocol::mailbox::MailboxGrant,
+        journal: &mut InstalledJournal<'_>,
+    ) -> Result<()> {
+        let i = index(name)?;
+        ensure!(
+            !self.services_closed
+                && self.slots[i].disposition == Disposition::Fresh
+                && self.slots[i].parent.is_none(),
+            "original collector start already attempted"
+        );
+        let provider = self
+            .provider
+            .as_ref()
+            .context("original provider missing")?;
+        // prepare_request intentionally serves transient launches; persistent
+        // journal startup instead supplies its exact VM binding directly.
+        let prepared = provider.prepare_vm(
+            &VmStartConfig {
+                name: name.into(),
+                tenant_id: Some("local".into()),
+                cpus: 1,
+                memory_mib: 256,
+                ..Default::default()
+            },
+            "local",
+            BackendKind::Firecracker,
+        )?;
+        let (prepared, kernel) = prepared.prepare_canonical_startup(quote)?;
+        require_signed_root(rootfs, kernel.workload_root_declaration()?)?;
+        let (mut lifetime, parent) = prepared.begin_launch()?;
+        self.slots[i].parent = Some(parent);
+        self.slots[i].disposition = Disposition::Attempted;
+        lifetime.select_canonical_kernel(kernel)?;
+        let result = self
+            .backend()
+            .start_persistent_with_journal_and_host_lifetime(name, grant, journal, lifetime)
+            .await;
+        match result {
+            Ok(started) => {
+                self.slots[i].started = Some(started);
+                Ok(())
+            }
+            Err(failed) => {
+                let error = anyhow::anyhow!("original owned journal startup: {:#}", failed.error());
+                match failed.into_unused_for_parent() {
+                    Ok(unused) => self.slots[i].unused = Some(unused),
+                    Err(failed) => self.slots[i].failed = Some(failed),
+                }
+                Err(error)
+            }
+        }
+    }
+
+    /// Cancel only the opaque unused token returned by this slot's SDK call.
+    /// Failure keeps both the original proof and original parent for retry.
+    pub fn cancel_unused(&mut self, name: &str) -> Result<()> {
+        let slot = &mut self.slots[index(name)?];
+        ensure!(
+            !self.services_closed
+                && slot.disposition == Disposition::Attempted
+                && slot.started.is_none()
+                && slot.failed.is_none()
+                && slot.endpoint.is_none()
+                && !slot.endpoint_transferred,
+            "original startup is not an unused preparation"
+        );
+        let proof = slot.unused.as_ref().context("SDK unused proof missing")?;
+        slot.parent
+            .as_mut()
+            .context("original unused parent missing")?
+            .cancel_unused(proof)?;
+        drop(slot.unused.take());
+        drop(slot.parent.take());
+        slot.disposition = Disposition::UnusedCancelled;
+        Ok(())
+    }
+
+    /// Borrow the actual SDK admission for the unchanged enrollment/posture checks.
+    pub fn machine(&self, name: &str) -> Result<&mvm_client::launch::machine_start::MachineStart> {
+        Ok(self.slots[index(name)?]
+            .started
+            .as_ref()
+            .context("original owned journal did not start")?
+            .machine())
+    }
+
+    /// One bounded attempt; an error leaves the same native/journal/parent custody
+    /// available for explicit retry. The caller retains the original helper too.
+    pub fn stop(
+        &mut self,
+        name: &str,
+        journal: &mut JournalOwner<'_>,
+        until: Instant,
+    ) -> Result<JournalStopOutcome> {
+        let slot = &mut self.slots[index(name)?];
+        ensure!(
+            !slot.disposition.complete(),
+            "original journal already collected"
+        );
+        let Slot {
+            parent,
+            started,
+            failed,
+            endpoint,
+            endpoint_transferred,
+            disposition,
+            ..
+        } = slot;
+        let parent = parent.as_mut().context("original parent owner missing")?;
+        let finish = |_: &mvm_core::plan::ExecutionPlan,
+                      _: bool,
+                      receipt: &mut mvm_client::OwnedRetirement|
+         -> Result<()> {
+            finish_parent(parent, endpoint, endpoint_transferred, receipt)
+        };
+        let outcome = if let Some(started) = started {
+            started.stop_and_collect(journal, until, finish)?
+        } else if let Some(failed) = failed {
+            failed.stop_and_collect(journal, until, finish)?
+        } else {
+            anyhow::bail!("original SDK startup custody missing")
+        };
+        *disposition = Disposition::Retired;
+        Ok(outcome)
+    }
+
+    /// Recovery is selected by the creation boundary's typed proof, never by
+    /// absence of a journal owner or a PID. The SDK retains its native receipt
+    /// if parent publication fails; retries reuse the same callback custody.
+    pub fn finish_without_helper(
+        &mut self,
+        name: &str,
+        until: Instant,
+    ) -> Result<NoHelperRetirement> {
+        let slot = &mut self.slots[index(name)?];
+        ensure!(
+            !slot.disposition.complete(),
+            "original no-helper startup already retired"
+        );
+        let failed = slot
+            .failed
+            .as_mut()
+            .context("original failed startup custody missing")?;
+        ensure!(
+            failed.helper_disposition() == JournalStartDisposition::NoExec,
+            "creation-boundary no-exec proof required"
+        );
+        let parent = slot
+            .parent
+            .as_mut()
+            .context("original parent owner missing")?;
+        if self.no_helper_callback_retry && !slot.no_helper_callback_retry_injected {
+            let mut entered = false;
+            let refused = failed.finish_without_helper(until, |_, _| {
+                entered = true;
+                // Deliberately fail before invoking the real parent. The SDK
+                // must keep the positive original native/collector receipt.
+                anyhow::bail!("explicit no-helper callback-retention witness refusal")
+            });
+            ensure!(
+                entered,
+                "no-helper callback-retention witness never reached its callback: {refused:?}"
+            );
+            ensure!(
+                refused.is_err(),
+                "no-helper SDK ignored the deliberate callback refusal"
+            );
+            slot.no_helper_callback_retry_injected = true;
+        }
+        let proof = failed.finish_without_helper(until, |_, receipt| {
+            finish_parent(
+                parent,
+                &mut slot.endpoint,
+                &mut slot.endpoint_transferred,
+                receipt,
+            )?;
+            slot.no_helper_parent_published = true;
+            Ok(())
+        })?;
+        ensure!(
+            slot.no_helper_parent_published,
+            "original parent callback publication was not observed"
+        );
+        slot.no_helper_callback_retry_observed = slot.no_helper_callback_retry_injected;
+        slot.disposition = Disposition::Retired;
+        Ok(proof)
+    }
+
+    pub fn resources(&self) -> Result<Value> {
+        Ok(serde_json::to_value(self.snapshot()?)?)
+    }
+
+    fn snapshot(&self) -> Result<ManagedSnapshot> {
+        Ok(self
+            .supervisor
+            .as_ref()
+            .context("original supervisor missing")?
+            .managed_resources()
+            .snapshot()?)
+    }
+
+    /// Stop only the original tenant service after both journals were collected.
+    /// Retained telemetry/startup debt remains booked; no definition or state reaping.
+    pub fn close(&mut self) -> Result<Value> {
+        ensure!(
+            self.slots.iter().all(|slot| slot.disposition.complete()),
+            "original pair retirement incomplete"
+        );
+        for slot in &mut self.slots {
+            drop(slot.started.take());
+            drop(slot.failed.take());
+            drop(slot.unused.take());
+            drop(slot.parent.take());
+        }
+        self.close_services()
+    }
+
+    /// This guard accepts original fresh/cancelled slots, never cleared fields
+    /// from a normally retired or uncertain workload.
+    pub fn close_without_workload_dispatch(&mut self) -> Result<Value> {
+        ensure!(
+            self.slots.iter().all(Slot::permits_no_dispatch_close),
+            "original undispatched close has pending or dispatched custody"
+        );
+        self.close_services()
+    }
+
+    fn close_services(&mut self) -> Result<Value> {
+        ensure!(!self.services_closed, "original services already closed");
+        drop(self.backend.take());
+        let provider = self.provider.take().context("original provider missing")?;
+        provider.close_admission();
+        // Global parent registration is weak. try_unwrap permits that original
+        // weak identity; get_mut would incorrectly reject it.
+        let mut provider = match Arc::try_unwrap(provider) {
+            Ok(provider) => provider,
+            Err(provider) => {
+                self.provider = Some(provider);
+                anyhow::bail!("original parent provider still shared");
+            }
+        };
+        let result = provider.stop_tenant_helper();
+        self.provider = Some(Arc::new(provider));
+        result?;
+        self.supervisor
+            .as_mut()
+            .context("original supervisor missing")?
+            .close_admission();
+        self.services_closed = true;
+        self.resources()
+    }
+}
+
+/// Actual SDK refusal and original-parent accounting, without guest dispatch.
+/// The enclosing paired transfer still returns its original application error.
+pub fn qualify_unused_refusal(
+    pair: &mut CollectorPair,
+    state: &State,
+    initial: &Value,
+    refusal: &anyhow::Error,
+) -> Result<Value> {
+    ensure!(
+        state.attempted == [false, true]
+            && state.defined == [true, false]
+            && state.a.is_none()
+            && state.b.is_none()
+            && state.b_pending.is_none()
+            && format!("{refusal:#}").contains("does not exist")
+            && pair.slots[1].unused.is_some(),
+        "original stopped-definition refusal and SDK unused proof required"
+    );
+    ensure!(
+        initial["usage"]["guests"] == 0 && initial["usage"]["guest_memory_bytes"] == 0,
+        "unused campaign requires the original empty guest budget"
+    );
+    let before = pair.snapshot()?;
+    ensure!(
+        before.usage.guests == 1 && before.usage.guest_memory_bytes == 256 << 20 && !before.fenced,
+        "original unused guest reservation was not retained"
+    );
+    let premature = pair
+        .close_without_workload_dispatch()
+        .err()
+        .context("pending original ownership permitted service close")?;
+    ensure!(
+        premature
+            .to_string()
+            .contains("pending or dispatched custody"),
+        "premature close did not refuse at the original custody gate"
+    );
+    let preserved = pair.snapshot()?;
+    ensure!(
+        preserved.usage == before.usage
+            && preserved.active_reservations == before.active_reservations,
+        "refused close changed the original reservation"
+    );
+    pair.cancel_unused(B)?;
+    let cancelled = pair.snapshot()?;
+    ensure!(
+        cancelled.usage.guests == 0
+            && cancelled.usage.guest_memory_bytes == 0
+            && cancelled.active_reservations.checked_add(1) == Some(before.active_reservations),
+        "original parent did not release exactly its unused VM reservation"
+    );
+    let repeat = pair
+        .cancel_unused(B)
+        .err()
+        .context("repeat cancellation was accepted")?;
+    ensure!(
+        repeat.to_string().contains("not an unused preparation"),
+        "repeat cancellation did not refuse at the original phase gate"
+    );
+    let repeated = pair.snapshot()?;
+    ensure!(
+        repeated.usage == cancelled.usage
+            && repeated.active_reservations == cancelled.active_reservations,
+        "repeat refusal changed reserved credit"
+    );
+    let closed = pair.close_without_workload_dispatch()?;
+    ensure!(
+        closed["usage"]["guests"] == 0 && closed["usage"]["workers"] == 0,
+        "original service shutdown left live resource charges"
+    );
+    Ok(
+        json!({"sdk_preparation_not_entered":true,"workload_not_dispatched":true,
+        "guest_reservations_initial_pending_cancelled":[0,1,0],
+        "premature_close_refused":true,"repeat_cancel_refused":true,
+        "original_parent_cancelled":true,"original_service_shutdown_completed":true,
+        "before_cancellation":before,"after_cancellation":cancelled,"after_service_shutdown":closed,
+        "application_transfer_executed":false,"runtime_state_removed":false,
+        "definitions_removed":false,"wan":null}),
+    )
+}
+
+impl Drop for CollectorPair {
+    fn drop(&mut self) {
+        if self
+            .slots
+            .iter()
+            .any(|slot| slot.parent.is_some() && !slot.disposition.complete())
+        {
+            // Abandonment is never positive retirement or a budget refund.
+            std::mem::forget(std::mem::replace(
+                &mut self.slots,
+                std::array::from_fn(|_| Slot::default()),
+            ));
+            std::mem::forget((
+                self.backend.take(),
+                self.provider.take(),
+                self.supervisor.take(),
+            ));
+        }
+    }
+}
+
+impl workload::CallBoundary for CollectorPair {
+    fn start(
+        &mut self,
+        name: &str,
+        payload: &Value,
+        until: Instant,
+    ) -> Result<Box<dyn workload::PendingCall>> {
+        let input = serde_json::to_vec(payload)?;
+        ensure!(
+            input.len() <= fixture::CALL_INPUT_LIMIT,
+            "oversized fixture Call"
+        );
+        let owner = self.slots[index(name)?]
+            .started
+            .as_mut()
+            .context("original owned journal call custody missing")?;
+        let mut output = mvm_client::entrypoint::dispatch::CapturedOutput::default();
+        let outcome = owner.run_entrypoint(&input, until, &mut output)?;
+        ensure!(
+            outcome.exit_code() == 0
+                && !output.truncated
+                && output.stdout.len() <= workload::CALL_OUTPUT_LIMIT,
+            "original owned workload failed: {:?}",
+            outcome.terminal
+        );
+        let value = serde_json::from_slice(&output.stdout)?;
+        Ok(Box::new(workload::CompletedCall {
+            value: Some(value),
+            input_bytes: input.len(),
+            output_bytes: output.stdout.len(),
+        }))
+    }
+}
+
+fn require_signed_root(rootfs: &Path, root: &mvm_core::plan::bundle::BundleArtifact) -> Result<()> {
+    ensure!(
+        root.role == mvm_core::plan::ArtifactRole::Rootfs
+            && fs::metadata(rootfs)?.len() == root.size_bytes
+            && mvm_core::crypto::image_verify::sha256_file(rootfs)? == root.sha256,
+        "original role root differs from signed canonical bundle"
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_dispatch_close_distinguishes_fresh_cancelled_and_retired_slots() {
+        for (disposition, allowed) in [
+            (Disposition::Fresh, true),
+            (Disposition::Attempted, false),
+            (Disposition::UnusedCancelled, true),
+            (Disposition::Retired, false),
+        ] {
+            let mut slot = Slot {
+                disposition,
+                ..Slot::default()
+            };
+            assert_eq!(slot.permits_no_dispatch_close(), allowed);
+            slot.endpoint_transferred = true;
+            assert!(!slot.permits_no_dispatch_close());
+        }
+    }
+
+    #[test]
+    fn role_root_requires_signed_length_and_exact_digest() {
+        let home = tempfile::tempdir().unwrap();
+        let image = home.path().join("root.ext4");
+        fs::write(&image, b"role-a").unwrap();
+        let mut root = mvm_core::plan::bundle::BundleArtifact {
+            name: "rootfs".into(),
+            role: mvm_core::plan::ArtifactRole::Rootfs,
+            path: "rootfs.ext4".into(),
+            sha256: mvm_core::crypto::image_verify::sha256_file(&image).unwrap(),
+            size_bytes: 6,
+        };
+        require_signed_root(&image, &root).unwrap();
+        fs::write(&image, b"role-b").unwrap();
+        assert!(require_signed_root(&image, &root).is_err());
+        fs::write(&image, b"role-a\0").unwrap();
+        assert!(require_signed_root(&image, &root).is_err());
+        fs::write(&image, b"role-a").unwrap();
+        root.size_bytes += 1;
+        assert!(require_signed_root(&image, &root).is_err());
+    }
+}

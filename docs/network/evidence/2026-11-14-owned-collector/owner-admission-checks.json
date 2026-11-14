@@ -1,0 +1,49 @@
+{
+  "scope": "Owner-admission component qualified; native transfer successor remains separate.",
+  "retained_failures": [
+    {
+      "log": "collector-owner-feature-red.log",
+      "sha256": "6b11bed84da34d7efce497ae27ca0fd4b2fb614dc178412b8d66b8d1160e5052",
+      "finding": "Invoked non-existent hostd test-support feature; corrected command, no source change."
+    },
+    {
+      "log": "collector-owner-import-red.log",
+      "sha256": "5f827a60109a712ec6d82a6eb49b0f214b38e5aef97d7fc5f44bbe25dfa772d8",
+      "finding": "New test imported mailbox types from wrong crate; fixed to canonical mvm_contract."
+    },
+    {
+      "log": "collector-owner-image-fixture-red.log",
+      "sha256": "6c980b4cdaa6d090e7a2ba9028a98ec6030d72a548434fa030ca7b0c86c01e55",
+      "finding": "PlanFixture.workload changed workload identifier, not signed image.name; corrected test-only image name. Production guard unchanged."
+    }
+  ],
+  "next_change": "Canonical owner captured pre-admission; signed journal policy and exact owner checked at final gates; strict entrypoint owner check unchanged. Native successor running.",
+  "source": {
+    "revision": "61f72716470c706c7ba90837d9f0c5b72e8f26c9",
+    "files": 4668,
+    "bytes": 64776202,
+    "manifest_sha256": "7040b2ef336451b59ac2339e398e8f574af92e57353da0c663d065b6a3a8505b",
+    "mismatches": []
+  },
+  "passed_checks": {
+    "hostd": {
+      "passed": 5,
+      "log_sha256": "9d243d2d488b4e6c9235898099670ec3d57f8577258de21e5fa3b9e18896a3d7"
+    },
+    "sdk": {
+      "passed": 13,
+      "log_sha256": "02ce6d9458fbf9c9304e9911069f1fb6330fdf9d5e5ce005772434638c8f9513"
+    }
+  },
+  "strict_clippy": {
+    "crates": [
+      "mvm-hostd",
+      "mvm-client"
+    ],
+    "all_targets": true,
+    "warnings": "denied",
+    "passed": true,
+    "log_sha256": "ac650c3ad6f7b97906fc28d689b9c03bee619acdcd1959f33b2ea2da42aac5bc"
+  },
+  "security_review": "Scoped independent PASS after adding canonical signed network-policy binding; initial P2 retained as fixed review finding."
+}

@@ -251,6 +251,26 @@ pub(crate) struct OrderedEviction {
     pub(crate) disk: u64,
 }
 
+fn write_publication_header(
+    output: &mut impl Write,
+    offer: &Offer,
+    manifest: Option<Id>,
+) -> Result<()> {
+    let mut header = [0u8; 81];
+    header[..8].copy_from_slice(b"SCPUB001");
+    header[8..16].copy_from_slice(&offer.len.to_le_bytes());
+    header[16..48].copy_from_slice(&offer.object);
+    header[48] = u8::from(manifest.is_some());
+    let len = if let Some(id) = manifest {
+        header[49..].copy_from_slice(&id);
+        81
+    } else {
+        49
+    };
+    output.write_all(&header[..len])?;
+    Ok(())
+}
+
 impl<A: Authority> Endpoint<A> {
     pub(crate) fn authorize(&self, context: &Context) -> Result<()> {
         self.authority.authorize(context)?;
@@ -1319,6 +1339,8 @@ impl<A: Authority> Endpoint<A> {
     fn disk_usage(&self, ns: Id) -> Result<(u64, u64, usize)> {
         #[cfg(test)]
         let _quota = commit_costs::span(commit_costs::Stage::Quota);
+        #[cfg(feature = "witness-timing")]
+        let _diagnostic_quota = commit_timing::span(commit_timing::Stage::Quota);
         #[cfg(any(target_os = "linux", target_os = "macos"))]
         if let StoreRoot::Owned(lease) = &self.root {
             let (mut scoped, mut all, mut count) = (0u64, 0u64, 0);
@@ -1429,13 +1451,20 @@ impl<A: Authority> Endpoint<A> {
                 let parent = path.parent().ok_or(Error::Storage)?;
                 private_dir(parent)?;
                 let tmp = parent.join(&stage);
+                #[cfg(feature = "witness-timing")]
+                let diagnostic_create_write = commit_timing::span(commit_timing::Stage::CreateWrite);
                 let mut f = commit_stage!(StageWrite, storage::create_new_file(&tmp))?;
                 let result = (|| {
                     commit_stage!(StageWrite, write_record(&mut f, offer, mid, bytes))?;
+                    #[cfg(feature = "witness-timing")]
+                    drop(diagnostic_create_write);
+                    sync_record(&f)?;
                     drop(f);
                     self.authorize(context)?;
                     #[cfg(test)]
                     let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
+                    #[cfg(feature = "witness-timing")]
+                    let _diagnostic_publish = commit_timing::span(commit_timing::Stage::NamespacePublish);
                     commit_stage!(NamespacePublish, storage::publish(&tmp, &path, root))
                 })();
                 if result.is_err() {
@@ -1452,15 +1481,22 @@ impl<A: Authority> Endpoint<A> {
                 };
                 lease.check_room(extra)?;
                 let dir = lease.open_namespace(ns, true)?;
+                #[cfg(feature = "witness-timing")]
+                let diagnostic_create_write = commit_timing::span(commit_timing::Stage::CreateWrite);
                 let mut f = commit_stage!(
                     StageWrite,
                     owned::create_new_at(dir.as_fd(), stage.as_ref())
                 )?;
                 let result = (|| {
                     commit_stage!(StageWrite, write_record(&mut f, offer, mid, bytes))?;
+                    #[cfg(feature = "witness-timing")]
+                    drop(diagnostic_create_write);
+                    sync_record(&f)?;
                     self.authorize(context)?;
                     #[cfg(test)]
                     let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
+                    #[cfg(feature = "witness-timing")]
+                    let _diagnostic_publish = commit_timing::span(commit_timing::Stage::NamespacePublish);
                     commit_stage!(
                         NamespacePublish,
                         lease.publish_at(
@@ -1487,6 +1523,8 @@ impl<A: Authority> Endpoint<A> {
         }
         #[cfg(test)]
         let _verify = commit_costs::span(commit_costs::Stage::VerifyPublished);
+        #[cfg(feature = "witness-timing")]
+        let _diagnostic_verify = commit_timing::span(commit_timing::Stage::VerifyPublished);
         let published = commit_stage!(VerifyPublished, self.open_publication(ns, offer.object))?;
         commit_stage!(VerifyPublished, {
             verify_publication(&published.meta, &published.file, bytes)?;
@@ -1632,6 +1670,8 @@ impl<A: Authority> Endpoint<A> {
             .map(|(bytes, disk)| (bytes.len() as u64, disk))
     }
     pub(crate) fn ordered_cache_read(&self, c: &Context, id: Id) -> Result<(Vec<u8>, u64)> {
+        #[cfg(feature = "witness-timing")]
+        let _diagnostic_readback = commit_timing::span(commit_timing::Stage::Readback);
         self.authorize(c)?;
         self.ordered_bounds()?;
         let record = self.open_publication(c.namespace()?, id)?;
@@ -1648,6 +1688,8 @@ impl<A: Authority> Endpoint<A> {
     fn ordered_remove_cache(&mut self, c: &Context, victim: &OrderedEviction) -> Result<()> {
         #[cfg(test)]
         let _victim = commit_costs::span(commit_costs::Stage::Victim);
+        #[cfg(feature = "witness-timing")]
+        let _diagnostic_victim = commit_timing::span(commit_timing::Stage::Victim);
         self.authorize(c)?;
         self.ordered_bounds()?;
         if self.ordered_active_objects(c)?.contains(&victim.id) {
@@ -1829,21 +1871,15 @@ fn state_reply(f: &Frame, s: &Attempt) -> Frame {
     f.reply(105, b)
 }
 fn write_record(file: &mut File, offer: &Offer, mid: Option<Id>, bytes: &[u8]) -> Result<()> {
-    let mut header = [0u8; 81];
-    header[..8].copy_from_slice(b"SCPUB001");
-    header[8..16].copy_from_slice(&offer.len.to_le_bytes());
-    header[16..48].copy_from_slice(&offer.object);
-    let header_len = if let Some(manifest) = mid {
-        header[48] = 1;
-        header[49..].copy_from_slice(&manifest);
-        header.len()
-    } else {
-        49
-    };
-    file.write_all(&header[..header_len])?;
+    write_publication_header(file, offer, mid)?;
     file.write_all(bytes)?;
+    Ok(())
+}
+fn sync_record(file: &File) -> Result<()> {
     #[cfg(test)]
     let _file_sync = commit_costs::span(commit_costs::Stage::FileSync);
+    #[cfg(feature = "witness-timing")]
+    let _diagnostic_file_sync = commit_timing::span(commit_timing::Stage::FileSync);
     commit_stage!(FileSync, file.sync_all())?;
     Ok(())
 }
@@ -2062,3 +2098,6 @@ mod ordered_eviction_tests;
 
 #[cfg(test)]
 mod commit_costs;
+
+#[cfg(feature = "witness-timing")]
+pub mod commit_timing;

@@ -187,8 +187,8 @@ fn main() -> Result<()> {
             .open(report.join(guest_stream::NAME))?;
         retained.write_all(raw.as_bytes())?;
         retained.sync_all()?;
-        match guest_stream::completed(&raw) {
-            Some((turns, read, written, finished)) => eprintln!(
+        match guest_stream::completed_for(&raw, guest_stream::SCOPE) {
+            Some((turns, read, written, _, _, finished)) => eprintln!(
                 "mailbox recorded_exchanges={turns} guest_to_host_read_bytes={read} host_to_guest_write_accepted_bytes={written} capture={}",
                 if finished {
                     "closed_session"

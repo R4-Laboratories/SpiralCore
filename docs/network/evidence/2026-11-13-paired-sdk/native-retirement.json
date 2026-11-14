@@ -1,0 +1,130 @@
+{
+  "scope": "single-host Linux x86-64 Firecracker; positive transfer substage; overall native retirement FAILED",
+  "mvm_source": "468661f47e01d0f59c6f1da4e35a968ceccb3ad2",
+  "spiralcore_guest_source": "2ec1d65ac3a43aa13d458c3b2ac98b3ae10a8354",
+  "host_driver_source": "f76923fa0ee18110cb6b50af7be1614c99aa126d",
+  "prestop_record_sha256": "6febc0b146ffa7edb8acc4648e756b5ffa76d00e67ea9330f07f6cba92c168b2",
+  "transfer_error": null,
+  "transfer": {
+    "verified_body_bytes": 257,
+    "receipt_outcome": "AcceptedLocalDurable",
+    "sealed_a_to_b_bytes": 5792,
+    "signed_b_to_a_bytes": 1192,
+    "setup_ns": 5169336293,
+    "through_observed_v2_ns": 135872032,
+    "through_verified_destination_call_ns": 1066808254,
+    "sdk_call_application_io": {
+      "destination_reply_with_readback": 792,
+      "destination_request": 81,
+      "source_reply": 192,
+      "source_request": 800
+    },
+    "guest_a_observed_receipt": null,
+    "receipt_recovery": null,
+    "wan_bytes": null
+  },
+  "guests": {
+    "guest_a": {
+      "cpu_ns": 255487,
+      "frame_bytes": 313,
+      "probe_from_agent": 196,
+      "probe_to_agent": 339,
+      "role": "staged",
+      "wall_ns": 682419
+    },
+    "guest_b": {
+      "ack_from_agent": 2260,
+      "ack_to_agent": 1976,
+      "cpu_ns": 632639,
+      "frame_bytes": 313,
+      "receive_from_agent": 2484,
+      "receive_to_agent": 54,
+      "role": "received_and_acknowledged",
+      "wall_ns": 887706737
+    }
+  },
+  "runtime": {
+    "arch": "x86_64",
+    "guest_archive_sha256": "b39c95d09c7b3e2aec9bdcc44c052df307e571d8808411953727139587fc2be2",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "217bdd8ed51d221fe5e13e7778a7302bea8f0ede25c8a6e129f93d3daeeb15ca",
+    "initramfs_sha256": "492235d57ee3587ff647af08482971be68929be2cd1f0c070d87d393e2412f71",
+    "mvm_version": "0.28.0-rc.3",
+    "overlay_root_hash": "cc90f00fa19b8a1494643aea6280f5c27ef106532d6c1cd4c1669b2414610c50",
+    "overlay_sha256": "b08dfb3bcfc0e0b15b4cdaac1adfd0c4cbb7586f2b58dacf45372ef390972581",
+    "overlay_verity_sha256": "383db93530344da755e2cd54faa365042bcc8ea81127a0a1d62d71b3ca4f101f",
+    "sdk_sidecars": 2
+  },
+  "images": [
+    {
+      "role": "journal-a",
+      "rootfs_bytes": 2691072,
+      "rootfs_sha256": "84e03525ba67ed651f19b2cebc9fa6cc3ccdc150e36eca6112310e566860aed9",
+      "verity_sha256": "bb524a99a2f9e3716cb32b2c289c0cd6c6ae49e5ef751ccaf4893fcbb53e1370",
+      "root_hash": "f9aa091751bdb9eb8a746236f1ad0907a639e88f93c065e86d32f15e984fcdc5",
+      "workload_sha256": "9151e2e2a289b217971796cff665ed8f18d49e6356a93d19760dcc3b088dd820",
+      "workload_bytes": 1950736,
+      "independent_ext4_workload_readback_exact": true
+    },
+    {
+      "role": "journal-b",
+      "rootfs_bytes": 2691072,
+      "rootfs_sha256": "6528c79c45f4a5a62d2201dc832a57e86684b9afdf1234a17abb8c0b154dd139",
+      "verity_sha256": "b3494324b6c22def06f2ef8df28743427528e92284daa897a2359a578af7a987",
+      "root_hash": "5f0aa3b435a40049b63751d15073772c60af4455bc6db6df91aed6cdc4a86f23",
+      "workload_sha256": "90a435a51e3e73fe24d0d961bc230a6efd81ebb145c390692224c835f698e64c",
+      "workload_bytes": 1950736,
+      "independent_ext4_workload_readback_exact": true
+    }
+  ],
+  "main_guest_lock_sha256": "3ba5d669084e928a090ef74005476620cfc51cd1a0ab7219624cfd503b4b22ef",
+  "retirement": {
+    "outer_result": "timeout",
+    "outer_signal": 15,
+    "outer_command_exit": 1,
+    "shell_exit_marker": 0,
+    "shell_marker_is_success_evidence": false,
+    "final_paired_record_bytes": 0,
+    "normal_retirement_proven": false,
+    "owned_original_processes_after_deadline": [],
+    "protected_telemetry_preserved": true
+  },
+  "firecracker_basename_probe": {
+    "binary_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+    "observations": [
+      {
+        "kind": "version-named",
+        "comm": "firecracker-v1.",
+        "expected_legacy_comm_matches": false,
+        "original_executable_identity_matches": true,
+        "guest_started": false,
+        "collected_exit": -15
+      },
+      {
+        "kind": "conventional-name",
+        "comm": "firecracker",
+        "expected_legacy_comm_matches": true,
+        "original_executable_identity_matches": true,
+        "guest_started": false,
+        "collected_exit": -15
+      }
+    ]
+  },
+  "record_sha256": {
+    "runtime-prepare.json": "fa54bd303e980ff2ebc8ec9a5bb977ebe5f0530936cfb6e021a8ed34b42a90a5",
+    "runtime-prepare.time": "9d4b9f048cab86ae74c1e9ae75a531c890f8111eb9b6b86bb084349b2a3a9a4e",
+    "runtime-prepare.stderr": "1d771bb9858dc86ab18fe512d795fbdcd495e99d8914bd5a188732374c94e175",
+    "guest-build.jsonl": "9c88551ba42363d118d1489a618ffe8f778124901f8239f68f28e931c65b2f0d",
+    "guest-build.stderr": "3588db8a69883c5c06fcfc61a5daa9c4b37619c6a74461ca8ef1d3b0cde0c07f",
+    "guest-build.time": "ff8b8fbfce9876917018cef646ae916539388c77443c7cdd00ad7822126d6526",
+    "frozen-guests-main.json": "5ec3e09e38a851823de1c165ee85c8474fce604512a58be83b60783e9c2a3038",
+    "main-image-verification.json": "38df860db817327a5db30ea3aefaafef4ab6b4bd615332d578be75c7347c92da",
+    "native-clean.stderr": "1c0522d6ea6d50f40a5191975525b1fcbd73642dbe7898f3f2dc9270fb3bd042",
+    "native-clean.time": "21b473e4345560ed6491bd70571286cbd3969c95c49f0f7fe2a66acc0f3a1f4a",
+    "native-clean2.stderr": "1c0522d6ea6d50f40a5191975525b1fcbd73642dbe7898f3f2dc9270fb3bd042",
+    "native-clean2.time": "f8ed74855e7f0c1b7f1fbde7c1b7b6a1eb8a3f4dd682d623211a24f3415c6a04",
+    "native-clean3.stderr": "ecd4ff27618ae014a59f52040a8d370060e64aa711cb6dbaceb6bb5a03a69f74",
+    "native-clean3-unit-journal.jsonl": "7fee81536fbc78f73edf5b5477d3739a25e9c486d99c7c6208be2fad950068ed",
+    "post-deadline-owned-processes.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  }
+}
