@@ -74,8 +74,8 @@ checks, not compression or zstd benchmarks.
 
 [Exact measurements and boundaries](original-process-results.json) ·
 [Final verification and retained raw-log hashes](validation-receipt.json).
-The receipt lists original per-target summaries, including nested fixture
-summaries; those rows must not be added as a unique-test count.
+The receipt records raw-log hashes and summary sums, including nested fixture
+summaries; those sums are not a unique-test count.
 
 ## Exceptional state and limits
 
