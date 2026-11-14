@@ -1,0 +1,217 @@
+{
+  "run": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43612000640",
+  "source": "13ff238d2ff013bd33012a8140003f058c48f20b",
+  "tree": "e00c38eb330281c81d539bc2c5d429188d3e1b88",
+  "classification": "paired native Windows process diagnostics; no MVM backend or WAN qualification",
+  "artifacts": [
+    {
+      "artifact_id": 14121480129,
+      "artifact_name": "flowmux-duplex-control-windows-2025-1",
+      "archive_bytes": 3683,
+      "archive_sha256": "a41ff3277e5de023bccba870f5c9b0f45be7faef9d26f6fc67fc24992fc4b5f6",
+      "member_hashes_verified": 6,
+      "identity": {
+        "source": "13ff238d2ff013bd33012a8140003f058c48f20b",
+        "lock_sha256": "EDA224172E7F53A824D1DB84260CE9ED1CBB77BFE12066928C769EDFA399D005",
+        "features": [],
+        "run": "43612000640",
+        "scope": "paired local native process controls; no MVM backend or WAN",
+        "tree": "e00c38eb330281c81d539bc2c5d429188d3e1b88",
+        "enrollment_seconds": 270,
+        "image": "20261103.298.1",
+        "blocks_each_direction": 4096,
+        "arch": "X64",
+        "os": "Windows",
+        "workload_seconds": 240,
+        "attempt": "1",
+        "target": "x86_64-pc-windows-msvc",
+        "bytes_each_direction": 67108864,
+        "operation_seconds": 2
+      },
+      "executable": {
+        "features": [
+          "default"
+        ],
+        "bytes": 3846144,
+        "package_id": "path+file:///D:/a/SpiralCore/SpiralCore/crates/spiralcore-mvm-flowmux#0.1.0",
+        "executable": "ordered_stream-c43c3372c7fdd5c2.exe",
+        "sha256": "D58206A9CE2BA8DA059E67A8673905D4BF47D50426F6CF44B5CD1D0DF1719700"
+      },
+      "cases": [
+        {
+          "layout": "alternating",
+          "bytes_after": 3846144,
+          "passed": true,
+          "sha256_after": "D58206A9CE2BA8DA059E67A8673905D4BF47D50426F6CF44B5CD1D0DF1719700",
+          "exit_code": 0,
+          "original_result_lines": [
+            "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=206044003 original_gate_us=240000000 setup_wall_us=89613 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(109296875) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+            "ORDERED_LAYOUT mode=alternating blocks_each_direction=4096 operation_seconds=2 workload_seconds=240",
+            "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=89613 lifecycle_wall_us=206119197 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(109328125) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+          ],
+          "failure_classification": "none",
+          "log_sha256": "4416046e5f0f988e2bf9122d6e92d9c8479b11364779ee1a31250e22a9e98482",
+          "wall_us": 206119197,
+          "process_cpu_us": 109328125,
+          "timing_boundary": "complete lifecycle"
+        },
+        {
+          "layout": "simultaneous",
+          "bytes_after": 3846144,
+          "passed": true,
+          "sha256_after": "D58206A9CE2BA8DA059E67A8673905D4BF47D50426F6CF44B5CD1D0DF1719700",
+          "exit_code": 0,
+          "original_result_lines": [
+            "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=224760021 original_gate_us=240000000 setup_wall_us=107838 setup_process_cpu_us=Some(0) process_cpu_to_snapshot_us=Some(122937500) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+            "ORDERED_LAYOUT mode=simultaneous blocks_each_direction=4096 operation_seconds=2 workload_seconds=240",
+            "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=107838 lifecycle_wall_us=225098870 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(122968750) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+          ],
+          "failure_classification": "none",
+          "log_sha256": "00d313ed6f1b9998920de2cc22542a5af2c93957bde1f1d89be4060b5e05ef61",
+          "wall_us": 225098870,
+          "process_cpu_us": 122968750,
+          "timing_boundary": "complete lifecycle"
+        }
+      ]
+    },
+    {
+      "artifact_id": 14121375546,
+      "artifact_name": "flowmux-duplex-control-windows-11-arm-1",
+      "archive_bytes": 3922,
+      "archive_sha256": "01eca743e5366e11fa986ca259717a9895ee496592701588858300bb91e2cb28",
+      "member_hashes_verified": 6,
+      "identity": {
+        "operation_seconds": 2,
+        "scope": "paired local native process controls; no MVM backend or WAN",
+        "image": "20261101.203.1",
+        "enrollment_seconds": 270,
+        "source": "13ff238d2ff013bd33012a8140003f058c48f20b",
+        "attempt": "1",
+        "tree": "e00c38eb330281c81d539bc2c5d429188d3e1b88",
+        "features": [],
+        "lock_sha256": "EDA224172E7F53A824D1DB84260CE9ED1CBB77BFE12066928C769EDFA399D005",
+        "arch": "ARM64",
+        "target": "aarch64-pc-windows-msvc",
+        "workload_seconds": 240,
+        "run": "43612000640",
+        "bytes_each_direction": 67108864,
+        "os": "Windows",
+        "blocks_each_direction": 4096
+      },
+      "executable": {
+        "features": [
+          "default"
+        ],
+        "executable": "ordered_stream-d874df40873f659d.exe",
+        "package_id": "path+file:///C:/a/SpiralCore/SpiralCore/crates/spiralcore-mvm-flowmux#0.1.0",
+        "sha256": "A31C3C6262AB657E04D50E3BC2203FB85EE9D130571BA7FE46157AE72BB3C824",
+        "bytes": 3282944
+      },
+      "cases": [
+        {
+          "exit_code": 0,
+          "passed": true,
+          "layout": "simultaneous",
+          "bytes_after": 3282944,
+          "sha256_after": "A31C3C6262AB657E04D50E3BC2203FB85EE9D130571BA7FE46157AE72BB3C824",
+          "original_result_lines": [
+            "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=208967336 original_gate_us=240000000 setup_wall_us=136731 setup_process_cpu_us=Some(31250) process_cpu_to_snapshot_us=Some(116468750) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+            "ORDERED_LAYOUT mode=simultaneous blocks_each_direction=4096 operation_seconds=2 workload_seconds=240",
+            "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=136731 lifecycle_wall_us=209055928 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(116484375) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+          ],
+          "failure_classification": "none",
+          "log_sha256": "9e49c1f06b4b1082fc38f44a7e6eec34e3aff25ef9733ee6714a4d487cc2e9b8",
+          "wall_us": 209055928,
+          "process_cpu_us": 116484375,
+          "timing_boundary": "complete lifecycle"
+        },
+        {
+          "exit_code": 101,
+          "passed": false,
+          "layout": "alternating",
+          "bytes_after": 3282944,
+          "sha256_after": "A31C3C6262AB657E04D50E3BC2203FB85EE9D130571BA7FE46157AE72BB3C824",
+          "original_result_lines": [
+            "ORDERED_WITNESS success=false witness_timing=false snapshot=concurrent wall_us=241988984 original_gate_us=240000000 setup_wall_us=139083 setup_process_cpu_us=Some(46875) process_cpu_to_snapshot_us=Some(92406250) progress_write_ack_left_right_read_left_right=[3990, 3989, 3989, 3990] actual_tls=[TlsCounters { received: 5254598, sent: 5254662 }, TlsCounters { received: 5254662, sent: 5254598 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+            "ORDERED_LAYOUT mode=alternating blocks_each_direction=4096 operation_seconds=2 workload_seconds=240"
+          ],
+          "failure_classification": "original workload deadline",
+          "log_sha256": "de9f5ed7fec7e3875e93fb6bb668d31facac62e6209d014bcfa1c18f0f8a7501",
+          "wall_us": 241988984,
+          "process_cpu_us": 92406250,
+          "timing_boundary": "failure snapshot"
+        }
+      ]
+    },
+    {
+      "artifact_id": 14120752444,
+      "artifact_name": "flowmux-duplex-control-windows-2022-1",
+      "archive_bytes": 3686,
+      "archive_sha256": "43bc24095817c966cbc9e6a0ba3772e2ace5be956be1526466f1ed201971ecd3",
+      "member_hashes_verified": 6,
+      "identity": {
+        "image": "20261112.366.7",
+        "arch": "X64",
+        "operation_seconds": 2,
+        "scope": "paired local native process controls; no MVM backend or WAN",
+        "lock_sha256": "EDA224172E7F53A824D1DB84260CE9ED1CBB77BFE12066928C769EDFA399D005",
+        "run": "43612000640",
+        "enrollment_seconds": 270,
+        "source": "13ff238d2ff013bd33012a8140003f058c48f20b",
+        "tree": "e00c38eb330281c81d539bc2c5d429188d3e1b88",
+        "features": [],
+        "target": "x86_64-pc-windows-msvc",
+        "bytes_each_direction": 67108864,
+        "blocks_each_direction": 4096,
+        "attempt": "1",
+        "os": "Windows",
+        "workload_seconds": 240
+      },
+      "executable": {
+        "package_id": "path+file:///D:/a/SpiralCore/SpiralCore/crates/spiralcore-mvm-flowmux#0.1.0",
+        "bytes": 3840000,
+        "features": [
+          "default"
+        ],
+        "sha256": "8A149AA2EE395CFA2DCEFAFDB2D53CA61EF6D6A2D6EAB707D8187BB9E7A10B08",
+        "executable": "ordered_stream-c43c3372c7fdd5c2.exe"
+      },
+      "cases": [
+        {
+          "layout": "simultaneous",
+          "bytes_after": 3840000,
+          "exit_code": 0,
+          "sha256_after": "8A149AA2EE395CFA2DCEFAFDB2D53CA61EF6D6A2D6EAB707D8187BB9E7A10B08",
+          "passed": true,
+          "original_result_lines": [
+            "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=204066316 original_gate_us=240000000 setup_wall_us=124252 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(99250000) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+            "ORDERED_LAYOUT mode=simultaneous blocks_each_direction=4096 operation_seconds=2 workload_seconds=240",
+            "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=124252 lifecycle_wall_us=204151819 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(99281250) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+          ],
+          "failure_classification": "none",
+          "log_sha256": "ba48632f322ad786725adc94e10089d667fccdd73804ad8e80d44d12eeddfc26",
+          "wall_us": 204151819,
+          "process_cpu_us": 99281250,
+          "timing_boundary": "complete lifecycle"
+        },
+        {
+          "layout": "alternating",
+          "bytes_after": 3840000,
+          "exit_code": 0,
+          "sha256_after": "8A149AA2EE395CFA2DCEFAFDB2D53CA61EF6D6A2D6EAB707D8187BB9E7A10B08",
+          "passed": true,
+          "original_result_lines": [
+            "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=225740770 original_gate_us=240000000 setup_wall_us=88352 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(94171875) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+            "ORDERED_LAYOUT mode=alternating blocks_each_direction=4096 operation_seconds=2 workload_seconds=240",
+            "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=88352 lifecycle_wall_us=225826709 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(94203125) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+          ],
+          "failure_classification": "none",
+          "log_sha256": "5345acab4a1d4b505e75f6cf9335a12620214dbe91bf154ad609ce40ae42604a",
+          "wall_us": 225826709,
+          "process_cpu_us": 94203125,
+          "timing_boundary": "complete lifecycle"
+        }
+      ]
+    }
+  ]
+}

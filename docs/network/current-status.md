@@ -1,3 +1,10 @@
+The default-feature Windows direction control passed both Server 2022/2025
+layouts and Windows ARM simultaneous transfer at 64 MiB exact bytes per direction.
+The ARM alternating control failed the unchanged 240-second workload gate near
+block 3,990. It does not reproduce or explain the earlier simultaneous sender-
+reply timeout; PR #260 remains held. All original archives and executable/source
+identities verify. [Paired results, CPU/time and retained failure](evidence/2026-11-14-duplex-control/README.md).
+
 Contributor MVM `639cdc36e` closes a post-spawn helper configuration-unwind
 window while preserving the actual original Child and failed-readiness owner.
 Four new child controls, spawn inventory, three original-helper process fixtures,
