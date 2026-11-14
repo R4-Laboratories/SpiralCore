@@ -122,9 +122,10 @@ or weaken its bound to label this test passed.
 
 ## Explicit failed-start callback-retry witness
 
-The contributor SDK successor `d84741509` adds typed pre-exec refusal custody;
-its subsequent error-conversion and fixture corrections must also be present.
-The new witness mapping is a development checkpoint until native qualification.
+The contributor SDK successor `6d8b3831f` includes typed pre-exec refusal custody
+and its qualification corrections. Native trial 13 qualified destination
+failed-start recovery and actual callback-error/retry; the complete pair remains
+unqualified and retains its unattempted-source error.
 
 ```text
 paired-journal --installed-collector --no-helper-callback-retry --backend firecracker A_ROOTFS A_SHA256 B_ROOTFS B_SHA256 FRAME
