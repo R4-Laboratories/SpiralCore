@@ -949,7 +949,7 @@ impl<A: Authority> Worker<A> {
             #[cfg(feature = "witness-stall")]
             self.stall.mark(WorkerPhase::Poll, 0, self.index);
             let routing = self.routing.clone();
-            let mut held = routing.reader()?;
+            let mut held = routing.worker_reader()?;
             let rx = held.as_mut().ok_or(Error::Closed)?;
             match rx.poll_input() {
                 Ok(false) => continue,

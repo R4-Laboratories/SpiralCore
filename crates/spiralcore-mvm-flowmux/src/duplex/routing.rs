@@ -105,6 +105,15 @@ impl Routing {
     pub(super) fn reader(&self) -> Result<MutexGuard<'_, Option<Rx>>> {
         lock(&self.reader)
     }
+    pub(super) fn worker_reader(&self) -> Result<MutexGuard<'_, Option<Rx>>> {
+        let reader = self.reader()?;
+        // Assistance publishes while holding this decoder. Refuse before a later
+        // socket poll can report a consequence of that failure's cancellation.
+        if let Some(error) = lock(&self.fatal)?.take() {
+            return Err(error);
+        }
+        Ok(reader)
+    }
     pub(super) fn inbound(self: &Arc<Self>) -> Inbound {
         self.busy.store(true, Ordering::Release);
         self.wake.notify();
@@ -455,6 +464,56 @@ mod tests {
             drop(held);
             assert!(matches!(owner.join().unwrap(), Err(Error::Limit)));
         });
+        assert!(lock(&pair.routing.fatal).unwrap().is_none());
+    }
+    #[test]
+    fn worker_reentry_refuses_before_polling_a_cancelled_decoder() {
+        let pair = pair();
+        let held = pair.routing.reader().unwrap();
+        pair.cancellation.cancel();
+        std::thread::scope(|scope| {
+            let (entered, entry) = mpsc::sync_channel(1);
+            let routing = pair.routing.clone();
+            let owner = scope.spawn(move || {
+                entered.send(()).unwrap();
+                routing.finish(routing.worker_reader().map(|_| ()))
+            });
+            entry.recv_timeout(Duration::from_secs(1)).unwrap();
+            *lock(&pair.routing.fatal).unwrap() = Some(Error::Limit);
+            drop(held);
+            assert!(matches!(owner.join().unwrap(), Err(Error::Limit)));
+        });
+        assert!(lock(&pair.routing.fatal).unwrap().is_none());
+    }
+    #[test]
+    fn worker_reentry_returns_the_owned_assisting_io_context() {
+        let pair = pair();
+        *lock(&pair.routing.fatal).unwrap() = Some(Error::Io(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "original assisting context",
+        )));
+        let result = pair
+            .routing
+            .finish(pair.routing.worker_reader().map(|_| ()));
+        assert!(
+            matches!(result, Err(Error::Io(error)) if error.to_string() == "original assisting context")
+        );
+        assert!(lock(&pair.routing.fatal).unwrap().is_none());
+    }
+    #[test]
+    fn independent_worker_io_is_preserved_even_with_identical_assisting_io() {
+        let pair = pair();
+        *lock(&pair.routing.fatal).unwrap() = Some(Error::Io(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "assisting read",
+        )));
+        let result = pair.routing.finish::<()>(Err(Error::Io(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "independent worker transport",
+        ))));
+        assert!(
+            matches!(result, Err(Error::Io(error)) if error.to_string() == "independent worker transport")
+        );
         assert!(lock(&pair.routing.fatal).unwrap().is_none());
     }
     #[test]
