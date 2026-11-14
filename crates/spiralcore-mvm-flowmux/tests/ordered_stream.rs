@@ -220,6 +220,8 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
     };
     let left_auth = authorize(Role::Initiator);
     let right_auth = authorize(Role::Acceptor);
+    #[cfg(feature = "witness-timing")]
+    eprintln!("ORDERED_STORAGE_ROOT temp={}", std::env::temp_dir().display());
     let stores = [
         Store(std::env::temp_dir().join(format!("ordered-stream-left-{}", std::process::id()))),
         Store(std::env::temp_dir().join(format!("ordered-stream-right-{}", std::process::id()))),
