@@ -1,6 +1,6 @@
 # Original helper custody during configuration unwind
 
-Contributor MVM [`ae2717f0f5c95fa5c6c5cf1f3c4ae98852f392ca`](https://github.com/Casey-allard/mvm/commit/ae2717f0f5c95fa5c6c5cf1f3c4ae98852f392ca)
+Contributor MVM [`639cdc36ed1a29a85a37e2606075894776747d54`](https://github.com/Casey-allard/mvm/commit/639cdc36ed1a29a85a37e2606075894776747d54)
 repairs a post-spawn configuration unwind window in the preview installed journal
 path. The actual child, launch marker and restart custody stay outside the
 configuration callback. A panic becomes fixed failed-readiness and returns the
@@ -18,8 +18,9 @@ after child collection. These are host component tests, with no booted MVM.
 The existing journal suite passed **39 tests**, including these four, with three
 actual-helper fixtures ignored because they require a separately compiled helper.
 Strict all-target workspace Clippy and Linux/BDD gated compilation passed.
-Workspace and explicit original-helper results are recorded separately once the
-owned qualification jobs finish. No completed release claim follows from a live
+Final-source workspace and explicit original-helper checks are still running
+under the original `sc-helper-config-final-checks` unit on Wick. This draft
+report is not a completed qualification. No completed release claim follows from a live
 job or a compilation result.
 
 The preferred `just tests::scoped` command could not run because cargo-nextest is
@@ -27,6 +28,24 @@ absent on Wick. Its setup failure was retained; focused `cargo test` supplied th
 behavioral RED/GREEN instead. The initial extraction also needed an ordinary
 `io::Error` to `anyhow::Error` coercion before that behavioral RED could compile.
 Neither setup/compile failure is counted as the observed panic regression.
+
+## Retained workspace failures
+
+The first parallel workspace attempt stopped when an existing builder-streaming
+fixture could not read its descendant PID file. That test passed in isolation.
+Temporary-directory interference is a hypothesis; the cause is not established.
+The serial run is a separate configuration, not proof of parallel reliability.
+
+The first serial run omitted the documented `MVM_GPU_TEST_EXPECT_NATIVE` flag
+and failed because Wick now has a native driver. The correctly configured
+focused GPU test passed. No driver or training configuration changed.
+
+The configured serial run reached the final tooling suite and found a real
+mistake in the new fixture: raw `Command::new` violated MVM's helper environment
+inventory. Candidate `639cdc36e` replaces it with the canonical `helper_command`;
+production custody code is unchanged from `ae2717f0f`. The final four child tests
+pass, and the inventory, strict/gated, helper-process and full-workspace checks
+are being rerun for that final source. All prior failures remain retained.
 
 ## Exceptional state and limits
 
@@ -52,9 +71,9 @@ still requires Ari's canonical publication. No signature check is bypassed.
 
 ## Source and resource boundary
 
-All **4,675 tracked files**, totalling **64,851,526 bytes**, match the published
+All **4,675 tracked files**, totalling **64,851,537 bytes**, match the published
 candidate's file manifest on Wick. Manifest SHA-256:
-`0bdaafe9e1e631033c92ee4660cee4a0a6c13fce5089ccbc180718bb2db4f0df`.
+`c5836a6fca7b952bbae0c46130c2b23b0aae06a141847211729d45f7f9f52017`.
 The retained checkout Git metadata remains at `0909b7ec`; qualification uses the
 verified candidate file overlay, not a clean release checkout or official
 publisher build. Raw logs and the complete manifest remain under Wick's existing
@@ -65,6 +84,6 @@ disabled, with one qualification job at a time. Rust 1.97.1, umask 0022, two Car
 build jobs and the existing shared target are used. No guest image or raw payload
 dataset is duplicated on the Mac.
 
-These controls send no application object: transfer bytes, fidelity comparison,
+The four configuration controls send no application object: transfer bytes, fidelity comparison,
 transfer latency and WAN results are unmeasured. Build/test command CPU and wall
 time are compilation-inclusive and cannot establish networking performance.
