@@ -58,9 +58,12 @@ reader, journal and dispatch implementations, with stale-input refusal tests.
 
 The fork's existing unsigned `guest-bins` workflow dispatch returned HTTP 422
 that Actions was disabled, despite its settings reporting enabled. No hosted
-run was created. The same canonical producer is running on Wick with pinned
-Zig 0.13.0 and cargo-zigbuild 0.23.0, both verified against MVM's pinned checksums,
-for x86-64 and AArch64. Its output is an unsigned contributor build.
+run was created. The same canonical producer subsequently completed on Wick for x86-64 and
+AArch64 using pinned Zig 0.13.0 and cargo-zigbuild 0.23.0. The clean-source
+archive passed MVM's canonical reader and has all three expected compatibility
+features for both architectures. See the [guest-build receipt](guest-build.md),
+including the retained dirty-provenance failure and separate clean rebuild.
+Its output remains an unsigned contributor build.
 
 The old signed runtime stays immutable. This checkpoint does not provide an
 accepted signed replacement, a new positive native application transfer,

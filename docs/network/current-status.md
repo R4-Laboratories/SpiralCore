@@ -3,8 +3,11 @@
 The current contributor host now refuses unsupported mailbox runtime profiles
 before guest dispatch and checks the exact serialized boot binding against the
 selected runtime. Final source `9394d74f` passed Linux workspace tests and strict
-all-targets Clippy; gated Linux/BDD compilation also passed. A canonical unsigned
-guest build is underway. An accepted signed compatible runtime and fresh paired
+all-targets Clippy; gated Linux/BDD compilation also passed. The canonical
+unsigned guest build now passes archive verification for x86-64 and AArch64,
+with all three compatibility features and an 8,192-byte bound.
+[Guest build and retained provenance failure](evidence/2026-11-14-runtime-compatibility/guest-build.md).
+An accepted signed compatible runtime and fresh paired
 delivery/recovery remain open in [#268](https://github.com/R4-Laboratories/SpiralCore/issues/268).
 [Compatibility implementation and recorded checks](evidence/2026-11-14-runtime-compatibility/README.md).
 
