@@ -1,5 +1,24 @@
 # Networking delivery status
 
+The installed MVM consumer qualification is merged through
+[PR #285](https://github.com/R4-Laboratories/SpiralCore/pull/285) at `acd39903`.
+Both consumer dependencies use reviewed SpiralCore `adcc7197`; active SDK
+references use frozen MVM rc.3 `611a3c76`. All 35 executed checks passed, with
+one manual signed-export job skipped. The released, reviewed and tested CI
+merge trees match. Six original reader/store custody, quarantine, funding and
+retirement controls pass on native Linux x64/ARM and macOS ARM, each bound to
+all 4,679 consumer source files and an unchanged executable. Full serial MVM
+workspace tests/doctests, strict all-target Clippy and gated compilation pass.
+
+The isolated registered fixture verifies 5,804 exact bytes each direction and
+counts 6,891 TLS bytes. Valid Open through verified half-close is 62.863567 ms;
+retirement including archive retry is 74.031218 ms. Whole-fixture wall/user/system
+CPU is 0.24/0.02/0.02 s, not transfer-only or separate sender/receiver CPU.
+Matched dependency/feature graphs across six target triples and two executable
+closures change only the reviewed pin. These are host-process fixtures and
+graph checks, with no booted MVM or WAN. The campaign does not qualify the newer
+upstream rc.4. [Source, review, costs and retained failures](evidence/2026-11-14-installed-consumer-custody/README.md).
+
 The descriptor-rooted Unix storage, original host/tenant descriptor/workspace
 funding and reproducible signed-fixture tooling are merged through
 [PR #260](https://github.com/R4-Laboratories/SpiralCore/pull/260) at `adcc7197`.
@@ -21,9 +40,9 @@ the collector RED/GREEN and earlier failures.
 [Reviewed delivery and measurements](evidence/2026-11-14-owned-store-delivery/README.md).
 
 All five MVM outcomes remain active under
-[#42](https://github.com/R4-Laboratories/SpiralCore/issues/42). The next installed
-storage gate is one reviewed public SpiralCore dependency pin in the MVM
-consumer and its exact-source installed custody/retirement qualification;
+[#42](https://github.com/R4-Laboratories/SpiralCore/issues/42). The reviewed
+consumer-pin and native process-custody gates above are complete, while full
+allocator/iterator/concurrency and installed memory-funding acceptance remain;
 [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258) remains open.
 Ari's compatible signed runtime, private MVMD integration, persistent recovery,
 retention/expiry, supported WAN/platform/capacity envelope and security/FIPS/CUI

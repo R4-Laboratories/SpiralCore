@@ -1,0 +1,24 @@
+{
+  "provenance": "Transcribed from the execution tool output after the original failed log was inadvertently overwritten. This is not the original raw log.",
+  "scope": "mvm-build library, full serial workspace under inherited umask0002",
+  "result": {"passed": 1423, "failed": 8, "ignored": 6},
+  "failed_tests": [
+    "builder_vm_runtime::image_lock::tests::ensure_persistent_volume_image_rw_refuses_concurrent",
+    "runtime_overlay::tests::overlay_tree_holds_exactly_what_the_overlay_image_holds",
+    "volume_image::tests::a_contended_volume_lock_refuses_before_creating_the_image",
+    "volume_image::tests::a_contender_reuses_the_owners_initialized_bytes_after_release",
+    "volume_image::tests::a_symlinked_image_is_refused",
+    "volume_image::tests::an_existing_image_others_can_access_is_refused_and_left_alone",
+    "volume_image::tests::dropping_a_volume_guard_does_not_release_a_duplicate_writers_locks",
+    "volume_image::tests::materialized_guard_transfers_original_resources_without_reacquisition"
+  ],
+  "representative_observations": [
+    "image_lock.rs:1340: ensure volume refused a writable disk image because temporary directory mode775 allowed other users to write; existing chmod go-w guidance was preserved",
+    "runtime_overlay.rs:1646: assertion left == right failed: VERSION; left420, right436",
+    "volume_image.rs:364: initialize after the owner releases refused directory mode775",
+    "volume_image.rs:411: recheck current image state after acquiring the lock refused directory mode775",
+    "volume_image.rs:485: symlink refusal test first encountered the mode775 ancestor refusal"
+  ],
+  "next_change": "Explicit umask0022 in the qualification shell; unchanged product checks/tests",
+  "successor": "mvm-store-workspace-final.log, exit0; full source4679 hashes reverified"
+}

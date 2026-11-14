@@ -1,0 +1,488 @@
+[
+  {
+    "archive": "linux-arm64.zip",
+    "archive_bytes": 331515,
+    "archive_sha256": "0efaeba925c73e8a45cb0132f910a9be9b8f2e65b52ac6130c4cd697ee0214a9",
+    "source": "611a3c76bf6f064760e5adef4fa7befbeb4eb650",
+    "tree": "fa41026dfd45841dab26655030629e10d3ca2712",
+    "host": "aarch64-unknown-linux-gnu",
+    "source_files_verified": 4679,
+    "source_after_ok": 4679,
+    "executable_sha256": "e07eb91723175521fa68a144165ccf367b2c4b9780ba8263531c1fd0a4f7ef0c",
+    "core": [
+      {
+        "name": "spiralcore-mvm-flowmux",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      },
+      {
+        "name": "spiralcore-transfer",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      },
+      {
+        "name": "uor-r4-object-store",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      }
+    ],
+    "controls": [
+      {
+        "test": "supervisor::flowmux::owned_relays::custody_tests::close_between_core_creation_and_attach_retains_original_reader_until_join",
+        "seconds": {
+          "real": 0.02,
+          "user": 0.0,
+          "sys": 0.01
+        }
+      },
+      {
+        "test": "supervisor::flowmux::owned_relays::custody_tests::poison_between_core_creation_and_attach_retains_original_reader_without_drain",
+        "seconds": {
+          "real": 0.02,
+          "user": 0.0,
+          "sys": 0.01
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::replaced_installed_store_quarantines_original_locked_owner_after_endpoint_drop",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::partial_installed_store_retains_original_parent_name_and_debit",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_workspace_is_charged_before_visits_are_available",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      }
+    ],
+    "members": {
+      "build.jsonl": {
+        "bytes": 321974,
+        "sha256": "7313e0901f5645599e0a351b16f2f26309a0470a18f732bb770afc6d47471846"
+      },
+      "build.stderr": {
+        "bytes": 11899,
+        "sha256": "046403812b2b7b37958ae26f466aacb02d3bdc95e4fd451d0e5a5c74be0aad0b"
+      },
+      "control-0.txt": {
+        "bytes": 644,
+        "sha256": "8a9a21705b52abbae6fc10785601a4e2050bba97ebb73051fbedfb1b9632547a"
+      },
+      "control-1.txt": {
+        "bytes": 656,
+        "sha256": "3f566fe115fd5d55b5225784b9c3e0debf9858f28db0928b8d3726a843466fcb"
+      },
+      "control-2.txt": {
+        "bytes": 466,
+        "sha256": "b138103b350c7ce6419d0ecfabce75b07a475dbf918c1751e378f588400c0193"
+      },
+      "control-3.txt": {
+        "bytes": 434,
+        "sha256": "8b180bb6831cc37b3518c0334980e656b6fa82bc1c76ccc8c58ede435847c737"
+      },
+      "control-4.txt": {
+        "bytes": 438,
+        "sha256": "1390070250140265e8e60052fd3f50253d19fd41bbf20c9cbfcb67afcadb9e87"
+      },
+      "control-5.txt": {
+        "bytes": 458,
+        "sha256": "4a6f1a4251143566b2336892e9c1abb6e3fce9fb3c63b54567f47c644bcbf11f"
+      },
+      "counts.txt": {
+        "bytes": 77,
+        "sha256": "c3df883b1f15f12b9ff33c5bd3e2276646f4a2fda6ccebfb2afbd2ec9e453bb9"
+      },
+      "declared-source.txt": {
+        "bytes": 126,
+        "sha256": "aed6e5ba6a3535250318c589ba397a5bc4ef7429d9c35efb12fbd167dfda048f"
+      },
+      "executable-after.sha256": {
+        "bytes": 144,
+        "sha256": "003c8a4c0cd8a61529d37b2f33d8f83d74ebe5212c9ebbd87752b91f54a1f44a"
+      },
+      "executable-before.sha256": {
+        "bytes": 144,
+        "sha256": "003c8a4c0cd8a61529d37b2f33d8f83d74ebe5212c9ebbd87752b91f54a1f44a"
+      },
+      "rustc.txt": {
+        "bytes": 197,
+        "sha256": "6c427c11d6d5e217066999d86447291da4f7aab462151b8e6064ab230dc0aecf"
+      },
+      "shared-core-lock-sources.txt": {
+        "bytes": 588,
+        "sha256": "ac688df4378498b8a9afce50efb09c0e14b030c453885020a1d87a1264b9f0a7"
+      },
+      "shared-core.json": {
+        "bytes": 666,
+        "sha256": "6d48816cffb533f7bf69c232625c91aa6ab42a8fcb47f76c30b3ef736211191a"
+      },
+      "source-after.txt": {
+        "bytes": 230261,
+        "sha256": "cefe6bfc8c90eaf6b342c91762bdf21509f97deac7dac58abfa7039aae951168"
+      },
+      "source.sha256": {
+        "bytes": 520359,
+        "sha256": "16d55ab597c2e17eb2907147c1945255479f1d047dcaf0a2c043b9564f1a763a"
+      },
+      "test-list.txt": {
+        "bytes": 225493,
+        "sha256": "fb9e5d712ad223cd3fc688f56adf17a1e75ad13fbbc1240302a2ad662aa65cfd"
+      },
+      "source-and-tree.txt": {
+        "bytes": 82,
+        "sha256": "8f6e2f19a8dfc1b0450952a8c2268916fc5b4402b4a4d758271298464c8bcce3"
+      }
+    },
+    "artifact": {
+      "digest": "sha256:0efaeba925c73e8a45cb0132f910a9be9b8f2e65b52ac6130c4cd697ee0214a9",
+      "id": 14137465579,
+      "name": "native-store-consumer-aarch64-unknown-linux-gnu-1",
+      "size_in_bytes": 331515
+    }
+  },
+  {
+    "archive": "linux-x64.zip",
+    "archive_bytes": 331296,
+    "archive_sha256": "40322e4a4a40d4c0bcd274adc3dd31691e7afcedee5d1cd7a1e3b7c8390c9f60",
+    "source": "611a3c76bf6f064760e5adef4fa7befbeb4eb650",
+    "tree": "fa41026dfd45841dab26655030629e10d3ca2712",
+    "host": "x86_64-unknown-linux-gnu",
+    "source_files_verified": 4679,
+    "source_after_ok": 4679,
+    "executable_sha256": "36b49542a7e2e5eceebac15645b1bb4a58cd5c9c130f4676ea07b0deaf2403fb",
+    "core": [
+      {
+        "name": "spiralcore-mvm-flowmux",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      },
+      {
+        "name": "spiralcore-transfer",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      },
+      {
+        "name": "uor-r4-object-store",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      }
+    ],
+    "controls": [
+      {
+        "test": "supervisor::flowmux::owned_relays::custody_tests::close_between_core_creation_and_attach_retains_original_reader_until_join",
+        "seconds": {
+          "real": 0.02,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::owned_relays::custody_tests::poison_between_core_creation_and_attach_retains_original_reader_without_drain",
+        "seconds": {
+          "real": 0.01,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::replaced_installed_store_quarantines_original_locked_owner_after_endpoint_drop",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::partial_installed_store_retains_original_parent_name_and_debit",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_workspace_is_charged_before_visits_are_available",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      }
+    ],
+    "members": {
+      "build.jsonl": {
+        "bytes": 321465,
+        "sha256": "a0eeb156b56306619467e559b034143c0541d4fb04ea22b6a1b90f042c0aa9b6"
+      },
+      "control-0.txt": {
+        "bytes": 644,
+        "sha256": "fbe4f83260628d32de41482b241a22d316dae6ccebcf2637bc1706f522b4078a"
+      },
+      "control-1.txt": {
+        "bytes": 656,
+        "sha256": "4f7bad3d1486c3f9f0bc8c9cdb60d0b7a0578662490e747c6a23507d34628056"
+      },
+      "build.stderr": {
+        "bytes": 11943,
+        "sha256": "3746ab19730f80472d0a1782f0a6b360430818b7a19e8a767010a96195c4b766"
+      },
+      "control-2.txt": {
+        "bytes": 466,
+        "sha256": "669982cea21c7d0aa6f6dd70b6174bb798b8c805fb09a0d9ebe46ae52cad9177"
+      },
+      "control-3.txt": {
+        "bytes": 434,
+        "sha256": "b216b1ad110e48bb1ff542bee449b7fb62856432e355ba9e0a4ac635ea72d02a"
+      },
+      "control-4.txt": {
+        "bytes": 438,
+        "sha256": "ace44be4acee3a182f996e949a8b98cf8b05caa072d507d9202697c7e37ddb1a"
+      },
+      "control-5.txt": {
+        "bytes": 458,
+        "sha256": "88f06c3ca5b006242d5e16e3223195b4a3d245ac2b2d720e82ae7bb661ec1518"
+      },
+      "counts.txt": {
+        "bytes": 77,
+        "sha256": "c3df883b1f15f12b9ff33c5bd3e2276646f4a2fda6ccebfb2afbd2ec9e453bb9"
+      },
+      "declared-source.txt": {
+        "bytes": 126,
+        "sha256": "aed6e5ba6a3535250318c589ba397a5bc4ef7429d9c35efb12fbd167dfda048f"
+      },
+      "executable-after.sha256": {
+        "bytes": 144,
+        "sha256": "df320cec1b69a0ad961bb7a390a88c6a3990043af75da6b140081f9b95dfc991"
+      },
+      "executable-before.sha256": {
+        "bytes": 144,
+        "sha256": "df320cec1b69a0ad961bb7a390a88c6a3990043af75da6b140081f9b95dfc991"
+      },
+      "shared-core-lock-sources.txt": {
+        "bytes": 588,
+        "sha256": "ac688df4378498b8a9afce50efb09c0e14b030c453885020a1d87a1264b9f0a7"
+      },
+      "rustc.txt": {
+        "bytes": 196,
+        "sha256": "b2bdf493bcf6d1dc55181a0efc2774b6d9cf7bf5c8dcc5bed592c994b2ad38c4"
+      },
+      "shared-core.json": {
+        "bytes": 666,
+        "sha256": "6d48816cffb533f7bf69c232625c91aa6ab42a8fcb47f76c30b3ef736211191a"
+      },
+      "source-after.txt": {
+        "bytes": 230261,
+        "sha256": "cefe6bfc8c90eaf6b342c91762bdf21509f97deac7dac58abfa7039aae951168"
+      },
+      "source-and-tree.txt": {
+        "bytes": 82,
+        "sha256": "8f6e2f19a8dfc1b0450952a8c2268916fc5b4402b4a4d758271298464c8bcce3"
+      },
+      "source.sha256": {
+        "bytes": 520359,
+        "sha256": "16d55ab597c2e17eb2907147c1945255479f1d047dcaf0a2c043b9564f1a763a"
+      },
+      "test-list.txt": {
+        "bytes": 225832,
+        "sha256": "e082ef276b64722eb08cdb0c3abc5005c84ffadbceeee54c7556c46df223452b"
+      }
+    },
+    "artifact": {
+      "digest": "sha256:40322e4a4a40d4c0bcd274adc3dd31691e7afcedee5d1cd7a1e3b7c8390c9f60",
+      "id": 14137280964,
+      "name": "native-store-consumer-x86_64-unknown-linux-gnu-1",
+      "size_in_bytes": 331296
+    }
+  },
+  {
+    "archive": "macos-arm64.zip",
+    "archive_bytes": 329827,
+    "archive_sha256": "4b779231856273b9760752e86b5b3d82445fb042e5eabcbfca2112e841635e0b",
+    "source": "611a3c76bf6f064760e5adef4fa7befbeb4eb650",
+    "tree": "fa41026dfd45841dab26655030629e10d3ca2712",
+    "host": "aarch64-apple-darwin",
+    "source_files_verified": 4679,
+    "source_after_ok": 4679,
+    "executable_sha256": "c09fbf641aefe5a4a8d0fa5489fa3bedb27874c7d09dbf5d1bc33b24793f4e44",
+    "core": [
+      {
+        "name": "spiralcore-mvm-flowmux",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      },
+      {
+        "name": "spiralcore-transfer",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      },
+      {
+        "name": "uor-r4-object-store",
+        "version": "0.1.0",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206"
+      }
+    ],
+    "controls": [
+      {
+        "test": "supervisor::flowmux::owned_relays::custody_tests::close_between_core_creation_and_attach_retains_original_reader_until_join",
+        "seconds": {
+          "real": 0.09,
+          "user": 0.01,
+          "sys": 0.03
+        }
+      },
+      {
+        "test": "supervisor::flowmux::owned_relays::custody_tests::poison_between_core_creation_and_attach_retains_original_reader_without_drain",
+        "seconds": {
+          "real": 0.08,
+          "user": 0.01,
+          "sys": 0.02
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::replaced_installed_store_quarantines_original_locked_owner_after_endpoint_drop",
+        "seconds": {
+          "real": 0.01,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::partial_installed_store_retains_original_parent_name_and_debit",
+        "seconds": {
+          "real": 0.01,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_workspace_is_charged_before_visits_are_available",
+        "seconds": {
+          "real": 0.0,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      },
+      {
+        "test": "supervisor::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge",
+        "seconds": {
+          "real": 0.02,
+          "user": 0.0,
+          "sys": 0.0
+        }
+      }
+    ],
+    "members": {
+      "build.jsonl": {
+        "bytes": 307922,
+        "sha256": "55b287ad7aad66d57596548f79f5d981c6f0f5ae3126ec6e1a6fb3d9be2dba5c"
+      },
+      "control-1.txt": {
+        "bytes": 656,
+        "sha256": "81873d7eac2fbd7a18c499e8bd758ddc2960130acf86d3a61089f59c8f82da33"
+      },
+      "control-0.txt": {
+        "bytes": 644,
+        "sha256": "e40b6c10ea7623ba2f903ebf802a5be547bdd53fb663d417037f39046876d6f1"
+      },
+      "build.stderr": {
+        "bytes": 11536,
+        "sha256": "cb0a4d829de2fb9b467a34c602ab093ef92bb8d1560fd9568d4c644091262f8e"
+      },
+      "control-2.txt": {
+        "bytes": 466,
+        "sha256": "64771a6f26c617e42004d076106fc4977d2859ef4d2bc1f1e2e0639932582ee9"
+      },
+      "control-3.txt": {
+        "bytes": 434,
+        "sha256": "acee3c17b24538ed63e7ef29cf7ac428827c9668d17c4678021305901332b293"
+      },
+      "control-4.txt": {
+        "bytes": 438,
+        "sha256": "033dbae1249ed67187a7fdb2d823a1cd16f84721f9af5ea0fe6511ec13596f24"
+      },
+      "control-5.txt": {
+        "bytes": 458,
+        "sha256": "ac185e19ca335c8accb56acd09dc877223c364976209ba81b68756b5c731aa63"
+      },
+      "counts.txt": {
+        "bytes": 77,
+        "sha256": "c3df883b1f15f12b9ff33c5bd3e2276646f4a2fda6ccebfb2afbd2ec9e453bb9"
+      },
+      "declared-source.txt": {
+        "bytes": 126,
+        "sha256": "aed6e5ba6a3535250318c589ba397a5bc4ef7429d9c35efb12fbd167dfda048f"
+      },
+      "executable-after.sha256": {
+        "bytes": 145,
+        "sha256": "6099b3cd34a7c867f586e9cb8995de584accb9830cfdcb790e36d155af7595f0"
+      },
+      "executable-before.sha256": {
+        "bytes": 145,
+        "sha256": "6099b3cd34a7c867f586e9cb8995de584accb9830cfdcb790e36d155af7595f0"
+      },
+      "rustc.txt": {
+        "bytes": 192,
+        "sha256": "e794146d99fad54562fdcbd4a7c8b22b0240d2b0312ff6d879d67939b3131850"
+      },
+      "shared-core-lock-sources.txt": {
+        "bytes": 588,
+        "sha256": "ac688df4378498b8a9afce50efb09c0e14b030c453885020a1d87a1264b9f0a7"
+      },
+      "shared-core.json": {
+        "bytes": 666,
+        "sha256": "6d48816cffb533f7bf69c232625c91aa6ab42a8fcb47f76c30b3ef736211191a"
+      },
+      "source-after.txt": {
+        "bytes": 230261,
+        "sha256": "cefe6bfc8c90eaf6b342c91762bdf21509f97deac7dac58abfa7039aae951168"
+      },
+      "source-and-tree.txt": {
+        "bytes": 82,
+        "sha256": "8f6e2f19a8dfc1b0450952a8c2268916fc5b4402b4a4d758271298464c8bcce3"
+      },
+      "source.sha256": {
+        "bytes": 520359,
+        "sha256": "16d55ab597c2e17eb2907147c1945255479f1d047dcaf0a2c043b9564f1a763a"
+      },
+      "test-list.txt": {
+        "bytes": 223660,
+        "sha256": "7dfa0549810b667ebfaaf90ee82c66f70efb45a904ec8f771e9ae22c2e59c3dc"
+      }
+    },
+    "artifact": {
+      "digest": "sha256:4b779231856273b9760752e86b5b3d82445fb042e5eabcbfca2112e841635e0b",
+      "id": 14137525894,
+      "name": "native-store-consumer-aarch64-apple-darwin-1",
+      "size_in_bytes": 329827
+    }
+  }
+]
