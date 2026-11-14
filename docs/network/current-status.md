@@ -1,5 +1,36 @@
 # Networking delivery status
 
+The descriptor-rooted Unix storage, original host/tenant descriptor/workspace
+funding and reproducible signed-fixture tooling are merged through
+[PR #260](https://github.com/R4-Laboratories/SpiralCore/pull/260) at `adcc7197`.
+The released tree equals reviewed candidate `0a3a2f69` and its CI merge tree.
+All 38 executed checks passed; four manual jobs were skipped. Original parent,
+child, lock and debit remain in custody on uncertain cleanup. Collector-only
+profiles retain zero codec-store descriptor charge. Main's original-refusal
+custody, bounded duplex pacing, deadlines and platform security checks remain.
+
+Fresh native component checks pass on Linux x64/ARM, macOS ARM/Intel and Windows
+Server 2022/2025/ARM: each sustained row recovers 64 MiB exactly each direction,
+with 10,790,065 actual transmitted TLS bytes. Windows post-cleanup lifecycle
+wall/process CPU is 24.717084/43.078125 s (2022), 67.150812/86.187500 s (2025),
+and 116.688586/98.531250 s (ARM). The original 2 s operation and 240 s workload
+gates remain. These are native component/client results, not MVM backend/WAN
+qualification. Separate sender/receiver CPU is unavailable. The packet preserves
+actual byte/readback, setup/CPU/lifecycle and source/artifact identity, including
+the collector RED/GREEN and earlier failures.
+[Reviewed delivery and measurements](evidence/2026-11-14-owned-store-delivery/README.md).
+
+All five MVM outcomes remain active under
+[#42](https://github.com/R4-Laboratories/SpiralCore/issues/42). The next installed
+storage gate is one reviewed public SpiralCore dependency pin in the MVM
+consumer and its exact-source installed custody/retirement qualification;
+[#258](https://github.com/R4-Laboratories/SpiralCore/issues/258) remains open.
+Ari's compatible signed runtime, private MVMD integration, persistent recovery,
+retention/expiry, supported WAN/platform/capacity envelope and security/FIPS/CUI
+qualification remain separate gates. No final upstream MVM contribution is
+submitted by this checkpoint. The final campaign's signed-export selector was
+ignored; historical genuine/native evidence retains its original source scope.
+
 The bounded duplex-progress slice is merged through [PR #282](https://github.com/R4-Laboratories/SpiralCore/pull/282)
 at `22f9fe7b`. The released tree equals reviewed/tested candidate `f680fc61` and
 its CI merge tree. All seven native component rows, all four timing rows and the
@@ -26,7 +57,7 @@ The default-feature Windows direction control passed both Server 2022/2025
 layouts and Windows ARM simultaneous transfer at 64 MiB exact bytes per direction.
 The ARM alternating control failed the unchanged 240-second workload gate near
 block 3,990. It does not reproduce or explain the earlier simultaneous sender-
-reply timeout; PR #260 remains held. All original archives and executable/source
+reply timeout; PR #260 remained held at that diagnostic checkpoint and subsequently merged after the fresh qualification above. All original archives and executable/source
 identities verify. [Paired results, CPU/time and retained failure](evidence/2026-11-14-duplex-control/README.md).
 
 Contributor MVM `639cdc36e` closes a post-spawn helper configuration-unwind
@@ -74,7 +105,7 @@ in #261, without adding a new launch or transfer measurement.
 
 Development checkpoint: contributor MVM `468661f4` and authenticated prepublication rc.3 guest now pass the installed one-guest Linux/Firecracker FlowMux witness. The guest recovered **5,804 exact bytes each way** and the denied destination received zero application bytes. The peer counted **6,889 TLS bytes**; the guest operation took **117.518 ms wall / 1.206 ms CPU**, and the complete controller took **6.87 s wall / 5.70 s CPU**. Original guest/worker retirement and signed-audit verification passed; four persistent reservations remained charged. This is one single-host functional trial without a matched zstd control. [Current measurements, artifact identities and audit limitation](evidence/2026-11-13-owned-unix-store/native-rc3-fixture.md).
 
-The contributor host also passed its recorded Linux workspace tests, strict Clippy, all-targets check and BDD-feature compilation under umask 022. Two restrictive-umask construction defects remain reported upstream. SpiralCore source `0941abea` completed 38 successful hosted checks and four skipped jobs; current passing Windows component rows do not explain earlier deadline failures. **Implementation PR #260 remains unmerged.** These reports publish its development evidence, not a release or the final upstream MVM submission. Current-source paired/recovery and sustained load, canonical cross-host transport, remaining platform cells, capacity and security/FIPS acceptance remain open. [Workspace qualification and retained failures](evidence/2026-11-13-owned-unix-store/mvm-workspace-qualification.md) · [Implementation PR](https://github.com/R4-Laboratories/SpiralCore/pull/260) · [Delivery roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42).
+The contributor host also passed its recorded Linux workspace tests, strict Clippy, all-targets check and BDD-feature compilation under umask 022. Two restrictive-umask construction defects remain reported upstream. SpiralCore source `0941abea` completed 38 successful hosted checks and four skipped jobs; current passing Windows component rows do not explain earlier deadline failures. **Historical development evidence:** implementation PR #260 subsequently merged at `adcc7197` after the fresh qualification above. These older reports retain their original source and measurement scope; this is not the final upstream MVM submission. Current-source paired/recovery and sustained load, canonical cross-host transport, remaining platform cells, capacity and security/FIPS acceptance remain open. [Workspace qualification and retained failures](evidence/2026-11-13-owned-unix-store/mvm-workspace-qualification.md) · [Implementation PR](https://github.com/R4-Laboratories/SpiralCore/pull/260) · [Delivery roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42).
 
 Updated **2026-11-13**. Native Linux x86-64/Firecracker and Apple Silicon/HVF now have clean and lost-first-receipt results on the same corrected MVM host source. Across four single-host trials, B verified, reopened and acknowledged every original byte. In the Linux clean run the relay carried 5,808 B toward B and 1,188 B back, with verified receipt in 105.627 ms and confirmed readback in 0.440133 s. The Linux retry recovered the identical signed receipt in 161.334 ms and completed application readback and the empty probe in 1.361047 s. All original VMMs stopped and all original mailbox helpers exited unassisted. [Linux measurements](evidence/2026-11-12-paired-mailbox/paired-durable-native/linux-823.md) · [Apple measurements](evidence/2026-11-12-paired-mailbox/paired-durable-native/arm64-hvf.md) · [Earlier Linux clean run](evidence/2026-11-12-paired-mailbox/paired-durable-native/graceful.md) · [WAN delivery](https://github.com/R4-Laboratories/SpiralCore/issues/47) · [Platform matrix](https://github.com/R4-Laboratories/SpiralCore/issues/46).
 
