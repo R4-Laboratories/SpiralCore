@@ -1,10 +1,12 @@
 use crate::FailureSite;
+pub(crate) mod routing;
 #[cfg(feature = "witness-timing")]
 use crate::timing::{FrameKind, Metric, Observation, Phase, TimingObserver};
 use crate::{
     Binding, Cancellation, Counters, Error, Event, MAX_BLOCK, ObjectChannel, ObjectRecord, Purpose,
     Result, Rx, Tx,
 };
+use routing::Routing;
 use spiralcore_transfer::{
     Id,
     client::Stats,
@@ -238,6 +240,7 @@ impl Duplex {
         let pending = Arc::new(Mutex::new(None));
         let closed = Arc::new(AtomicBool::new(false));
         let (responses, response_rx) = mpsc::sync_channel(1);
+        let routing = Routing::new(channel.rx, pending.clone(), responses, &cancellation)?;
         let (delivery, delivery_rx) = mpsc::sync_channel(4);
         let (done, done_rx) = mpsc::sync_channel(1);
         let retention = RetentionObserver::default();
@@ -249,10 +252,9 @@ impl Duplex {
             #[cfg(feature = "witness-timing")]
             timing: timing.clone(),
             completed: false,
-            rx: channel.rx,
+            routing: routing.clone(),
             tx: shared_tx.clone(),
             pending: pending.clone(),
-            responses,
             delivery,
             endpoint,
             context: context.clone(),
@@ -282,6 +284,7 @@ impl Duplex {
                 #[cfg(feature = "witness-timing")]
                 timing,
                 tx: shared_tx,
+                routing,
                 pending,
                 responses: response_rx,
                 sender,
@@ -318,6 +321,7 @@ impl Duplex {
 }
 
 pub struct DuplexWriter {
+    routing: Arc<Routing>,
     #[cfg(feature = "witness-stall")]
     stall: StallObserver,
     #[cfg(feature = "witness-timing")]
@@ -342,6 +346,7 @@ impl DuplexWriter {
         tx: &SharedTx,
         pending: &Pending,
         responses: &Receiver<Frame>,
+        routing: &Routing,
         frames: &[Frame],
         purpose: Purpose,
         until: Instant,
@@ -408,25 +413,18 @@ impl DuplexWriter {
                     Phase::SenderWait,
                     FrameKind::from_wire(frame.kind),
                 ));
-                responses.recv_timeout(remaining(until).inspect_err(|e| {
-                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
-                })?)
+                routing.wait_reply(responses, until, cancellation)
             };
             #[cfg(feature = "witness-timing")]
             timing.count(match &response {
                 Ok(reply) if reply.kind == 127 => Observation::WaitRefused,
                 Ok(_) => Observation::WaitOk,
-                Err(RecvTimeoutError::Timeout) => Observation::WaitTimeout,
-                Err(RecvTimeoutError::Disconnected) => Observation::WaitDisconnected,
+                Err(Error::Timeout) => Observation::WaitTimeout,
+                Err(_) => Observation::WaitDisconnected,
             });
-            let reply = response
-                .map_err(|error| match error {
-                    RecvTimeoutError::Timeout => Error::Timeout,
-                    RecvTimeoutError::Disconnected => Error::Closed,
-                })
-                .inspect_err(|e| {
-                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
-                })?;
+            let reply = response.inspect_err(|e| {
+                cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
+            })?;
             remaining(until).inspect_err(|e| {
                 cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
             })?;
@@ -464,6 +462,7 @@ impl DuplexWriter {
                 tx,
                 pending,
                 responses,
+                &self.routing,
                 frames,
                 purpose,
                 until,
@@ -767,10 +766,9 @@ struct Worker<A: Authority> {
     #[cfg(feature = "witness-timing")]
     timing: TimingObserver,
     completed: bool,
-    rx: Rx,
+    routing: Arc<Routing>,
     tx: SharedTx,
     pending: Pending,
-    responses: SyncSender<Frame>,
     delivery: SyncSender<Event>,
     endpoint: ReceiveEndpoint<A>,
     context: Context,
@@ -790,7 +788,11 @@ impl<A: Authority> Worker<A> {
         self.cancellation.check_delivery()?;
         let counters = (
             acquire_tx(&self.tx, deadline(self.timeout)?, &self.cancellation)?.counters(),
-            self.rx.counters(),
+            self.routing
+                .reader()?
+                .as_ref()
+                .ok_or(Error::Closed)?
+                .counters(),
         );
         self.completed = true;
         self.cancellation.complete();
@@ -944,7 +946,10 @@ impl<A: Authority> Worker<A> {
             }
             #[cfg(feature = "witness-stall")]
             self.stall.mark(WorkerPhase::Poll, 0, self.index);
-            match self.rx.poll_input() {
+            let routing = self.routing.clone();
+            let mut held = routing.reader()?;
+            let rx = held.as_mut().ok_or(Error::Closed)?;
+            match rx.poll_input() {
                 Ok(false) => continue,
                 Ok(true) => {}
                 Err(error)
@@ -958,46 +963,33 @@ impl<A: Authority> Worker<A> {
                     let tx = acquire_tx(&self.tx, deadline(self.timeout)?, &self.cancellation)?;
                     if self.local_closed.load(Ordering::Acquire) && lock(&self.pending)?.is_none() {
                         drop(tx);
+                        drop(held);
                         return self.complete();
                     }
                     return Err(error);
                 }
                 Err(error) => return Err(error),
             }
-            let mut until = deadline(self.timeout)?;
-            {
-                let mut pending = lock(&self.pending)?;
-                if let Some(expected) = pending.as_mut() {
-                    remaining(expected.until)?;
-                    let seen = expected
-                        .seen
-                        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_add(1))
-                        .map_err(|_| Error::Limit)?;
-                    if seen >= 32 {
-                        return Err(Error::Limit);
-                    }
-                    until = until.min(expected.until);
-                }
-            }
+            let until = routing.read_deadline(rx, deadline(self.timeout)?)?;
             #[cfg(feature = "witness-stall")]
             self.stall.mark(WorkerPhase::Receive, 0, self.index);
-            match self.rx.receive_object(until)? {
-                ObjectRecord::Frame(purpose, frame) if matches!(frame.kind, 1..=6) => {
-                    self.request(purpose, frame, until)?
+            let record = rx.receive_object(until)?;
+            if let ObjectRecord::Frame(purpose, frame) = record {
+                if !matches!(frame.kind, 1..=6) {
+                    routing.route(purpose, frame)?;
+                    continue;
                 }
-                ObjectRecord::Frame(purpose, frame) => {
-                    let expected = lock(&self.pending)?.take().ok_or(Error::Protocol)?;
-                    if purpose != expected.purpose
-                        || frame.transfer != expected.transfer
-                        || frame.seq != expected.seq
-                    {
-                        return Err(Error::Protocol);
-                    }
-                    remaining(expected.until)?;
-                    self.responses
-                        .try_send(frame)
-                        .map_err(|_| Error::Protocol)?;
-                }
+                let _inbound = routing.inbound();
+                drop(held);
+                routing.ready();
+                self.request(purpose, frame, until)?;
+                continue;
+            }
+            let _inbound = routing.inbound();
+            drop(held);
+            routing.ready();
+            match record {
+                ObjectRecord::Frame(_, _) => return Err(Error::Protocol),
                 ObjectRecord::ApplicationHalfClose => {
                     if self.remote_closed || self.active.is_some() {
                         return Err(Error::Protocol);
@@ -1020,5 +1012,6 @@ impl<A: Authority> Drop for Worker<A> {
         if !self.completed {
             self.cancellation.cancel();
         }
+        self.routing.retire();
     }
 }

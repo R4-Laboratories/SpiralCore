@@ -117,6 +117,8 @@ fn independent_reply_progresses_while_original_inbound_authority_is_held() {
         &stores[1],
         Duration::from_secs(2),
     );
+    let left_cancel = left_tx.cancellation.clone();
+    let right_cancel = right_tx.cancellation.clone();
     let wire = right_tx.tx.clone();
     let diagnostic_stop = AtomicBool::new(false);
     let snapshot = || {
@@ -159,7 +161,12 @@ fn independent_reply_progresses_while_original_inbound_authority_is_held() {
         let left_semantics = left_guard.join();
         let right_semantics = right_guard.join();
         eprintln!(
-            "REPLY_PROGRESS inbound_gate_entered={} before={before:?} after={after:?} local_success={} original_workers_collected={collected} left_collection={left_collection:?} right_collection={right_collection:?}",
+            "FAILURES left={:?} right={:?}",
+            left_cancel.first_failure(),
+            right_cancel.first_failure()
+        );
+        eprintln!(
+            "REPLY_PROGRESS inbound_gate_entered={} before={before:?} after={after:?} local_success={} original_workers_collected={collected} left_collection={left_collection:?} right_collection={right_collection:?} peer_result={peer_result:?} left_semantics={left_semantics:?} right_semantics={right_semantics:?}",
             entered.is_ok(),
             local_result.is_ok()
         );
