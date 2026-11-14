@@ -11,6 +11,7 @@ on:
       - 'crates/spiralcore-mvm-live/src/installed_resources.rs'
       - 'crates/spiralcore-mvm-live/src/installed_parent.rs'
       - 'crates/spiralcore-mvm-live/src/installed_parent/**'
+      - 'docs/platforms/mvm-mailbox-portable.json'
       - 'crates/spiralcore-mvm-live/Cargo.toml'
       - 'crates/spiralcore-mvm-live/Cargo.lock'
       - 'crates/spiralcore-mvm-adapter/Cargo.toml'
@@ -149,4 +150,110 @@ jobs:
         with:
           name: canonical-endpoint-${{ matrix.target }}-${{ github.run_attempt }}
           path: endpoint-evidence/
+          retention-days: 14
+  native-store-consumer:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, target: x86_64-unknown-linux-gnu}
+          - {runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu}
+          - {runner: macos-26, target: aarch64-apple-darwin}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+      EXPECTED_TARGET: ${{ matrix.target }}
+      MVM_DEV_ENV_KEEP_INHERITED: 1
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Resolve the declared public consumer
+        id: consumer
+        run: |
+          set -euo pipefail
+          source=$(jq -er .mvm_source docs/platforms/mvm-mailbox-portable.json)
+          prefix='git+https://github.com/Casey-allard/mvm?rev='
+          [[ "$source" == "$prefix"* ]]
+          revision=${source#"$prefix"}
+          revision=${revision%%#*}
+          [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$source" == "$prefix$revision#$revision" ]]
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+          mkdir consumer-evidence
+          printf '%s\n' "$source" > consumer-evidence/declared-source.txt
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Casey-allard/mvm
+          ref: ${{ steps.consumer.outputs.revision }}
+          path: consumer
+          persist-credentials: false
+      - name: Bind native consumer source and exact shared core
+        working-directory: consumer
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal
+          evidence="$GITHUB_WORKSPACE/consumer-evidence"
+          git rev-parse HEAD 'HEAD^{tree}' > "$evidence/source-and-tree.txt"
+          test "$(git rev-parse HEAD)" = '${{ steps.consumer.outputs.revision }}'
+          rustc +1.97.1 -vV > "$evidence/rustc.txt"
+          grep -Fx "host: $EXPECTED_TARGET" "$evidence/rustc.txt"
+          git ls-files -z | xargs -0 shasum -a 256 > "$evidence/source.sha256"
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/consumer-target" >> "$GITHUB_ENV"
+          echo "CARGO_HOME=$HOME/.cargo" >> "$GITHUB_ENV"
+          echo "MVM_HOME=$RUNNER_TEMP/consumer-home" >> "$GITHUB_ENV"
+          echo "TMPDIR=$RUNNER_TEMP/consumer-tmp" >> "$GITHUB_ENV"
+          mkdir -m700 "$RUNNER_TEMP/consumer-home" "$RUNNER_TEMP/consumer-tmp"
+          cargo +1.97.1 metadata --locked --format-version 1 --filter-platform "$EXPECTED_TARGET" > "$RUNNER_TEMP/consumer-metadata.json"
+          expected='git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206'
+          jq -e --arg expected "$expected" '
+            [.packages[] | select(.name | startswith("spiralcore-") or . == "uor-r4-object-store")] as $core |
+            ($core | length) == 4 and all($core[]; .source == $expected)
+          ' "$RUNNER_TEMP/consumer-metadata.json"
+          jq '[.packages[] | select(.name | startswith("spiralcore-") or . == "uor-r4-object-store") | {name, version, source}]' \
+            "$RUNNER_TEMP/consumer-metadata.json" > "$evidence/shared-core.json"
+      - name: Execute original reader and store ownership controls
+        working-directory: consumer
+        run: |
+          set -euo pipefail
+          source scripts/dev-env.sh
+          evidence="$GITHUB_WORKSPACE/consumer-evidence"
+          cargo +1.97.1 test --locked -p mvm-hostd --lib --no-run --message-format=json > "$RUNNER_TEMP/consumer-build.jsonl" 2> "$evidence/build.stderr"
+          executable=$(jq -ers '[.[] | select(.reason == "compiler-artifact" and .target.name == "mvm_hostd" and .target.kind == ["lib"] and .profile.test and .executable) | .executable] | select(length == 1) | first' "$RUNNER_TEMP/consumer-build.jsonl")
+          [[ "$(realpath "$executable")" == "$(realpath "$CARGO_TARGET_DIR")"/debug/deps/* ]]
+          shasum -a 256 "$executable" > "$evidence/executable-before.sha256"
+          "$executable" --list --format terse > "$evidence/test-list.txt"
+          tests=(
+            supervisor::flowmux::owned_relays::custody_tests::close_between_core_creation_and_attach_retains_original_reader_until_join
+            supervisor::flowmux::owned_relays::custody_tests::poison_between_core_creation_and_attach_retains_original_reader_without_drain
+            supervisor::flowmux::spiralcore_payload::resource_pool_tests::replaced_installed_store_quarantines_original_locked_owner_after_endpoint_drop
+            supervisor::flowmux::spiralcore_payload::resource_pool_tests::partial_installed_store_retains_original_parent_name_and_debit
+            supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_workspace_is_charged_before_visits_are_available
+            supervisor::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge
+          )
+          index=0
+          for test in "${tests[@]}"; do
+            grep -Fx "$test: test" "$evidence/test-list.txt"
+            /usr/bin/time -p "$executable" --exact "$test" --show-output --test-threads=1 > "$evidence/control-$index.txt" 2>&1
+            grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
+            index=$((index + 1))
+          done
+          shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
+          cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
+          shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
+          printf 'executed_controls=6\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-store-consumer-${{ matrix.target }}-${{ github.run_attempt }}
+          path: consumer-evidence/
+          if-no-files-found: error
           retention-days: 14
