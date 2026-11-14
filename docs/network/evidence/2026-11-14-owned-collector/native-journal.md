@@ -30,6 +30,7 @@ latest upstream release workflow inspected was the rc.3 run
 [43486823143](https://github.com/tinylabscom/mvm/actions/runs/43486823143), whose
 signed candidate is the older runtime used here; newer source-build releases
 inspected contain host helpers, not a replacement signed guest runtime.
+Compatibility qualification is tracked in [#268](https://github.com/R4-Laboratories/SpiralCore/issues/268).
 No signature check, boot bound or original-owner check is bypassed to obtain a
 positive row. This result closes the observed retirement behavior, not the
 complete mailbox service or upstream submission.
