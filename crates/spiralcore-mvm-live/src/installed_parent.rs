@@ -49,6 +49,9 @@ mod startup_bounds;
 #[cfg(all(test, target_os = "linux"))]
 #[path = "installed_parent/collector_tests.rs"]
 mod collector_tests;
+#[cfg(all(test, target_os = "linux"))]
+#[path = "installed_parent/store_load_tests.rs"]
+mod store_load_tests;
 #[cfg(test)]
 #[path = "installed_parent/config_tests.rs"]
 mod config_tests;
