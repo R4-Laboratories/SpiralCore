@@ -1,5 +1,49 @@
 # Networking delivery status
 
+Owned filesystem workspace funding is merged through
+[PR #296](https://github.com/R4-Laboratories/SpiralCore/pull/296) at `a0b9b32e`.
+The core now quotes Store/Arc, index/scan, names and platform synchronization
+alongside directory buffers, requires original-owner funding before effects,
+and retains the original lease through metadata destruction. The frozen MVM
+consumer `04a5e3e0` uses reviewed core `86497e88` for both dependencies and
+derives the declaration from its original current SmallV1 permit. The installed
+1 MiB workspace floor, separately paid 2 MiB execution class, canonical bytes,
+original custody, signed authority, deadlines and security checks remain.
+Requested-layout declarations do not establish physical allocator/native-stack
+bounds or grant authority.
+
+All 40 executed CI checks pass; four manual jobs are SKIPPED/NOT_RUN. Seven
+native rows each pass 87 FlowMux and 20 ordered controls, reconstructing exact
+64 MiB each direction with 10,790,065 actual TLS bytes under unchanged 2 s/240 s
+guards. Windows ARM records 122.534585 s lifecycle / 90.734375 s process CPU.
+All three native consumer rows pass eight original reader/store controls each.
+Independent code/security, full-command and artifact reviews clear the exact
+reviewed/CI/released tree. The original ZIPs and complete checksums are retained.
+
+Full serial default-profile MVM workspace/doctests, strict Clippy, all-target
+and explicit BDD compile checks pass. Outer harnesses record 21,743 passing
+binary executions and 27 passing doctest executions, with 67/8 ignored; these
+are execution counts, not deduplicated definitions. All 4,680 MVM source inputs
+remain unchanged. The wrapper's rejection of 30 generated Python bytecode files
+is retained separately from successful commands and verified cleanup. Both
+installed-tool compile checks and the original journal restart/same-receipt
+regression pass, with 485 unchanged SDK inputs. These are source/component and
+native host-process observations, not installed MVM, WAN or fleet acceptance.
+
+Ari alignment is checked through MVM `7fe252a5`: preserve current
+endpoint/FlowMux ownership, independent owner grants and warm-claim audit
+identity. Merged ADR-057/#5513 and #5292 choose a keyless host scheduler with
+VM-scoped keyholders; Proposed ADR-062/#5544 still needs custody reconciliation
+before daemon cutover. rc.4 runtime/signature-bundle metadata is visible, but
+compatible signed bytes and installed boot are not qualified. Current-owner
+integration is the next implementation boundary. Complete #258 physical,
+original-enforced-runtime and concurrency acceptance, all five #42 outcomes,
+private MVMD, supported backend/WAN/capacity and separate security gates remain
+open. No final upstream MVM contribution is submitted.
+[Reviewed source, costs, retained failures and delivery evidence](evidence/2026-11-15-owned-workspace-funding/README.md).
+
+## Earlier source-scoped checkpoints
+
 Owned publication verification is merged through
 [PR #294](https://github.com/R4-Laboratories/SpiralCore/pull/294) at `6d195a0c`.
 The private Unix preflight/retirement verifier now hashes through fixed 8 KiB
