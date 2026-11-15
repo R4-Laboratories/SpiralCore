@@ -138,7 +138,8 @@ jobs:
           $scopes = @(
             @{ Name = 'owned-primitives'; Selector = @('--lib', 'endpoint::storage::owned::tests::'); Expected = $primitiveCount },
             @{ Name = 'owned-store'; Selector = @('--test', 'owned_store'); Expected = 5 },
-            @{ Name = 'owned-resources'; Selector = @('--test', 'owned_store_resources'); Expected = 1 }
+            @{ Name = 'owned-resources'; Selector = @('--test', 'owned_store_resources'); Expected = 1 },
+            @{ Name = 'owned-allocation'; Selector = @('--test', 'owned_store_allocation'); Expected = 1 }
           )
           foreach ($scope in $scopes) {
             $name = $scope.Name
@@ -157,6 +158,19 @@ jobs:
             $g = $summaries[0].Groups
             if ([int]$g[1].Value -ne $scope.Expected -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw "Incomplete $name test execution" }
             if ($name -ne 'owned-primitives' -and [int]$g[5].Value -ne 0) { throw "Filtered integration tests in $name" }
+            if ($name -eq 'owned-allocation') {
+              $rows = [regex]::Matches($log, '(?m)^OWNED_ALLOCATION (.+)\r?$')
+              if ($rows.Count -ne 1) { throw 'Missing isolated owned-allocation measurement' }
+              $row = $rows[0].Groups[1].Value | ConvertFrom-Json
+              if ($row.stores -ne 2 -or $row.publications_per_store -ne 64 -or $row.recovery_stages_per_store -ne 32 -or
+                  $row.admitted_entry_count -ne 101 -or $row.overflow_entry_count -ne 102 -or
+                  $row.exact_readbacks -ne $true -or $row.retirement_overload_preserved_all_bytes -ne $true -or
+                  $row.original_lock_retained_on_refusal -ne $true -or $row.rust_peak_requested -le 0 -or
+                  $row.counter_bookkeeping_valid -ne $true -or $row.application_bytes -ne 4194304 -or
+                  $row.request_frame_bytes -le 0 -or $row.reply_frame_bytes -le 0 -or
+                  $row.rust_peak_requested -gt $row.aggregate_declared_bytes) { throw 'Incomplete populated owned-store qualification' }
+              $row | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/owned-allocation.json
+            }
           }
           $lockChanges = git status --porcelain -- crates/spiralcore-transfer/Cargo.lock
           if ($LASTEXITCODE -ne 0 -or $lockChanges) { throw 'Could not confirm unchanged transfer lockfile' }
