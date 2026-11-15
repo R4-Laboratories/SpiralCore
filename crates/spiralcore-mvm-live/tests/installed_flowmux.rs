@@ -127,7 +127,8 @@ fn partition(signed: &SignedExecutionPlan) -> Result<EndpointPartitionLimits> {
         host_stack_bytes: 48 << 20,
         cache_disk_bytes: 32 << 20,
         staging_disk_bytes: 4 << 20,
-        workers: 6,
+        workers: mvm_hostd::installed_endpoint::owned_network_runtime_requirements()?
+            .required_workers,
         max_streams: 1,
     })
 }
