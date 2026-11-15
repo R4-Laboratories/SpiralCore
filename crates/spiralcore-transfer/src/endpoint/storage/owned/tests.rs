@@ -415,14 +415,16 @@ fn checked_walk_holds_four_transient_fds_at_file_verification() {
     assert_eq!(count(), baseline);
     println!("OWNED_SCAN_FD_DELTA=4");
     drop(store);
-    let stores: Vec<_> = (0..2).map(|_| {
-        let store = Store::new();
-        store.claim();
-        let dir = store.lease.open_namespace(ns, true).unwrap();
-        drop(super::create_new_at(dir.as_fd(), "entry".as_ref()).unwrap());
-        drop(dir);
-        store
-    }).collect();
+    let stores: Vec<_> = (0..2)
+        .map(|_| {
+            let store = Store::new();
+            store.claim();
+            let dir = store.lease.open_namespace(ns, true).unwrap();
+            drop(super::create_new_at(dir.as_fd(), "entry".as_ref()).unwrap());
+            drop(dir);
+            store
+        })
+        .collect();
     let persistent = count();
     let wall = std::time::Instant::now();
     let cpu = cpu_time::ProcessTime::now();
@@ -434,27 +436,43 @@ fn checked_walk_holds_four_transient_fds_at_file_verification() {
             let arrived = arrived.clone();
             let (release, released) = std::sync::mpsc::sync_channel(1);
             releases.push(release);
-            workers.push(scope.spawn(move || store.lease.visit(None, |parent, dir, name| {
-                if parent == Some(ns) && name == "entry" {
-                    let file = super::open_read_at(dir, name)?;
-                    arrived.send(()).map_err(|_| Error::Storage)?;
-                    // This bounded fixture gate holds the actual four transient FDs.
-                    let outcome = released.recv_timeout(std::time::Duration::from_secs(5));
-                    drop(file);
-                    outcome.map_err(|_| Error::Storage)?;
-                }
-                Ok(())
-            })));
+            workers.push(scope.spawn(move || {
+                store.lease.visit(None, |parent, dir, name| {
+                    if parent == Some(ns) && name == "entry" {
+                        let file = super::open_read_at(dir, name)?;
+                        arrived.send(()).map_err(|_| Error::Storage)?;
+                        // This bounded fixture gate holds the actual four transient FDs.
+                        let outcome = released.recv_timeout(std::time::Duration::from_secs(5));
+                        drop(file);
+                        outcome.map_err(|_| Error::Storage)?;
+                    }
+                    Ok(())
+                })
+            }));
         }
-        let ready = (0..2).all(|_| arrivals.recv_timeout(std::time::Duration::from_secs(5)).is_ok());
+        let ready = (0..2).all(|_| {
+            arrivals
+                .recv_timeout(std::time::Duration::from_secs(5))
+                .is_ok()
+        });
         let peak = count();
+        let both_work_buffers_held = stores.iter().all(|store| {
+            matches!(
+                store.lease.0.work.try_lock(),
+                Err(std::sync::TryLockError::WouldBlock)
+            )
+        });
         // Always release and collect both original threads before assertions.
-        for release in releases { let _ = release.send(()); }
+        for release in releases {
+            let _ = release.send(());
+        }
         let results: Vec<_> = workers.into_iter().map(|worker| worker.join()).collect();
-        (peak, results, ready)
+        (peak, results, ready && both_work_buffers_held)
     });
     assert!(ready);
-    assert!(results.into_iter().all(|result| matches!(result, Ok(Ok(_)))));
+    assert!(results
+        .into_iter()
+        .all(|result| matches!(result, Ok(Ok(_)))));
     assert_eq!(peak - persistent, 8);
     assert_eq!(count(), persistent);
     println!("OWNED_CONCURRENT_SCAN stores=2 transient_fds=8 persistent_fds={persistent} observed_fds={peak} observer_fds=1 wall_ns={} process_cpu_ns={}", wall.elapsed().as_nanos(), cpu.elapsed().as_nanos());
@@ -550,4 +568,82 @@ fn post_unlink_sync_failure_quarantines_the_original_locked_store() {
     ));
     assert_eq!(store.lease.retire_contents(), Err(Error::Storage));
     assert!(store.lease.check_lane([1; 32]).is_err());
+}
+
+#[test]
+fn directory_work_contention_reentry_and_callback_errors_keep_original_outcomes() {
+    let store = Store::new();
+    store.claim();
+    let work = store.lease.0.work.lock().unwrap();
+    assert_eq!(
+        store
+            .lease
+            .walk(None, |_, _, _| panic!("contended callback")),
+        Err(Error::Limit)
+    );
+    drop(work);
+    let mut visited = 0;
+    assert_eq!(
+        store.lease.walk(None, |_, _, _| {
+            visited += 1;
+            assert_eq!(
+                store
+                    .lease
+                    .walk(None, |_, _, _| panic!("reentrant callback")),
+                Err(Error::Limit)
+            );
+            Err(Error::Unauthorized)
+        }),
+        Err(Error::Unauthorized)
+    );
+    assert_eq!(visited, 1);
+    assert_eq!(
+        store.lease.walk(None, |_, _, _| Err(Error::Limit)),
+        Err(Error::Limit)
+    );
+    assert_eq!(store.lease.walk(None, |_, _, _| Ok(())).unwrap(), 2);
+}
+
+#[test]
+fn poisoned_directory_work_refuses_without_cleanup_or_lock_release() {
+    let mut store = Store::new();
+    store.claim();
+    std::thread::scope(|scope| {
+        let lease = &store.lease;
+        assert!(scope
+            .spawn(move || {
+                let _work = lease.0.work.lock().unwrap();
+                panic!("injected directory work poison");
+            })
+            .join()
+            .is_err());
+    });
+    assert_eq!(
+        store
+            .lease
+            .walk(None, |_, _, _| panic!("poisoned callback")),
+        Err(Error::Storage)
+    );
+    assert_eq!(store.lease.retire_contents(), Err(Error::Storage));
+    let owner = File::open(store.parent.join("store/.owner")).unwrap();
+    assert!(matches!(
+        owner.try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+    assert!(store.parent.join("store/.spiralcore-profile-v1").exists());
+}
+
+#[test]
+fn directory_buffers_survive_successful_retirement_until_final_store_drop() {
+    let mut store = Store::new();
+    store.claim();
+    assert_eq!(OwnedStorePolicy::directory_buffer_bytes(), 32768);
+    let before = store.lease.0.work.lock().unwrap().identity();
+    assert_eq!(before.2, OwnedStorePolicy::directory_buffer_bytes());
+    store.lease.retire_contents().unwrap();
+    assert_eq!(store.lease.0.work.try_lock().unwrap().identity(), before);
+    let original = Arc::downgrade(&store.lease.0);
+    assert!(original.upgrade().is_some());
+    drop(store);
+    assert!(original.upgrade().is_none());
 }

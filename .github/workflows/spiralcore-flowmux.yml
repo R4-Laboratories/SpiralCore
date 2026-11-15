@@ -5,6 +5,7 @@ on:
     paths:
       - 'crates/spiralcore-mvm-flowmux/**'
       - 'crates/spiralcore-transfer/**'
+      - 'crates/spiralcore-directory-macos/**'
       - 'crates/spiralcore-storage-windows/**'
       - 'crates/uor-r4-object-store/**'
       - 'docs/platforms/mvm-mailbox-portable.json'
@@ -129,14 +130,49 @@ jobs:
             $rows | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/metadata-pairs.json
           }
           if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Locked metadata execution changed source' }
+      - name: Execute fixed-buffer directory parser and native macOS refills
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-directory-macos/Cargo.toml', '--lib')
+          $build = @(& cargo @cargoArgs --no-run --message-format=json 2> flowmux-evidence/directory-build.txt)
+          $buildCode = $LASTEXITCODE
+          $build | Set-Content flowmux-evidence/directory-build.jsonl
+          if ($buildCode -ne 0) {
+            $build | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.reason -eq 'compiler-message' } | ForEach-Object { $_.message.rendered | Write-Output }
+            throw "Directory helper build failed: $buildCode"
+          }
+          $artifacts = @($build | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object {
+            $_.reason -eq 'compiler-artifact' -and $_.executable -and $_.target.name -eq 'spiralcore_directory_macos'
+          })
+          if ($artifacts.Count -ne 1) { throw 'Expected one directory helper executable' }
+          $executable = $artifacts[0].executable
+          $before = (Get-FileHash $executable -Algorithm SHA256).Hash.ToLowerInvariant()
+          $log = (& cargo @cargoArgs -- --show-output --test-threads=1 --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/directory-tests.txt
+          $log | Write-Output
+          $expected = if ($env:RUNNER_OS -eq 'macOS') { 10 } else { 8 }
+          if ($code -ne 0 -or $log -notmatch "test result: ok\. $expected passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;") { throw 'Incomplete directory helper tests' }
+          $after = (Get-FileHash $executable -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($before -ne $after) { throw 'Directory executable changed' }
+          @{ passed = $expected; executable_sha256_before = $before; executable_sha256_after = $after;
+            scope = 'safe ABI parser; native macOS additionally forces refills, fresh offsets, early stop and refusal'
+          } | ConvertTo-Json | Set-Content flowmux-evidence/directory-counts.json
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-directory-macos/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/directory-clippy.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Directory helper Clippy failed' }
+          if (git status --porcelain -- crates/spiralcore-directory-macos/Cargo.lock) { throw 'Directory lockfile changed' }
       - name: Execute native Unix owned-store guards
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $false
-          $primitiveCount = if ($env:RUNNER_OS -eq 'Linux') { 18 } else { 17 }
+          $primitiveCount = if ($env:RUNNER_OS -eq 'Linux') { 21 } else { 20 }
           $scopes = @(
             @{ Name = 'owned-primitives'; Selector = @('--lib', 'endpoint::storage::owned::tests::'); Expected = $primitiveCount },
+            @{ Name = 'directory-work'; Selector = @('--lib', 'endpoint::storage::owned::work::'); Expected = 2 },
             @{ Name = 'owned-store'; Selector = @('--test', 'owned_store'); Expected = 5 },
             @{ Name = 'owned-resources'; Selector = @('--test', 'owned_store_resources'); Expected = 1 },
             @{ Name = 'owned-allocation'; Selector = @('--test', 'owned_store_allocation'); Expected = 1 }
@@ -157,7 +193,7 @@ jobs:
             if ($code -ne 0 -or $summaries.Count -ne 1) { throw "Failed $name tests; see $name-tests.txt" }
             $g = $summaries[0].Groups
             if ([int]$g[1].Value -ne $scope.Expected -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw "Incomplete $name test execution" }
-            if ($name -ne 'owned-primitives' -and [int]$g[5].Value -ne 0) { throw "Filtered integration tests in $name" }
+            if ($name -notin @('owned-primitives', 'directory-work') -and [int]$g[5].Value -ne 0) { throw "Filtered integration tests in $name" }
             if ($name -eq 'owned-allocation') {
               $rows = [regex]::Matches($log, '(?m)^OWNED_ALLOCATION (.+)\r?$')
               if ($rows.Count -ne 1) { throw 'Missing isolated owned-allocation measurement' }

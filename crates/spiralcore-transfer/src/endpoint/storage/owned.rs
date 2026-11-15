@@ -17,6 +17,13 @@ pub struct OwnedStorePolicy {
 }
 
 impl OwnedStorePolicy {
+    /// Retained requested allocation for the two directory buffers per store.
+    /// Fund before capture, through final lease destruction. This excludes
+    /// allocator overhead, fixed bookkeeping, stacks and kernel memory.
+    pub const fn directory_buffer_bytes() -> usize {
+        2 * work::BUFFER_BYTES
+    }
+
     pub fn small_v1(
         limits: &Limits,
         funded_entry_visits: u16,
@@ -52,6 +59,7 @@ mod tests;
 mod io;
 mod retire;
 mod walk;
+mod work;
 pub(crate) use io::{check_file_at, create_new_at, open_read_at, quota_len_at, unlink_checked_at};
 
 use rustix::fs::{FileType, OFlags};
@@ -76,6 +84,7 @@ struct Store {
     child: Arc<File>,
     policy: OwnedStorePolicy,
     claim: Mutex<Claim>,
+    work: Mutex<work::Buffers>,
     #[cfg(test)]
     fail_publication_sync: std::sync::atomic::AtomicBool,
 }
@@ -91,7 +100,8 @@ struct Claim {
 
 impl OwnedStoreLease {
     /// The provider supplies an original private mount tree with no nested mounts.
-    /// Capture performs checks only. Attach this lease to the original permit before opening an endpoint.
+    /// Capture checks custody and fallibly allocates the funded directory buffers.
+    /// Attach this lease to the original permit before opening an endpoint.
     pub fn capture(
         parent: Arc<File>,
         leaf: &OsStr,
@@ -100,12 +110,14 @@ impl OwnedStoreLease {
     ) -> Result<Self> {
         io::private(&io::held(parent.as_fd())?, FileType::Directory)?;
         io::check_named(parent.as_fd(), leaf, child.as_fd(), FileType::Directory)?;
+        let work = work::Buffers::new()?;
         Ok(Self(Arc::new(Store {
             parent,
             leaf: leaf.to_owned(),
             child,
             policy,
             claim: Mutex::new(Claim::default()),
+            work: Mutex::new(work),
             #[cfg(test)]
             fail_publication_sync: std::sync::atomic::AtomicBool::new(false),
         })))
