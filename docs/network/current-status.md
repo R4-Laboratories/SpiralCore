@@ -1,5 +1,25 @@
 # Networking delivery status
 
+Populated owned-store qualification is merged through
+[PR #287](https://github.com/R4-Laboratories/SpiralCore/pull/287) at `525cd69f`.
+Two worker threads exercise 64 publications per store, recovery at 101 entries,
+and a 102-entry retirement refusal that preserves every byte and original
+owner/lock. The source/executable-bound witness passes on Linux x64/ARM and
+macOS Intel/ARM. All 27 executed checks pass; manual genuine-export is skipped.
+The released, reviewed and tested CI merge trees match. Product code, protocol,
+authority, deadlines and MVM's reviewed dependency pin are unchanged.
+
+Each row verifies 4,194,304 application bytes and counts 4,250,368/55,808 encoded
+request/reply frame bytes in process. Native peak requested Rust heap ranges
+from 2,228,363 to 2,234,363 bytes; the final Wick row records 2,263,327 bytes,
+1.546448361 s fixture wall and 126.914196 ms process CPU. This is an observed
+instrumented Rust allocation sample against an 18,681,720-byte modeled quote,
+not a hard memory bound or proof of the 1 MiB filesystem workspace in isolation.
+Direct libc allocation, allocator overhead, stacks and RSS are outside that
+counter; overlapping store lifetimes do not prove simultaneous iterator peaks.
+Full #258 memory/iterator/concurrency acceptance remains open.
+[Native artifacts, source review, actual costs and retained failures](evidence/2026-11-14-populated-store-allocation/README.md).
+
 The installed MVM consumer qualification is merged through
 [PR #285](https://github.com/R4-Laboratories/SpiralCore/pull/285) at `acd39903`.
 Both consumer dependencies use reviewed SpiralCore `adcc7197`; active SDK
