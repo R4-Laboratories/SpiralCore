@@ -472,7 +472,29 @@ fn metadata_cases() {
         let lifecycle_wall = lifecycle_clock.elapsed().as_nanos();
         let lifecycle_cpu = lifecycle_cpu.elapsed().as_nanos();
         assert!(allocations::valid());
-        rows.push(serde_json::json!({"component_bytes":leaf.len(),"publications":64,"body_bytes_each":1,"initial_entries":101,"post_recovery_entries":68,"setup_readback_bytes":fixture.setup_readback_bytes,"post_eviction_readback_bytes":final_readback,"evictions":2,"request_frame_bytes":request_bytes,"reply_frame_bytes":reply_bytes,"required_heap_bytes":required.required_heap_bytes,"required_existing_stack_bytes":required.required_existing_stack_bytes,"directory_buffer_bytes":required.directory_buffer_bytes,"fixed_store_layout_bytes":required.fixed_store_layout_bytes,"ordered_index_bytes":required.ordered_index_bytes,"scan_record_bytes":required.scan_record_bytes,"retained_requested_bytes":required.retained_requested_bytes,"peak_temporary_requested_bytes":required.peak_temporary_requested_bytes,"original_owner_memory_enforcement_required":required.original_owner_memory_enforcement_required,"synchronization_bytes":required.synchronization_bytes,"capture_allocation_count":required.retained_allocation_count,"setup_wall_ns":setup_wall,"setup_process_cpu_ns":setup_cpu,"capture_wall_ns":capture_wall,"capture_process_cpu_ns":capture_cpu,"recovery_wall_ns":recover_wall,"recovery_process_cpu_ns":recover_cpu,"index_wall_ns":index_wall,"index_process_cpu_ns":index_cpu,"planning_wall_ns":plan_wall,"planning_process_cpu_ns":plan_cpu,"retirement_wall_ns":retire_wall,"retirement_process_cpu_ns":retire_cpu,"lease_release_wall_ns":release_wall,"lease_release_process_cpu_ns":release_cpu,"lifecycle_wall_ns":lifecycle_wall,"lifecycle_process_cpu_ns":lifecycle_cpu,"lifecycle_scope":"setup through verified retirement and final core-lease drop; excludes fixture-parent removal","sender_cpu_ns":null,"network_bytes":null,"capture_heap":window_json(capture_heap),"recovery_heap":window_json(recover_heap),"index_heap":window_json(index_heap),"planning_heap":window_json(plan_heap),"retirement_heap":window_json(retire_heap),"lease_release_heap":window_json(release_heap)}));
+        let mut row = serde_json::json!({"component_bytes":leaf.len(),"publications":64,"body_bytes_each":1,"initial_entries":101,"post_recovery_entries":68,"setup_readback_bytes":fixture.setup_readback_bytes,"post_eviction_readback_bytes":final_readback,"evictions":2,"request_frame_bytes":request_bytes,"reply_frame_bytes":reply_bytes,"required_heap_bytes":required.required_heap_bytes,"required_existing_stack_bytes":required.required_existing_stack_bytes,"synchronization_bytes":required.synchronization_bytes,"capture_allocation_count":required.retained_allocation_count,"setup_wall_ns":setup_wall,"setup_process_cpu_ns":setup_cpu,"capture_wall_ns":capture_wall,"capture_process_cpu_ns":capture_cpu,"recovery_wall_ns":recover_wall,"recovery_process_cpu_ns":recover_cpu,"index_wall_ns":index_wall,"index_process_cpu_ns":index_cpu,"planning_wall_ns":plan_wall,"planning_process_cpu_ns":plan_cpu,"retirement_wall_ns":retire_wall,"retirement_process_cpu_ns":retire_cpu,"lease_release_wall_ns":release_wall,"lease_release_process_cpu_ns":release_cpu,"lifecycle_wall_ns":lifecycle_wall,"lifecycle_process_cpu_ns":lifecycle_cpu,"lifecycle_scope":"setup through verified retirement and final core-lease drop; excludes fixture-parent removal","sender_cpu_ns":null,"network_bytes":null,"capture_heap":window_json(capture_heap),"recovery_heap":window_json(recover_heap),"index_heap":window_json(index_heap),"planning_heap":window_json(plan_heap),"retirement_heap":window_json(retire_heap),"lease_release_heap":window_json(release_heap)});
+        for (name, bytes) in [
+            ("directory_buffer_bytes", required.directory_buffer_bytes),
+            (
+                "fixed_store_layout_bytes",
+                required.fixed_store_layout_bytes,
+            ),
+            ("ordered_index_bytes", required.ordered_index_bytes),
+            ("scan_record_bytes", required.scan_record_bytes),
+            (
+                "retained_requested_bytes",
+                required.retained_requested_bytes,
+            ),
+            (
+                "peak_temporary_requested_bytes",
+                required.peak_temporary_requested_bytes,
+            ),
+        ] {
+            row[name] = bytes.into();
+        }
+        row["original_owner_memory_enforcement_required"] =
+            required.original_owner_memory_enforcement_required.into();
+        rows.push(row);
     }
     println!(
         "OWNED_WORKSPACE {}",
