@@ -1,0 +1,1812 @@
+    Finished `release` profile [optimized] target(s) in 0.09s
+     Running unittests src/lib.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_transfer-d4d9e341f4213c1f)
+
+running 84 tests
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test delta::sender_delta_checks::unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse ... ok
+test delta::unrelated_cpu_checks::unrelated_cpu_anchor_search_matches_first_maximal_scalar_run ... ok
+test delta::unrelated_cpu_checks::unrelated_cpu_preserves_frozen_frames_on_short_runs_edges_and_operation_cap ... ok
+test endpoint::commit_costs::cold_whole_ordered_commit_after_full_cache ... ignored, explicit native filesystem timing witness
+test endpoint::metadata_tests::metadata_paths_preserve_header_length_missing_and_exact_body_checks ... ok
+test endpoint::metadata_tests::metadata_paths_reject_hardlinks_without_changing_the_original_bytes ... ok
+test endpoint::metadata_tests::original_file_verifies_named_digest_and_small_body_limit ... ok
+test endpoint::metadata_tests::owned_receipts_retry_original_durability_after_ambiguous_rename ... ok
+test endpoint::metadata_tests::publication_header_preserves_both_layouts_in_one_complete_write ... ok
+test endpoint::metadata_tests::streamed_owned_verification_keeps_body_and_eof_io_errors_as_storage ... ok
+test endpoint::metadata_tests::streamed_owned_verification_preserves_canonical_bytes_and_exact_end ... ok
+test endpoint::ordered_eviction_tests::an_ordered_read_uses_the_current_private_file_from_header_through_eof ... ok
+test endpoint::ordered_eviction_tests::application_commit_returns_one_independent_disk_readback ... ok
+test endpoint::ordered_eviction_tests::owned_ordered_victim_requires_live_authority_and_intact_sibling ... ok
+test endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal ... ok
+test endpoint::storage::owned::tests::capture_and_claim_keep_the_original_directory_and_lock ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+test endpoint::storage::owned::tests::checked_opens_refuse_fifo_symlink_and_hardlink ... ok
+test endpoint::storage::owned::tests::directory_buffers_survive_successful_retirement_until_final_store_drop ... ok
+test endpoint::storage::owned::tests::directory_work_contention_reentry_and_callback_errors_keep_original_outcomes ... ok
+test endpoint::storage::owned::tests::excess_publications_refuse_recovery_and_retirement_before_unlink ... ok
+test endpoint::storage::owned::tests::checked_walk_holds_four_transient_fds_at_file_verification ... ok
+test endpoint::storage::owned::tests::failed_locked_recovery_preserves_stages_and_original_lock ... ok
+test endpoint::storage::owned::tests::held_parent_rename_and_clean_retirement_preserve_substitute ... ok
+test endpoint::storage::owned::tests::invalid_original_marker_refuses_before_locking_owner ... ok
+test endpoint::storage::owned::tests::linux_mount_identity_uses_the_held_descriptors ... ok
+test endpoint::storage::owned::tests::missing_initialized_profile_preserves_remaining_contents ... ok
+test endpoint::storage::owned::tests::opened_foreign_lane_blocks_retirement_before_any_unlink ... ok
+test endpoint::storage::owned::tests::oversized_components_are_refused_before_os_path_conversion ... ok
+test endpoint::storage::owned::tests::failed_lock_retains_opened_fd_without_granting_exclusion ... ok
+test endpoint::storage::owned::tests::poisoned_directory_work_refuses_without_cleanup_or_lock_release ... ok
+test endpoint::storage::owned::tests::post_unlink_sync_failure_quarantines_the_original_locked_store ... ok
+test endpoint::storage::owned::tests::small_v1_funds_overflow_lookahead ... ok
+test endpoint::storage::owned::tests::stage_substitution_refuses_publish_and_cleanup ... ok
+test endpoint::storage::owned::tests::retirement_refuses_unknown_file_before_deleting_known_data ... ok
+test endpoint::storage::owned::tests::wrong_root_fd_and_unsafe_leaf_are_refused_without_storage_effects ... ok
+test endpoint::storage::owned::work::scan_tests::fixed_buffer_refills_and_fresh_offsets_preserve_long_names ... ok
+test endpoint::storage::owned::work::tests::actual_retained_capacity_must_match_the_funded_payload ... ok
+test endpoint::storage::owned::tests::walk_charges_unknown_names_and_refuses_unenrolled_lanes ... ok
+test endpoint::storage_tests::contended_handoff_revalidates_the_profile_and_named_owner ... ok
+test endpoint::storage_tests::private_store_refuses_hardlinked_profile_without_resetting_it ... ok
+test endpoint::storage_tests::reopen_waits_for_a_transient_duplicate_of_the_original_lock ... ok
+test endpoint::storage_tests::published_bytes_survive_restart_and_fresh_read_rejects_corruption ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes ... ok
+test schema::sender_checks::cpu_conscious_fast_literal_work_fallback_never_counts_a_template ... ok
+test schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes ... ok
+test schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes ... ok
+test schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget ... ok
+test schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact ... ok
+test schema::sender_checks::fit_order_and_training_schema_limits_match_original ... ok
+test schema::sender_checks::impossible_record_preflight_keeps_complete_frozen_encoder_bytes ... ok
+test schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes ... ok
+test endpoint::storage_tests::staging_collection_refuses_hardlinks_without_removing_either_name ... ok
+test schema::sender_checks::newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries ... ok
+test schema::sender_checks::possible_record_is_only_a_conservative_length_and_json_prefix_check ... ok
+test schema::sender_checks::newline_iterator_capped_count_matches_original_record_limit ... ok
+test schema::sender_checks::record_count_matches_iterator_at_chunk_boundaries_and_saturation ... ok
+test schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_frozen_oracle_covers_fallbacks_lengths_and_equal_basis_receipts ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_schema_loser_is_certified_and_canonical_frames_match_frozen_baseline ... ok
+test schema_selection::cpu_conscious_checks::cpu_conscious_skips_real_compression_only_for_zero_useful_records ... ok
+test schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes ... ok
+test schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode ... ok
+test schema_zstd::cpu_conscious_checks::cpu_conscious_preparation_preserves_resource_and_poison_errors ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_bounds_preserve_domain_ties_and_context_after_prune_or_inconclusive ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test v1::ordered::tests::private_ordinal_fence_cannot_wrap_to_old_zero_identity ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder ... ok
+test zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound ... ok
+test zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+
+successes:
+
+---- endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal stdout ----
+ORDERED_SINGLE_EVICTION bytes=16384 full_reads=1
+
+---- endpoint::storage::owned::tests::poisoned_directory_work_refuses_without_cleanup_or_lock_release stdout ----
+
+thread '<unnamed>' (2729649) panicked at src/endpoint/storage/owned/tests.rs:616:17:
+injected directory work poison
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+successes:
+    dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget
+    dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound
+    dag::fold_memo_tests::rejected_records_never_enter_the_memo
+    delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows
+    delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary
+    delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries
+    delta::sender_delta_checks::unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse
+    delta::unrelated_cpu_checks::unrelated_cpu_anchor_search_matches_first_maximal_scalar_run
+    delta::unrelated_cpu_checks::unrelated_cpu_preserves_frozen_frames_on_short_runs_edges_and_operation_cap
+    endpoint::metadata_tests::metadata_paths_preserve_header_length_missing_and_exact_body_checks
+    endpoint::metadata_tests::metadata_paths_reject_hardlinks_without_changing_the_original_bytes
+    endpoint::metadata_tests::original_file_verifies_named_digest_and_small_body_limit
+    endpoint::metadata_tests::owned_receipts_retry_original_durability_after_ambiguous_rename
+    endpoint::metadata_tests::publication_header_preserves_both_layouts_in_one_complete_write
+    endpoint::metadata_tests::streamed_owned_verification_keeps_body_and_eof_io_errors_as_storage
+    endpoint::metadata_tests::streamed_owned_verification_preserves_canonical_bytes_and_exact_end
+    endpoint::ordered_eviction_tests::an_ordered_read_uses_the_current_private_file_from_header_through_eof
+    endpoint::ordered_eviction_tests::application_commit_returns_one_independent_disk_readback
+    endpoint::ordered_eviction_tests::owned_ordered_victim_requires_live_authority_and_intact_sibling
+    endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal
+    endpoint::storage::owned::tests::capture_and_claim_keep_the_original_directory_and_lock
+    endpoint::storage::owned::tests::checked_opens_refuse_fifo_symlink_and_hardlink
+    endpoint::storage::owned::tests::checked_walk_holds_four_transient_fds_at_file_verification
+    endpoint::storage::owned::tests::directory_buffers_survive_successful_retirement_until_final_store_drop
+    endpoint::storage::owned::tests::directory_work_contention_reentry_and_callback_errors_keep_original_outcomes
+    endpoint::storage::owned::tests::excess_publications_refuse_recovery_and_retirement_before_unlink
+    endpoint::storage::owned::tests::failed_lock_retains_opened_fd_without_granting_exclusion
+    endpoint::storage::owned::tests::failed_locked_recovery_preserves_stages_and_original_lock
+    endpoint::storage::owned::tests::held_parent_rename_and_clean_retirement_preserve_substitute
+    endpoint::storage::owned::tests::invalid_original_marker_refuses_before_locking_owner
+    endpoint::storage::owned::tests::linux_mount_identity_uses_the_held_descriptors
+    endpoint::storage::owned::tests::missing_initialized_profile_preserves_remaining_contents
+    endpoint::storage::owned::tests::opened_foreign_lane_blocks_retirement_before_any_unlink
+    endpoint::storage::owned::tests::oversized_components_are_refused_before_os_path_conversion
+    endpoint::storage::owned::tests::poisoned_directory_work_refuses_without_cleanup_or_lock_release
+    endpoint::storage::owned::tests::post_unlink_sync_failure_quarantines_the_original_locked_store
+    endpoint::storage::owned::tests::retirement_refuses_unknown_file_before_deleting_known_data
+    endpoint::storage::owned::tests::small_v1_funds_overflow_lookahead
+    endpoint::storage::owned::tests::stage_substitution_refuses_publish_and_cleanup
+    endpoint::storage::owned::tests::walk_charges_unknown_names_and_refuses_unenrolled_lanes
+    endpoint::storage::owned::tests::wrong_root_fd_and_unsafe_leaf_are_refused_without_storage_effects
+    endpoint::storage::owned::work::scan_tests::fixed_buffer_refills_and_fresh_offsets_preserve_long_names
+    endpoint::storage::owned::work::tests::actual_retained_capacity_must_match_the_funded_payload
+    endpoint::storage_tests::contended_handoff_revalidates_the_profile_and_named_owner
+    endpoint::storage_tests::private_store_refuses_hardlinked_profile_without_resetting_it
+    endpoint::storage_tests::published_bytes_survive_restart_and_fresh_read_rejects_corruption
+    endpoint::storage_tests::reopen_waits_for_a_transient_duplicate_of_the_original_lock
+    endpoint::storage_tests::staging_collection_refuses_hardlinks_without_removing_either_name
+    fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes
+    schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes
+    schema::sender_checks::cpu_conscious_fast_literal_work_fallback_never_counts_a_template
+    schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes
+    schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes
+    schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget
+    schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact
+    schema::sender_checks::fit_order_and_training_schema_limits_match_original
+    schema::sender_checks::impossible_record_preflight_keeps_complete_frozen_encoder_bytes
+    schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes
+    schema::sender_checks::newline_iterator_capped_count_matches_original_record_limit
+    schema::sender_checks::newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries
+    schema::sender_checks::possible_record_is_only_a_conservative_length_and_json_prefix_check
+    schema::sender_checks::record_count_matches_iterator_at_chunk_boundaries_and_saturation
+    schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes
+    schema_selection::candidate_cpu_checks::candidate_cpu_bounds_preserve_domain_ties_and_context_after_prune_or_inconclusive
+    schema_selection::candidate_cpu_checks::candidate_cpu_frozen_oracle_covers_fallbacks_lengths_and_equal_basis_receipts
+    schema_selection::candidate_cpu_checks::candidate_cpu_schema_loser_is_certified_and_canonical_frames_match_frozen_baseline
+    schema_selection::cpu_conscious_checks::cpu_conscious_skips_real_compression_only_for_zero_useful_records
+    schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes
+    schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode
+    schema_zstd::cpu_conscious_checks::cpu_conscious_preparation_preserves_resource_and_poison_errors
+    selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs
+    selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority
+    selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes
+    selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes
+    selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior
+    shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries
+    shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes
+    v1::ordered::tests::private_ordinal_fence_cannot_wrap_to_old_zero_identity
+    zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent
+    zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries
+    zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder
+    zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound
+    zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly
+
+test result: ok. 83 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.68s
+
+     Running unittests src/bin/spiralcore.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore-3c2aa9c3d4de22c6)
+
+running 1 test
+test tests::frame_deadline_does_not_restart_after_a_partial_read ... ok
+
+successes:
+
+successes:
+    tests::frame_deadline_does_not_restart_after_a_partial_read
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests src/bin/spiralcore-bench.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_bench-6e0dbce04013cf17)
+
+running 10 tests
+test tests::broad_local_http_first_pair_for_every_case_reopens_exactly ... ignored, 88 real 16 MiB-class HTTP operations; explicitly run in release
+test tests::broad_receipts_bind_policy_actual_length_and_fixture_identity ... ok
+test tests::fixture_mutations_are_exact_and_reproducible ... ok
+test tests::large16_local_http_first_pair_reopens_exact_bytes_for_all_arms ... ignored, bounded 16 MiB HTTP qualification; explicitly run with --release --ignored
+test tests::broad_fixtures_cover_length_changes_and_existing_compressed_content ... ok
+test tests::paired_ratios_are_not_ratios_of_unpaired_means ... ok
+test tests::rerun_against_populated_receiver_is_a_retained_failure ... ok
+test tests::summary_includes_seed_cost_and_rejects_missing_seed_or_wrong_pair ... ok
+test tests::transfer_identity_is_fresh_and_cache_hit_policy_covers_every_arm ... ok
+test tests::large16_receipts_require_shard_and_canonical_ids_without_legacy_drift ... ok
+
+successes:
+
+successes:
+    tests::broad_fixtures_cover_length_changes_and_existing_compressed_content
+    tests::broad_receipts_bind_policy_actual_length_and_fixture_identity
+    tests::fixture_mutations_are_exact_and_reproducible
+    tests::large16_receipts_require_shard_and_canonical_ids_without_legacy_drift
+    tests::paired_ratios_are_not_ratios_of_unpaired_means
+    tests::rerun_against_populated_receiver_is_a_retained_failure
+    tests::summary_includes_seed_cost_and_rejects_missing_seed_or_wrong_pair
+    tests::transfer_identity_is_fresh_and_cache_hit_policy_covers_every_arm
+
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.30s
+
+     Running unittests src/bin/spiralcore-capture.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_capture-bc5e0dd2028f46fa)
+
+running 27 tests
+test capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block ... ok
+test capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval ... ok
+test capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence ... ok
+test capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks ... ok
+test capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle ... ok
+test tests::capture_statistics_matching_counts_are_retained_and_verified ... ok
+test tests::both_endiannesses_and_timestamp_resolutions_are_supported ... ok
+test tests::capture_statistics_mismatch_and_truncation_are_incomplete ... ok
+test tests::cooked_headers_vlan_and_ipv6_use_the_ip_length ... ok
+test tests::delayed_fin_is_charged_to_the_connection_owner_not_the_next_row ... ok
+test tests::double_vlan_minimum_frame_padding_is_not_counted_as_ip_bytes ... ok
+test tests::drops_or_missing_drop_summary_never_become_complete ... ok
+test tests::isolated_veth_scope_is_exact_and_never_relaxes_the_wan_port ... ok
+test tests::lifecycle_failure_can_never_leave_an_equal_counter_capture_complete ... ok
+test tests::lifecycle_is_bound_to_the_same_pcap_endpoints_and_final_counters ... ok
+test tests::malformed_or_truncated_packet_headers_are_rejected ... ok
+test tests::missing_syn_and_reused_tuple_are_unattributed_and_incomplete ... ok
+test tests::packet_record_order_does_not_change_owner_and_pre_syn_packets_are_unattributed ... ok
+test tests::published_body_coverage_is_a_required_lower_bound ... ok
+test tests::qualification_port_is_loopback_only_and_wan_default_remains_443 ... ok
+test tests::retransmitted_syn_keeps_its_first_owner ... ok
+test tests::row_order_duplicates_and_timestamp_overflow_are_rejected ... ok
+test tests::setup_and_multiple_connections_keep_ownership_while_gap_syn_is_unattributed ... ok
+test tests::snaplen_is_not_ip_length_and_connection_totals_include_delayed_packets ... ok
+test tests::tcpdump_summary_counter_is_preserved_without_guessing ... ok
+test tests::unknown_packets_are_visible_and_unexpected_flows_are_rejected ... ok
+test tests::capture_statistics_smoke_gap_is_unresolved_even_with_zero_kernel_drops ... ok
+
+successes:
+
+successes:
+    capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval
+    capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block
+    capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence
+    capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle
+    capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks
+    tests::both_endiannesses_and_timestamp_resolutions_are_supported
+    tests::capture_statistics_matching_counts_are_retained_and_verified
+    tests::capture_statistics_mismatch_and_truncation_are_incomplete
+    tests::capture_statistics_smoke_gap_is_unresolved_even_with_zero_kernel_drops
+    tests::cooked_headers_vlan_and_ipv6_use_the_ip_length
+    tests::delayed_fin_is_charged_to_the_connection_owner_not_the_next_row
+    tests::double_vlan_minimum_frame_padding_is_not_counted_as_ip_bytes
+    tests::drops_or_missing_drop_summary_never_become_complete
+    tests::isolated_veth_scope_is_exact_and_never_relaxes_the_wan_port
+    tests::lifecycle_failure_can_never_leave_an_equal_counter_capture_complete
+    tests::lifecycle_is_bound_to_the_same_pcap_endpoints_and_final_counters
+    tests::malformed_or_truncated_packet_headers_are_rejected
+    tests::missing_syn_and_reused_tuple_are_unattributed_and_incomplete
+    tests::packet_record_order_does_not_change_owner_and_pre_syn_packets_are_unattributed
+    tests::published_body_coverage_is_a_required_lower_bound
+    tests::qualification_port_is_loopback_only_and_wan_default_remains_443
+    tests::retransmitted_syn_keeps_its_first_owner
+    tests::row_order_duplicates_and_timestamp_overflow_are_rejected
+    tests::setup_and_multiple_connections_keep_ownership_while_gap_syn_is_unattributed
+    tests::snaplen_is_not_ip_length_and_connection_totals_include_delayed_packets
+    tests::tcpdump_summary_counter_is_preserved_without_guessing
+    tests::unknown_packets_are_visible_and_unexpected_flows_are_rejected
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/bin/spiralcore-capture-control.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_capture_control-fd18abd7a981f20a)
+
+running 13 tests
+test capture_fixture::tests::all_required_offloads_must_be_explicitly_disabled ... ok
+test capture_fixture::tests::fixture_collision_check_accepts_default_route_but_rejects_overlaps ... ok
+test capture_fixture::tests::fixture_tool_output_is_bounded_before_collection_finishes ... ok
+test capture_fixture::tests::privileged_deadline_wraps_the_actual_tool_without_foreground_escape ... ok
+test capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval ... ok
+test capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block ... ok
+test capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence ... ok
+test capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle ... ok
+test capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks ... ok
+test tests::ethernet_capture_filter_has_no_direction_metadata_load ... ok
+test tests::no_shell_text_can_enter_the_interface_and_port ... ok
+test tests::stderr_collection_is_bounded_even_for_a_noisy_child ... ok
+test capture_fixture::tests::successful_creation_remains_owned_when_receipt_writing_fails ... ok
+
+successes:
+
+successes:
+    capture_fixture::tests::all_required_offloads_must_be_explicitly_disabled
+    capture_fixture::tests::fixture_collision_check_accepts_default_route_but_rejects_overlaps
+    capture_fixture::tests::fixture_tool_output_is_bounded_before_collection_finishes
+    capture_fixture::tests::privileged_deadline_wraps_the_actual_tool_without_foreground_escape
+    capture_fixture::tests::successful_creation_remains_owned_when_receipt_writing_fails
+    capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval
+    capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block
+    capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence
+    capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle
+    capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks
+    tests::ethernet_capture_filter_has_no_direction_metadata_load
+    tests::no_shell_text_can_enter_the_interface_and_port
+    tests::stderr_collection_is_bounded_even_for_a_noisy_child
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/bin/spiralcore-wan.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_wan-5c61c33550c9ec1e)
+
+running 0 tests
+
+successes:
+
+successes:
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/adaptive.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/adaptive-40f6571aa1e85960)
+
+running 13 tests
+test cold_structured_data_selects_zstd_before_begin ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test oversized_inputs_fail_before_any_exchange ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+
+successes:
+
+successes:
+    cold_structured_data_selects_zstd_before_begin
+    empty_and_incompressible_ties_prefer_raw_with_exact_full_cost
+    exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart
+    exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload
+    malicious_receipts_are_checked_after_selection
+    missing_base_and_changed_scope_do_not_reoffer_or_publish
+    oversized_inputs_fail_before_any_exchange
+    real_http_codec_selection_cost_matches_bodies_and_reopens_exactly
+    repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer
+    revoked_authority_and_transport_failure_never_retry_selection
+    selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes
+    small_localized_edit_uses_prefix_when_it_costs_less_than_sparse
+    warm_local_edits_choose_sparse_and_reordered_data_choose_prefix
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.66s
+
+     Running tests/batched.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/batched-9dee81e9d0d2bbd1)
+
+running 19 tests
+test capped_raw_checks_offer_reply_and_sequence_limits_before_exchange ... ok
+test capped_raw_fits_each_frame_and_preserves_legacy_wire_at_the_default_cap ... ok
+test cold_raw_and_zstd_each_use_one_exact_batch ... ok
+test empty_object_uses_begin_and_finish_without_fabricated_data ... ok
+test leased_sender_keeps_malformed_or_unrelated_reply_unsettled ... ok
+test leased_sender_settles_each_validated_reply_before_next_call_and_warm_repeat ... ok
+test leased_sender_settles_valid_refusal_and_stops_on_ambiguous_ack ... ok
+test leased_whole_zstd_counts_exact_encoded_fragments_even_when_they_expand ... ok
+test leased_whole_zstd_refuses_more_fragments_than_receiver_can_accept ... ok
+test missing_or_extra_nonterminal_replies_are_rejected ... ok
+test oversized_campaign_object_is_rejected_before_exchange ... ok
+test peer_cannot_request_a_record_outside_the_offered_graph ... ok
+test published_on_data_is_not_a_valid_terminal_prefix ... ok
+test reply_identity_ready_ack_and_published_digest_are_checked ... ok
+test terminal_error_prefix_is_allowed_but_replies_after_it_are_rejected ... ok
+test unsuccessful_repair_stops_after_two_rounds ... ok
+test warm_dag_change_is_exact_and_repairs_missing_descendant_closure ... ok
+test warm_probe_skips_data_but_unprobed_cache_hit_counts_the_actual_upload ... ok
+test large_dag_is_split_with_bounded_batches_and_exact_sequence ... ok
+
+successes:
+
+---- leased_sender_settles_each_validated_reply_before_next_call_and_warm_repeat stdout ----
+data=4096 call_bytes=4376 reply_bytes=282 through_settlement_us=8460 through_readback_us=8477 sender_and_harness_cpu_us=5 receiver_handle_cpu_us=133
+data=0 call_bytes=102 reply_bytes=88 through_settlement_us=19 through_readback_us=36 sender_and_harness_cpu_us=2 receiver_handle_cpu_us=17
+
+
+successes:
+    capped_raw_checks_offer_reply_and_sequence_limits_before_exchange
+    capped_raw_fits_each_frame_and_preserves_legacy_wire_at_the_default_cap
+    cold_raw_and_zstd_each_use_one_exact_batch
+    empty_object_uses_begin_and_finish_without_fabricated_data
+    large_dag_is_split_with_bounded_batches_and_exact_sequence
+    leased_sender_keeps_malformed_or_unrelated_reply_unsettled
+    leased_sender_settles_each_validated_reply_before_next_call_and_warm_repeat
+    leased_sender_settles_valid_refusal_and_stops_on_ambiguous_ack
+    leased_whole_zstd_counts_exact_encoded_fragments_even_when_they_expand
+    leased_whole_zstd_refuses_more_fragments_than_receiver_can_accept
+    missing_or_extra_nonterminal_replies_are_rejected
+    oversized_campaign_object_is_rejected_before_exchange
+    peer_cannot_request_a_record_outside_the_offered_graph
+    published_on_data_is_not_a_valid_terminal_prefix
+    reply_identity_ready_ack_and_published_digest_are_checked
+    terminal_error_prefix_is_allowed_but_replies_after_it_are_rejected
+    unsuccessful_repair_stops_after_two_rounds
+    warm_dag_change_is_exact_and_repairs_missing_descendant_closure
+    warm_probe_skips_data_but_unprobed_cache_hit_counts_the_actual_upload
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.69s
+
+     Running tests/benchmark.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/benchmark-11a664b5ff287f39)
+
+running 8 tests
+test deterministic_plan_is_bounded_and_uses_isolated_scopes ... ok
+test broad16_plans_isolate_all_controls_and_bound_each_fresh_cache ... ok
+test efficiency_suites_preserve_v1_and_bound_each_thirty_trial_cache ... ok
+benchmark: invalid receipt schema, phase or outcome
+benchmark: invalid receipt schema, phase or outcome
+test efficiency_campaigns_retain_prepared_state_and_reopen_exact_bytes ... ok
+test large16_shard_arguments_are_strict_and_canonical ... ok
+test large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches ... ok
+benchmark: --trials must be between 1 and 30
+benchmark: --trials must be between 1 and 30
+benchmark: --trials must be between 1 and 30
+benchmark: File exists (os error 17)
+test plan_rejects_unbounded_trials_and_does_not_replace_output ... ok
+benchmark: receipt metadata differs from canonical plan or repeats an operation
+test full_one_trial_http_campaign_qualifies_exact_bytes_after_restart ... ok
+
+successes:
+
+successes:
+    broad16_plans_isolate_all_controls_and_bound_each_fresh_cache
+    deterministic_plan_is_bounded_and_uses_isolated_scopes
+    efficiency_campaigns_retain_prepared_state_and_reopen_exact_bytes
+    efficiency_suites_preserve_v1_and_bound_each_thirty_trial_cache
+    full_one_trial_http_campaign_qualifies_exact_bytes_after_restart
+    large16_shard_arguments_are_strict_and_canonical
+    large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches
+    plan_rejects_unbounded_trials_and_does_not_replace_output
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.33s
+
+     Running tests/bounded_selection_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/bounded_selection_workflow-800a0b77d96c38d2)
+
+running 3 tests
+test bounded_selection_workflow_requires_a_full_secret_without_fallback ... ok
+test bounded_selection_workflow_accepts_only_the_pinned_first_attempt ... ok
+test bounded_selection_workflow_restricts_every_receiver_url ... ok
+
+successes:
+
+successes:
+    bounded_selection_workflow_accepts_only_the_pinned_first_attempt
+    bounded_selection_workflow_requires_a_full_secret_without_fallback
+    bounded_selection_workflow_restricts_every_receiver_url
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/cli.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/cli-86f619d0c9518e6a)
+
+running 9 tests
+test explicit_sparse_cli_preserves_insertions_and_socket_accounting ... ok
+test partial_and_oversized_socket_frames_close_without_publication ... ok
+test protocol_error_reply_preserves_request_identity ... ok
+test real_loopback_cold_warm_mutation_and_exclusive_restart_read ... ok
+test demo_uses_tcp_and_verifies_all_three_objects_after_restart ... ok
+test sparse_mode_requires_a_base_and_preserves_other_mode_validation ... ok
+test unsafe_addresses_bad_options_and_oversized_files_are_rejected ... ok
+test sparse_cli_raw_fallback_and_exact_repeat_keep_socket_accounting ... ok
+test zstd_send_and_get_preserve_trailing_zeroes ... ok
+
+successes:
+
+successes:
+    demo_uses_tcp_and_verifies_all_three_objects_after_restart
+    explicit_sparse_cli_preserves_insertions_and_socket_accounting
+    partial_and_oversized_socket_frames_close_without_publication
+    protocol_error_reply_preserves_request_identity
+    real_loopback_cold_warm_mutation_and_exclusive_restart_read
+    sparse_cli_raw_fallback_and_exact_repeat_keep_socket_accounting
+    sparse_mode_requires_a_base_and_preserves_other_mode_validation
+    unsafe_addresses_bad_options_and_oversized_files_are_rejected
+    zstd_send_and_get_preserve_trailing_zeroes
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+     Running tests/client_prepared.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/client_prepared-0aef88cf33598efe)
+
+running 12 tests
+test generic_senders_reject_sparse_without_the_owned_base_bytes_api ... ok
+test missing_base_is_an_error_without_reoffering_the_transfer_id ... ok
+test prepared_cache_hit_counts_every_already_uploaded_frame ... ok
+test prepared_missing_descendants_are_repaired_from_target_closure ... ok
+test prepared_peer_cannot_request_an_unreachable_old_base_record ... ok
+test prepared_repeat_uses_raw_identity_probe ... ok
+test prepared_sender_matches_canonical_offer_and_actual_accounting ... ok
+test sparse_bounds_are_checked_before_any_exchange ... ok
+test sparse_probe_and_unprobed_cache_hit_have_exact_upload_accounting ... ok
+test sparse_ack_and_need_responses_obey_strict_mode_rules ... ok
+test sparse_raw_fallback_happens_before_exchange_without_requiring_remote_base ... ok
+test sparse_sender_handles_edits_insertions_and_deletions_exactly ... ok
+
+successes:
+
+successes:
+    generic_senders_reject_sparse_without_the_owned_base_bytes_api
+    missing_base_is_an_error_without_reoffering_the_transfer_id
+    prepared_cache_hit_counts_every_already_uploaded_frame
+    prepared_missing_descendants_are_repaired_from_target_closure
+    prepared_peer_cannot_request_an_unreachable_old_base_record
+    prepared_repeat_uses_raw_identity_probe
+    prepared_sender_matches_canonical_offer_and_actual_accounting
+    sparse_ack_and_need_responses_obey_strict_mode_rules
+    sparse_bounds_are_checked_before_any_exchange
+    sparse_probe_and_unprobed_cache_hit_have_exact_upload_accounting
+    sparse_raw_fallback_happens_before_exchange_without_requiring_remote_base
+    sparse_sender_handles_edits_insertions_and_deletions_exactly
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.45s
+
+     Running tests/combined_session.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/combined_session-f705bab25d039c55)
+
+running 6 tests
+test evicted_checkpoint_or_rolling_base_fails_without_reoffer ... ok
+test cpu_conscious_default_remains_exhaustive_and_repeat_keeps_current_ack ... ok
+test exact_repeat_probes_before_codecs_and_recovers_eviction_under_same_offer ... ok
+test full_size_target_is_admitted_and_transport_failure_does_not_publish ... ok
+test one_session_combines_runtime_and_rolling_sparse_without_raw_seed ... ok
+test readiness_failure_scope_and_capacity_never_promote_unverified_bytes ... ok
+
+successes:
+
+successes:
+    cpu_conscious_default_remains_exhaustive_and_repeat_keeps_current_ack
+    evicted_checkpoint_or_rolling_base_fails_without_reoffer
+    exact_repeat_probes_before_codecs_and_recovers_eviction_under_same_offer
+    full_size_target_is_admitted_and_transport_failure_does_not_publish
+    one_session_combines_runtime_and_rolling_sparse_without_raw_seed
+    readiness_failure_scope_and_capacity_never_promote_unverified_bytes
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+
+     Running tests/direct_dag.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/direct_dag-a7ee9b195bbad041)
+
+running 5 tests
+test oversized_object_is_rejected_before_folding ... ok
+test repeated_occurrences_only_consume_unique_node_budget ... ok
+test unique_node_budget_matches_legacy_at_every_small_boundary ... ok
+test zero_and_overflowing_budgets_preserve_legacy_behavior ... ok
+test direct_builder_matches_legacy_canonical_graph ... ok
+
+successes:
+
+successes:
+    direct_builder_matches_legacy_canonical_graph
+    oversized_object_is_rejected_before_folding
+    repeated_occurrences_only_consume_unique_node_budget
+    unique_node_budget_matches_legacy_at_every_small_boundary
+    zero_and_overflowing_budgets_preserve_legacy_behavior
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/endpoint.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/endpoint-9975e78530624e4d)
+
+running 21 tests
+test auth_conflict_and_corruption_do_not_publish ... ok
+test authorization_is_checked_at_publication ... ok
+test authorization_is_rechecked_after_read ... ok
+test disk_quota_is_reserved_at_admission ... ok
+test cached_graph_never_bypasses_disk_integrity_or_namespace ... ok
+test object_identity_cannot_shrink_an_existing_disk_reservation ... ok
+test durable_cold_transfer_retry_and_restart ... ok
+test pinned_graph_survives_eviction_pressure_then_releases_after_cancel ... ok
+test optional_graphs_are_evicted_for_verified_reads_and_published_resume ... ok
+test plaintext_cache_is_private ... ok
+test repair_exhaustion_is_terminal ... ok
+test published_resume_respects_other_active_reservations ... ok
+test sparse_copy_insert_is_durable_and_base_scoped ... ok
+test retained_graph_is_used_and_eviction_is_recoverable ... ok
+test sparse_needs_no_dag_and_rejects_unreserved_target ... ok
+test sparse_replay_cancel_bad_digest_and_revocation_never_commit ... ok
+test tiny_dag_cannot_admit_unreserved_unrelated_nodes ... ok
+test two_attempts_publish_one_immutable_object ... ok
+test unowned_staging_is_never_removed ... ok
+test terminal_reply_ledgers_cannot_outgrow_quota ... ok
+test writer_quota_cancel_and_expiry_are_bounded ... ok
+
+successes:
+
+successes:
+    auth_conflict_and_corruption_do_not_publish
+    authorization_is_checked_at_publication
+    authorization_is_rechecked_after_read
+    cached_graph_never_bypasses_disk_integrity_or_namespace
+    disk_quota_is_reserved_at_admission
+    durable_cold_transfer_retry_and_restart
+    object_identity_cannot_shrink_an_existing_disk_reservation
+    optional_graphs_are_evicted_for_verified_reads_and_published_resume
+    pinned_graph_survives_eviction_pressure_then_releases_after_cancel
+    plaintext_cache_is_private
+    published_resume_respects_other_active_reservations
+    repair_exhaustion_is_terminal
+    retained_graph_is_used_and_eviction_is_recoverable
+    sparse_copy_insert_is_durable_and_base_scoped
+    sparse_needs_no_dag_and_rejects_unreserved_target
+    sparse_replay_cancel_bad_digest_and_revocation_never_commit
+    terminal_reply_ledgers_cannot_outgrow_quota
+    tiny_dag_cannot_admit_unreserved_unrelated_nodes
+    two_attempts_publish_one_immutable_object
+    unowned_staging_is_never_removed
+    writer_quota_cancel_and_expiry_are_bounded
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+     Running tests/fitted_transfer.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/fitted_transfer-4987619eaf7969ae)
+
+running 5 tests
+test fitted_admission_precedes_corrupt_artifact_read_and_cancel_releases_budget ... ok
+test fitted_offer_requires_artifact_and_bounded_output ... ok
+test fitted_finish_rechecks_authority_and_digest_without_partial_publication ... ok
+test fitted_sender_falls_back_before_begin_and_rejects_false_receipts ... ok
+test fitted_transfer_is_exact_durable_and_scoped_to_artifact_namespace ... ok
+
+successes:
+
+successes:
+    fitted_admission_precedes_corrupt_artifact_read_and_cancel_releases_budget
+    fitted_finish_rechecks_authority_and_digest_without_partial_publication
+    fitted_offer_requires_artifact_and_bounded_output
+    fitted_sender_falls_back_before_begin_and_rejects_false_receipts
+    fitted_transfer_is_exact_durable_and_scoped_to_artifact_namespace
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+     Running tests/hash_backend.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/hash_backend-b60f1e99c0aee7d2)
+
+running 1 test
+test sha256_known_answers_survive_backend_selection ... ok
+
+successes:
+
+successes:
+    sha256_known_answers_survive_backend_selection
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ordered_retention.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/ordered_retention-b530d93de2a5853b)
+
+running 7 tests
+test binding_and_progress_refuse_bad_domains_scope_gaps_and_unqualified_general ... ok
+test all_pinned_exhaustion_preserves_setup_and_completed_replay ... ok
+test current_authority_precedes_cache_membership_and_ordered_diagnostics ... ok
+test ordered_progress_keeps_retry_until_successful_next_admission_and_rejects_old_scope ... ok
+test poisoned_cache_victim_fences_without_deleting_unverified_bytes ... ok
+test refused_second_lane_cannot_evict_a_verified_publication ... ok
+test ordered_cache_evicts_verified_old_applications_and_preserves_two_setup_pins ... ok
+
+successes:
+
+successes:
+    all_pinned_exhaustion_preserves_setup_and_completed_replay
+    binding_and_progress_refuse_bad_domains_scope_gaps_and_unqualified_general
+    current_authority_precedes_cache_membership_and_ordered_diagnostics
+    ordered_cache_evicts_verified_old_applications_and_preserves_two_setup_pins
+    ordered_progress_keeps_retry_until_successful_next_admission_and_rejects_old_scope
+    poisoned_cache_victim_fences_without_deleting_unverified_bytes
+    refused_second_lane_cannot_evict_a_verified_publication
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.79s
+
+     Running tests/owned_store.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/owned_store-79641a1c69e23e71)
+
+running 5 tests
+test negotiated_profile_and_captured_disk_limits_must_match_before_claim ... ok
+test ordered_scan_requires_an_actual_directory_for_a_namespace_name ... ok
+test commit_rechecks_quota_after_begin_and_preserves_prior_object ... ok
+
+running 1 test
+
+running 1 test
+test original_directory_v1_roundtrips_trailing_nul ... ok
+test process_exit_recovers_only_the_original_stage_or_verified_publication ... ok
+
+successes:
+
+---- commit_rechecks_quota_after_begin_and_preserves_prior_object stdout ----
+OWNED_V1 warm=false body=9 request=228 reply=218 wall_ns=24239974 process_cpu_ns=1385216
+
+---- original_directory_v1_roundtrips_trailing_nul stdout ----
+OWNED_V1 warm=false body=16 request=235 reply=218 wall_ns=15376700 process_cpu_ns=421970
+OWNED_V1 warm=true body=16 request=102 reply=88 wall_ns=8854456 process_cpu_ns=385131
+
+
+successes:
+    commit_rechecks_quota_after_begin_and_preserves_prior_object
+    negotiated_profile_and_captured_disk_limits_must_match_before_claim
+    ordered_scan_requires_an_actual_directory_for_a_namespace_name
+    original_directory_v1_roundtrips_trailing_nul
+    process_exit_recovers_only_the_original_stage_or_verified_publication
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/owned_store_allocation.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/owned_store_allocation-803042bfc137ef3c)
+
+running 1 test
+test populated_owned_stores_recover_and_refuse_overload_with_requested_heap_accounting ... ok
+
+successes:
+
+---- populated_owned_stores_recover_and_refuse_overload_with_requested_heap_accounting stdout ----
+OWNED_ALLOCATION {"admitted_entry_count":101,"aggregate_declared_bytes":18681720,"allocator_source_sha256":"f5713a187903149a839a3742ee5871bc6b74d0aa21fe9d7d3c8221caa1752bb1","application_bytes":4194304,"counter_bookkeeping_valid":true,"declared_operation_per_store":8292284,"declared_workspace_per_store":1048576,"exact_readbacks":true,"executable_sha256_after":"646b606536296d4bc61fc5a76b26c5ba5001fb5e17579b6a4f708a7f611050b9","executable_sha256_before":"646b606536296d4bc61fc5a76b26c5ba5001fb5e17579b6a4f708a7f611050b9","initial_readback_cpu_ns":31760631,"original_lock_retained_on_refusal":true,"overflow_entry_count":102,"overflow_refusal_cpu_ns":4716897,"overflow_refusal_wall_ns_sum":4717055,"process_cpu_ns":284993913,"publications_per_store":64,"receiver_dispatch_cpu_ns":187352657,"recovery_cpu_ns":12776724,"recovery_stages_per_store":32,"recovery_wall_ns_sum":381907400,"reply_frame_bytes":55808,"request_frame_bytes":4250368,"retirement_cpu_ns":23590051,"retirement_overload_preserved_all_bytes":true,"retirement_wall_ns_sum":746287433,"rust_cumulative_requested":61651528,"rust_live_after":4741,"rust_live_before":4325,"rust_peak_requested":2268772,"scope":"instrumented host process; requested Rust allocations only; no direct libc/allocator overhead/native stacks/RSS/MVM/WAN bound","sender_outside_dispatch_cpu_ns":2160777,"setup_core_cpu_ns":844351,"setup_core_wall_ns_sum":34545854,"stores":2,"wall_ns":1899736661,"witness_source_sha256":"792e96972ba2b8433cea8d1ba30d9b00d0f43a0f2100dd5cf61ff22d5e83f07c"}
+
+
+successes:
+    populated_owned_stores_recover_and_refuse_overload_with_requested_heap_accounting
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.91s
+
+     Running tests/owned_store_resources.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/owned_store_resources-d8715427b3a2ccdf)
+
+running 1 test
+test maximal_admitted_owned_store_lifecycle ... ok
+
+successes:
+
+---- maximal_admitted_owned_store_lifecycle stdout ----
+OWNED_RESOURCE stores=2 base_fds=3 persistent_fds=8 final_fds=3 observer_fds=1 wall_ns=23061398 process_cpu_ns=630034
+
+
+successes:
+    maximal_admitted_owned_store_lifecycle
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/owned_verification_workspace.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/owned_verification_workspace-f7e9cb7b05500c22)
+
+running 1 test
+test maximal_store_retirement_does_not_allocate_a_publication_body ... ok
+
+successes:
+
+---- maximal_store_retirement_does_not_allocate_a_publication_body stdout ----
+OWNED_VERIFICATION {"allocation_scope":"all process requests while window open; retirement coordination/assertions/fixture destruction included; retained directory buffers predate window","body_bytes_each":65536,"cumulative_new_requested_bytes":112650,"declared_workspace_each":1048576,"entries_each":101,"largest_new_requested_allocation":250,"preloaded_objects_each":64,"retirement_thread_cpu_ns_each":[24016065,24148408],"retirement_timing_scope":"each worker opening the original owner probe through return from retire_contents; excludes later assertions/destruction","retirement_wall_ns_each":[594227905,591516251],"scope":"filesystem-only private cache fixtures; requested Rust payload only, not allocator overhead/direct libc/stacks/RSS; no network/MVM/WAN","setup_process_cpu_ns":7413979,"setup_readback_bytes":8394880,"setup_wall_ns":19265938,"stores":2,"window_process_cpu_ns":48319121,"window_timing_scope":"before worker release through all joins; includes coordination/assertions/destruction","window_wall_ns":594306616}
+
+
+successes:
+    maximal_store_retirement_does_not_allocate_a_publication_body
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+
+     Running tests/persistent_session.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/persistent_session-aca86f90e6a32b57)
+
+running 10 tests
+test context_changes_and_invalid_ack_invalidate_hints_without_promotion ... ok
+test exact_repeat_sender_cpu_profile ... ignored, explicit CPU diagnostic; coordinate with live measurement windows
+test exact_repeat_never_trusts_local_readiness_instead_of_ack_or_scope ... ok
+test exact_repeat_uses_current_raw_identity_probe_and_recovers_remote_eviction ... ok
+test input_capacity_limits_precede_network_and_do_not_destroy_known_base ... ok
+test lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target ... ok
+test missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly ... ok
+test rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames ... ok
+test runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack ... ok
+test schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state ... ok
+
+successes:
+
+successes:
+    context_changes_and_invalid_ack_invalidate_hints_without_promotion
+    exact_repeat_never_trusts_local_readiness_instead_of_ack_or_scope
+    exact_repeat_uses_current_raw_identity_probe_and_recovers_remote_eviction
+    input_capacity_limits_precede_network_and_do_not_destroy_known_base
+    lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target
+    missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly
+    rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames
+    runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack
+    schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state
+
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.47s
+
+     Running tests/persistent_session_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/persistent_session_workflow-c759305bb570ef0a)
+
+running 5 tests
+test persistent_session_workflow_accepts_only_the_pinned_first_attempt ... ok
+test persistent_session_workflow_dose_is_six_or_only_shard_zero ... ok
+test persistent_session_workflow_requires_a_full_secret_without_fallback ... ok
+test persistent_session_workflow_rejects_unknown_purpose ... ok
+test persistent_session_workflow_restricts_every_receiver_url ... ok
+
+successes:
+
+successes:
+    persistent_session_workflow_accepts_only_the_pinned_first_attempt
+    persistent_session_workflow_dose_is_six_or_only_shard_zero
+    persistent_session_workflow_rejects_unknown_purpose
+    persistent_session_workflow_requires_a_full_secret_without_fallback
+    persistent_session_workflow_restricts_every_receiver_url
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/prepared.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/prepared-cfe0a9bf547f4af0)
+
+running 9 tests
+test exact_repeat_shares_flat_graph_and_bytes_including_empty_and_nul ... ok
+test conservative_charges_include_shared_base_overlay_index_and_bytes ... ok
+test length_and_unique_target_limits_fail_without_mutating_base ... ok
+test owned_data_and_public_clones_cannot_poison_verified_nodes ... ok
+test promotion_is_budgeted_and_detaches_the_old_base ... ok
+test randomized_boundary_edits_preserve_every_record_and_manifest ... ok
+test repair_authorization_is_target_closure_not_every_base_node ... ok
+test same_length_delta_matches_full_fold_and_reconstructs_exactly ... ok
+test one_changed_leaf_has_only_its_ten_new_records ... ok
+
+successes:
+
+successes:
+    conservative_charges_include_shared_base_overlay_index_and_bytes
+    exact_repeat_shares_flat_graph_and_bytes_including_empty_and_nul
+    length_and_unique_target_limits_fail_without_mutating_base
+    one_changed_leaf_has_only_its_ten_new_records
+    owned_data_and_public_clones_cannot_poison_verified_nodes
+    promotion_is_budgeted_and_detaches_the_old_base
+    randomized_boundary_edits_preserve_every_record_and_manifest
+    repair_authorization_is_target_closure_not_every_base_node
+    same_length_delta_matches_full_fold_and_reconstructs_exactly
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/profile.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/profile-ef24e5081ab9abe1)
+
+running 5 tests
+test framing_is_bounded_and_canonical ... ok
+test independent_sha256_binary_vectors_are_stable ... ok
+test profile_rejects_missing_corrupt_scale_and_padding ... ok
+test public_invalid_parent_never_panics ... ok
+test exact_sha_profile_preserves_length_and_all_byte_edits ... ok
+
+successes:
+
+successes:
+    exact_sha_profile_preserves_length_and_all_byte_edits
+    framing_is_bounded_and_canonical
+    independent_sha256_binary_vectors_are_stable
+    profile_rejects_missing_corrupt_scale_and_padding
+    public_invalid_parent_never_panics
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/replay_cpu.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/replay_cpu-15cf446bd445cabf)
+
+running 2 tests
+test packed_replay_preserves_extreme_valid_clock_and_memory_settings ... ok
+test packed_replay_is_byte_identical_to_public_scalar_steps ... ok
+
+successes:
+
+successes:
+    packed_replay_is_byte_identical_to_public_scalar_steps
+    packed_replay_preserves_extreme_valid_clock_and_memory_settings
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/resource_general_measure.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/resource_general_measure-30efbe4b69310003)
+
+running 2 tests
+test measure_general_no_graph_with_exact_readbacks ... ok
+test measure_general_profile_with_exact_readbacks ... ok
+
+successes:
+
+successes:
+    measure_general_no_graph_with_exact_readbacks
+    measure_general_profile_with_exact_readbacks
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.23s
+
+     Running tests/resource_small_measure.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/resource_small_measure-d742819d31c71feb)
+
+running 1 test
+test measure_small_profile_with_exact_readbacks ... ok
+
+successes:
+
+successes:
+    measure_small_profile_with_exact_readbacks
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.88s
+
+     Running tests/schema_codec.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/schema_codec-40a02e6977430498)
+
+running 10 tests
+test arbitrary_bytes_layout_drift_and_nested_values_remain_exact_literals ... ok
+test duplicate_keys_whitespace_crlf_escapes_and_numeric_spellings_are_preserved ... ok
+test frozen_training_template_preserves_held_out_raw_tokens ... ok
+test hostile_stream_counts_indices_tokens_and_lengths_fail_preflight ... ok
+test empty_mixed_and_newline_heavy_objects_have_exact_fallback ... ok
+test invalid_primitive_spellings_and_slot_overflow_are_literals ... ok
+test malformed_artifact_is_rejected_even_for_a_literal_target ... ok
+test malformed_templates_duplicates_and_profile_caps_are_rejected ... ok
+test wrong_schema_and_encoded_lengths_are_rejected ... ok
+test training_limits_and_template_count_are_bounded ... ok
+
+successes:
+
+successes:
+    arbitrary_bytes_layout_drift_and_nested_values_remain_exact_literals
+    duplicate_keys_whitespace_crlf_escapes_and_numeric_spellings_are_preserved
+    empty_mixed_and_newline_heavy_objects_have_exact_fallback
+    frozen_training_template_preserves_held_out_raw_tokens
+    hostile_stream_counts_indices_tokens_and_lengths_fail_preflight
+    invalid_primitive_spellings_and_slot_overflow_are_literals
+    malformed_artifact_is_rejected_even_for_a_literal_target
+    malformed_templates_duplicates_and_profile_caps_are_rejected
+    training_limits_and_template_count_are_bounded
+    wrong_schema_and_encoded_lengths_are_rejected
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_prepared.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/schema_prepared-5a010c5757310ac6)
+
+running 6 tests
+test prepared_encoders_recover_after_rejected_oversize_input ... ok
+test prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors ... ok
+test prepared_schema_owns_artifact_and_preserves_existing_stream_bytes ... ok
+test schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame ... ok
+test schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback ... ok
+test target_specific_intermediate_cap_covers_maximum_literal_record_overhead ... ok
+
+successes:
+
+successes:
+    prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors
+    prepared_encoders_recover_after_rejected_oversize_input
+    prepared_schema_owns_artifact_and_preserves_existing_stream_bytes
+    schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame
+    schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback
+    target_specific_intermediate_cap_covers_maximum_literal_record_overhead
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/schema_reuse.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/schema_reuse-fb97db3e86a985f4)
+
+running 5 tests
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+
+successes:
+
+successes:
+    bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers
+    codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget
+    compressed_schema_offer_is_versioned_and_bounded
+    persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart
+    warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+
+     Running tests/schema_selection.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/schema_selection-30d7996d52e6882f)
+
+running 8 tests
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+
+successes:
+
+successes:
+    exact_candidate_costs_and_raw_tie_match_independent_frame_lengths
+    lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly
+    prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer
+    unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped
+    whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode
+    whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames
+    whole_receiver_rejects_corruption_then_reuses_bounded_contexts
+    whole_zstd_mode_is_explicit_and_requires_no_artifact
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+     Running tests/schema_selection_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/schema_selection_workflow-d932b7a618205cb4)
+
+running 3 tests
+test schema_selection_workflow_requires_a_full_secret_without_fallback ... ok
+test schema_selection_workflow_accepts_only_the_pinned_first_attempt ... ok
+test schema_selection_workflow_restricts_every_receiver_url ... ok
+
+successes:
+
+successes:
+    schema_selection_workflow_accepts_only_the_pinned_first_attempt
+    schema_selection_workflow_requires_a_full_secret_without_fallback
+    schema_selection_workflow_restricts_every_receiver_url
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/schema_sender.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/schema_sender-e85186cf9e5737ca)
+
+running 3 tests
+test allocation_counter_is_local_and_disabled_outside_the_scope ... ok
+test matching_prepared_records_allocate_only_the_output_buffer ... ok
+test fitting_repeated_first_layout_has_constant_temporary_allocations ... ok
+
+successes:
+
+successes:
+    allocation_counter_is_local_and_disabled_outside_the_scope
+    fitting_repeated_first_layout_has_constant_temporary_allocations
+    matching_prepared_records_allocate_only_the_output_buffer
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_wan_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/schema_wan_workflow-04777e4b8cf234dc)
+
+running 3 tests
+test schema_wan_workflow_requires_a_full_secret_without_fallback ... ok
+test schema_wan_workflow_accepts_only_the_pinned_first_attempt ... ok
+test schema_wan_workflow_restricts_every_receiver_url ... ok
+
+successes:
+
+successes:
+    schema_wan_workflow_accepts_only_the_pinned_first_attempt
+    schema_wan_workflow_requires_a_full_secret_without_fallback
+    schema_wan_workflow_restricts_every_receiver_url
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/selector_setup_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/selector_setup_workflow-353b251017964aa7)
+
+running 3 tests
+test selector_setup_workflow_requires_a_full_secret_without_fallback ... ok
+test selector_setup_workflow_accepts_only_the_pinned_first_attempt ... ok
+test selector_setup_workflow_restricts_every_receiver_url ... ok
+
+successes:
+
+successes:
+    selector_setup_workflow_accepts_only_the_pinned_first_attempt
+    selector_setup_workflow_requires_a_full_secret_without_fallback
+    selector_setup_workflow_restricts_every_receiver_url
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/shared_runtime.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/shared_runtime-023974c515e88988)
+
+running 22 tests
+test checkpoint_rejects_noncanonical_float_padding_flags_and_root_count ... ok
+test checkpoint_rejects_every_truncation_trailing_bytes_and_bad_magic ... ok
+test checkpoints_roundtrip_every_resume_boundary_without_fidelity_loss ... ok
+test exact_replay_final_checkpoint_matches_explicit_steps ... ok
+test fold_values_preserve_observed_unweighted_summary_semantics ... ok
+test full_transition_matches_pinned_python_ca_fold_clock_and_memory_fields ... ok
+test every_valid_reference_ring_evolves_exactly_for_all_three_rules ... ok
+test historical_root_retention_cap_drops_oldest_summary_without_exceeding_bounds ... ok
+test invalid_dimensions_rings_and_nonfinite_state_are_refused ... ok
+test invalid_frequency_coupling_clock_root_and_payload_are_refused ... ok
+test memory_coupler_affects_phases_without_changing_ca_or_leaf_count ... ok
+test logical_step_root_and_replay_limits_are_bounded ... ok
+test recipe_rejects_noncanonical_payload_reserved_bits_and_output_kind ... ok
+test recipe_roundtrip_rejects_truncation_trailing_and_unknown_header ... ok
+test native_canonical_checkpoint_and_trace_vectors_are_stable ... ok
+test root_counts_and_phase_bounds_are_validated ... ok
+test replay_exact_output_budget_succeeds_and_one_byte_short_fails ... ok
+test splitting_replay_across_independent_checkpoint_receivers_is_exact ... ok
+test trace_contains_every_complete_post_step_checkpoint_in_order ... ok
+test trace_reserves_exact_required_output_instead_of_entire_admission_ceiling ... ok
+test zero_step_final_replay_is_identity_and_zero_step_trace_is_header_only ... ok
+test seeded_default_ca_row_matches_pinned_python_reference ... ok
+
+successes:
+
+---- native_canonical_checkpoint_and_trace_vectors_are_stable stdout ----
+NATIVE_CANONICAL_VECTORS=[{"bytes":346,"id":"width48_dt005_n0","object_id":"594aeeb4320926c376a6d25d756a9901c56817bc1ba82b8510b2e62e171fc0d7","sha256":"611c47e23223123a992b7e0c5bf7791c43ba38c60af887a86b548a482eddc598"},{"bytes":426,"id":"width48_dt005_n9","object_id":"b463c543db135f95f20fe119fdb9c5ab8cbe3e2824e0f8ea24331d686ae1070f","sha256":"a9611fcb6a9e3623868305d5c59ba6a8abff1c28dc2f74a3f81103d27ddc45ca"},{"bytes":426,"id":"width48_dt005_n81","object_id":"175bc65b601b9a75404b204efd754cc35de77a65d08d8576e50f68573170fab9","sha256":"b64c427415d146427c2f260444a381369da27e94af8936ca8058e9cb78695532"},{"bytes":4678,"id":"width48_dt005_trace9","object_id":"36de4e1e9ce1bbf5567c2232ec01999cad566ffb7bc9fd2ed6ac6b6d69d24d24","sha256":"fba50687cd0984458a8ef75b1f9f69d2a9d353bbdd1a9174516875f041eaca3a"}]
+
+
+successes:
+    checkpoint_rejects_every_truncation_trailing_bytes_and_bad_magic
+    checkpoint_rejects_noncanonical_float_padding_flags_and_root_count
+    checkpoints_roundtrip_every_resume_boundary_without_fidelity_loss
+    every_valid_reference_ring_evolves_exactly_for_all_three_rules
+    exact_replay_final_checkpoint_matches_explicit_steps
+    fold_values_preserve_observed_unweighted_summary_semantics
+    full_transition_matches_pinned_python_ca_fold_clock_and_memory_fields
+    historical_root_retention_cap_drops_oldest_summary_without_exceeding_bounds
+    invalid_dimensions_rings_and_nonfinite_state_are_refused
+    invalid_frequency_coupling_clock_root_and_payload_are_refused
+    logical_step_root_and_replay_limits_are_bounded
+    memory_coupler_affects_phases_without_changing_ca_or_leaf_count
+    native_canonical_checkpoint_and_trace_vectors_are_stable
+    recipe_rejects_noncanonical_payload_reserved_bits_and_output_kind
+    recipe_roundtrip_rejects_truncation_trailing_and_unknown_header
+    replay_exact_output_budget_succeeds_and_one_byte_short_fails
+    root_counts_and_phase_bounds_are_validated
+    seeded_default_ca_row_matches_pinned_python_reference
+    splitting_replay_across_independent_checkpoint_receivers_is_exact
+    trace_contains_every_complete_post_step_checkpoint_in_order
+    trace_reserves_exact_required_output_instead_of_entire_admission_ceiling
+    zero_step_final_replay_is_identity_and_zero_step_trace_is_header_only
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/shared_transfer.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/shared_transfer-efd8d271ec0a5552)
+
+running 10 tests
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test prepared_prediction_owns_its_state_and_preserves_residual_bytes ... ok
+test prepared_prediction_rejects_invalid_state_and_oversize_targets ... ok
+test prepared_prediction_transfers_repeated_edits_without_granting_authority ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+
+successes:
+
+successes:
+    checkpoint_must_be_authorized_present_and_within_replay_budget
+    different_lengths_and_final_checkpoint_use_exact_residuals
+    malformed_setup_missing_setup_and_failed_final_digest_never_publish
+    prepared_prediction_owns_its_state_and_preserves_residual_bytes
+    prepared_prediction_rejects_invalid_state_and_oversize_targets
+    prepared_prediction_transfers_repeated_edits_without_granting_authority
+    replay_is_idempotent_and_cancel_discards_output
+    revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay
+    runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes
+    setup_truncations_versions_digest_and_resource_lies_are_rejected
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/small_resources.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/small_resources-7866ca2bb645b515)
+
+running 8 tests
+test public_small_prediction_keeps_profile_bound_when_preparing_later_targets ... ok
+test public_small_selector_refuses_oversized_target_and_base_even_when_codecs_are_pruned ... ok
+test small_capacity_artifact_shape_and_profile_refusals_precede_exchange_or_store_creation ... ok
+test runtime_receiver_rejects_large_declared_or_computed_prediction_before_evolution ... ok
+test small_profile_is_explicit_bounded_and_never_negotiates_general_fallback ... ok
+test small_profile_refuses_legacy_streaming_zstd_at_negotiation_and_admission ... ok
+test small_receiver_rejects_oversized_general_base_and_forged_probe_before_read ... ok
+test small_facade_all_modes_publish_exactly_with_one_aggregate_envelope ... ok
+
+successes:
+
+successes:
+    public_small_prediction_keeps_profile_bound_when_preparing_later_targets
+    public_small_selector_refuses_oversized_target_and_base_even_when_codecs_are_pruned
+    runtime_receiver_rejects_large_declared_or_computed_prediction_before_evolution
+    small_capacity_artifact_shape_and_profile_refusals_precede_exchange_or_store_creation
+    small_facade_all_modes_publish_exactly_with_one_aggregate_envelope
+    small_profile_is_explicit_bounded_and_never_negotiates_general_fallback
+    small_profile_refuses_legacy_streaming_zstd_at_negotiation_and_admission
+    small_receiver_rejects_oversized_general_base_and_forged_probe_before_read
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests/small_source_gate.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/small_source_gate-c5c8dcf99ed439ca)
+
+running 1 test
+test small_source_gate_refuses_before_filesystem_or_codec_setup_when_unqualified ... ok
+
+successes:
+
+---- small_source_gate_refuses_before_filesystem_or_codec_setup_when_unqualified stdout ----
+source_qualified=true
+
+
+successes:
+    small_source_gate_refuses_before_filesystem_or_codec_setup_when_unqualified
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/sparse.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/sparse-8516b6ef337b23f6)
+
+running 6 tests
+test edits_lengths_and_fallback_preserve_every_byte ... ok
+test hostile_versions_lengths_ops_and_truncation_fail_closed ... ok
+test literal_frames_split_and_large_copy_remains_small ... ok
+test malformed_recipe_is_atomic ... ok
+test prefix_insertion_uses_a_small_exact_recipe ... ok
+test exact_operation_literal_and_object_limits_are_enforced ... ok
+
+successes:
+
+successes:
+    edits_lengths_and_fallback_preserve_every_byte
+    exact_operation_literal_and_object_limits_are_enforced
+    hostile_versions_lengths_ops_and_truncation_fail_closed
+    literal_frames_split_and_large_copy_remains_small
+    malformed_recipe_is_atomic
+    prefix_insertion_uses_a_small_exact_recipe
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/transfer.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/transfer-293849acfa5c77e9)
+
+running 5 tests
+test peer_cannot_request_records_outside_the_offered_object ... ok
+test missing_record_batch_is_repaired_with_complete_descendants ... ok
+test unrelated_reply_and_zstd_trailing_frames_are_rejected ... ok
+test zstd_decoder_enforces_actual_window_limit ... ok
+test raw_zstd_repeat_and_warm_delta_reconstruct_exactly ... ok
+
+successes:
+
+successes:
+    missing_record_batch_is_repaired_with_complete_descendants
+    peer_cannot_request_records_outside_the_offered_object
+    raw_zstd_repeat_and_warm_delta_reconstruct_exactly
+    unrelated_reply_and_zstd_trailing_frames_are_rejected
+    zstd_decoder_enforces_actual_window_limit
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/unrelated_cpu_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/unrelated_cpu_workflow-6b46894d672132ce)
+
+running 5 tests
+test unrelated_workflow_pins_overlay_restore_and_always_retains_failures ... ok
+test unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap ... ok
+test unrelated_workflow_requires_the_complete_capability ... ok
+test unrelated_workflow_requires_exact_source_branch_and_first_attempt ... ok
+test unrelated_workflow_restricts_all_six_receiver_origins ... ok
+
+successes:
+
+successes:
+    unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap
+    unrelated_workflow_pins_overlay_restore_and_always_retains_failures
+    unrelated_workflow_requires_exact_source_branch_and_first_attempt
+    unrelated_workflow_requires_the_complete_capability
+    unrelated_workflow_restricts_all_six_receiver_origins
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/unrelated_delta.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/unrelated_delta-a6d042c99357a42e)
+
+running 2 tests
+test allocation_counter_observes_large_requests_only_within_its_scope ... ok
+test all_literal_rejection_does_not_allocate_payload_sized_buffers ... ok
+
+successes:
+
+successes:
+    all_literal_rejection_does_not_allocate_payload_sized_buffers
+    allocation_counter_observes_large_requests_only_within_its_scope
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/v1_contract.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/v1_contract-6e319453e6aa4504)
+
+running 8 tests
+test capabilities_validate_before_intersection ... ok
+test every_seed_constructor_enforces_the_same_object_cap_without_carrier ... ok
+test endpoint_checks_authority_then_begin_and_resume_caps ... ok
+test legacy_wire_golden_is_unchanged ... ok
+test exact_durable_reopen_and_interrupted_not_published ... ok
+test narrowed_runtime_and_combined_selected_offer_never_reaches_carrier ... ok
+test sender_rejects_ineligible_before_callback_and_limits_replies ... ok
+test narrowed_warm_selected_offer_never_reaches_carrier ... ok
+
+successes:
+
+successes:
+    capabilities_validate_before_intersection
+    endpoint_checks_authority_then_begin_and_resume_caps
+    every_seed_constructor_enforces_the_same_object_cap_without_carrier
+    exact_durable_reopen_and_interrupted_not_published
+    legacy_wire_golden_is_unchanged
+    narrowed_runtime_and_combined_selected_offer_never_reaches_carrier
+    narrowed_warm_selected_offer_never_reaches_carrier
+    sender_rejects_ineligible_before_callback_and_limits_replies
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/wan.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/wan-2a25ca50893e4766)
+
+running 12 tests
+test authenticated_batch_commits_exact_bytes_with_measured_receiver_work ... ok
+test an_idle_completed_connection_cannot_block_another_client ... ok
+test batch_bounds_and_canonical_framing ... ok
+test campaign_origin_refuses_to_reuse_a_populated_cache ... ok
+test campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache ... ok
+test campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache ... ok
+test client_rejects_a_truncated_nonterminal_reply_prefix ... ok
+test client_rejects_unsafe_urls_and_short_capabilities ... ok
+test authentication_and_scope_fail_before_reading_body ... ok
+test hostile_http_headers_and_truncation_are_rejected ... ok
+test observed_origin_rejects_failed_logging_and_does_not_observe_unauthorized_requests ... ok
+test codec_cache_cli_is_opt_in_and_records_persistent_hits_without_credentials ... ok
+
+successes:
+
+successes:
+    an_idle_completed_connection_cannot_block_another_client
+    authenticated_batch_commits_exact_bytes_with_measured_receiver_work
+    authentication_and_scope_fail_before_reading_body
+    batch_bounds_and_canonical_framing
+    campaign_origin_refuses_to_reuse_a_populated_cache
+    campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache
+    campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache
+    client_rejects_a_truncated_nonterminal_reply_prefix
+    client_rejects_unsafe_urls_and_short_capabilities
+    codec_cache_cli_is_opt_in_and_records_persistent_hits_without_credentials
+    hostile_http_headers_and_truncation_are_rejected
+    observed_origin_rejects_failed_logging_and_does_not_observe_unauthorized_requests
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.14s
+
+     Running tests/wan_diagnostics_cli.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/wan_diagnostics_cli-07c1b1556af21578)
+
+running 1 test
+test connection_log_is_exclusive_and_contains_only_structured_transport_metadata ... ok
+
+successes:
+
+successes:
+    connection_log_is_exclusive_and_contains_only_structured_transport_metadata
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.02s
+
+     Running tests/wan_persistent.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/wan_persistent-3a652edfb509e4ba)
+
+running 11 tests
+test client_transport_failure_distinguishes_a_truncated_response_body ... ok
+test client_transport_failure_keeps_only_sanitized_status_and_resets_per_exchange ... ok
+test connection_diagnostics_distinguish_empty_idle_from_rejected_auth_without_leaks ... ok
+test connection_diagnostics_preserve_partial_header_timeout_and_eof_rejections ... ok
+test connection_cap_and_client_close_are_honored ... ok
+test idle_connection_releases_serial_origin_without_consuming_a_request ... ok
+test invalid_keep_alive_plan_is_rejected_before_cache_creation ... ok
+test legacy_zero_duration_returns_ok_without_accepting_or_processing_requests ... ok
+test malformed_or_truncated_second_request_closes_connection ... ok
+test reused_connection_rechecks_auth_and_scope_before_body ... ok
+test eleven_transfers_reuse_one_connection_and_reopen_exactly ... ok
+
+successes:
+
+successes:
+    client_transport_failure_distinguishes_a_truncated_response_body
+    client_transport_failure_keeps_only_sanitized_status_and_resets_per_exchange
+    connection_cap_and_client_close_are_honored
+    connection_diagnostics_distinguish_empty_idle_from_rejected_auth_without_leaks
+    connection_diagnostics_preserve_partial_header_timeout_and_eof_rejections
+    eleven_transfers_reuse_one_connection_and_reopen_exactly
+    idle_connection_releases_serial_origin_without_consuming_a_request
+    invalid_keep_alive_plan_is_rejected_before_cache_creation
+    legacy_zero_duration_returns_ok_without_accepting_or_processing_requests
+    malformed_or_truncated_second_request_closes_connection
+    reused_connection_rechecks_auth_and_scope_before_body
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.72s
+
+     Running tests/warm_object_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/warm_object_workflow-fdf49cc2e0e68adb)
+
+running 3 tests
+test warm_object_workflow_requires_a_full_secret_without_fallback ... ok
+test warm_object_workflow_accepts_only_the_pinned_first_attempt ... ok
+test warm_object_workflow_restricts_every_receiver_url ... ok
+
+successes:
+
+successes:
+    warm_object_workflow_accepts_only_the_pinned_first_attempt
+    warm_object_workflow_requires_a_full_secret_without_fallback
+    warm_object_workflow_restricts_every_receiver_url
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/warm_policy.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/warm_policy-686f222c4c9a2ad3)
+
+running 2 tests
+test default_policy_preserves_graph_readiness_and_disabled_reduces_admission_only ... ok
+test disabled_skips_only_optional_raw_and_zstd_graph_warming ... ok
+
+successes:
+
+successes:
+    default_policy_preserves_graph_readiness_and_disabled_reduces_admission_only
+    disabled_skips_only_optional_raw_and_zstd_graph_warming
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/warm_selection.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/warm_selection-7e49ba4b9de70bc8)
+
+running 9 tests
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test period64_without_short_period_still_uses_actual_rejection_certificate ... ok
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test sampled_short_period_repetition_schedules_full_encoding_without_pruning ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+successes:
+
+successes:
+    all_four_winners_match_exhaustive_selected_frame_bytes
+    boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum
+    cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse
+    period64_without_short_period_still_uses_actual_rejection_certificate
+    raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits
+    sampled_short_period_repetition_schedules_full_encoding_without_pruning
+    static_tie_requires_whole_evaluation_or_a_stronger_actual_bound
+    structural_bounds_skip_only_candidates_that_cannot_win
+    verified_base_makes_sparse_an_exact_scored_candidate
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+     Running tests/warm_selection_client.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/warm_selection_client-7184e34b6556c6c9)
+
+running 3 tests
+test unavailable_selected_base_or_transport_failure_never_reoffers ... ok
+test warm_hints_do_not_authorize_missing_schema_or_revoked_context ... ok
+test selected_warm_plan_sends_exact_cost_without_reencoding_and_reopens ... ok
+
+successes:
+
+successes:
+    selected_warm_plan_sends_exact_cost_without_reencoding_and_reopens
+    unavailable_selected_base_or_transport_failure_never_reoffers
+    warm_hints_do_not_authorize_missing_schema_or_revoked_context
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/warm_selection_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/warm_selection_workflow-86c0d679c87326ff)
+
+running 3 tests
+test warm_selection_workflow_requires_a_full_secret_without_fallback ... ok
+test warm_selection_workflow_accepts_only_the_pinned_first_attempt ... ok
+test warm_selection_workflow_restricts_every_receiver_url ... ok
+
+successes:
+
+successes:
+    warm_selection_workflow_accepts_only_the_pinned_first_attempt
+    warm_selection_workflow_requires_a_full_secret_without_fallback
+    warm_selection_workflow_restricts_every_receiver_url
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/zstd_dictionary.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/zstd_dictionary-05359a1a5a262e3e)
+
+running 2 tests
+test dictionary_rejects_malformed_artifacts_and_resource_expansion ... ok
+test trained_dictionary_exactly_recovers_held_out_and_arbitrary_bytes ... ok
+
+successes:
+
+successes:
+    dictionary_rejects_malformed_artifacts_and_resource_expansion
+    trained_dictionary_exactly_recovers_held_out_and_arbitrary_bytes
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/zstd_prefix.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/zstd_prefix-5359a3584f27479b)
+
+running 8 tests
+test endpoint_prefix_pins_authorized_base_and_publishes_only_verified_complete_bytes ... ok
+test batched_prefix_reports_selection_and_falls_back_only_before_begin ... ok
+test prefix_admission_precedes_corrupt_base_read_and_final_hash_is_mandatory ... ok
+test prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded ... ok
+test rejects_wrong_base_damage_trailing_frames_and_unbounded_header ... ok
+test sender_rejects_wrong_cumulative_encoded_receipt ... ok
+test whole_prefix_roundtrips_empty_edits_insertions_and_unrelated_data ... ok
+test prefix_reservations_are_shared_and_cancel_releases_them ... ok
+
+successes:
+
+successes:
+    batched_prefix_reports_selection_and_falls_back_only_before_begin
+    endpoint_prefix_pins_authorized_base_and_publishes_only_verified_complete_bytes
+    prefix_admission_precedes_corrupt_base_read_and_final_hash_is_mandatory
+    prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded
+    prefix_reservations_are_shared_and_cancel_releases_them
+    rejects_wrong_base_damage_trailing_frames_and_unbounded_header
+    sender_rejects_wrong_cumulative_encoded_receipt
+    whole_prefix_roundtrips_empty_edits_insertions_and_unrelated_data
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/zstd_probe_guard.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/zstd_probe_guard-d2ab893a3adab14d)
+
+running 4 tests
+test qualification_can_require_the_enabled_or_disabled_build_path ... ok
+test source_guard_rejects_missing_or_foreign_trees ... ok
+test system_linkage_and_native_overrides_disable_the_certificate ... ok
+test qualified_build_records_the_exact_source_tree ... ok
+
+successes:
+
+successes:
+    qualification_can_require_the_enabled_or_disabled_build_path
+    qualified_build_records_the_exact_source_tree
+    source_guard_rejects_missing_or_foreign_trees
+    system_linkage_and_native_overrides_disable_the_certificate
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/zstd_whole_probe.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/zstd_whole_probe-54e84245dc3c48a0)
+
+running 2 tests
+test compressible_whole_winner_keeps_uncapped_frame_after_inconclusive_probe ... ok
+test first_block_excludes_random_one_mib_without_full_whole_candidate ... ok
+
+successes:
+
+successes:
+    compressible_whole_winner_keeps_uncapped_frame_after_inconclusive_probe
+    first_block_excludes_random_one_mib_without_full_whole_candidate
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/codec_selection.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/codec_selection-78a948edbe09736e)
+
+running 5 tests
+test tests::distribution_uses_midpoint_median_and_nearest_rank_p95 ... ok
+test tests::configuration_rejects_ambiguous_or_out_of_bounds_inputs ... ok
+test tests::fixtures_are_paired_and_localized_changes_have_exact_extent ... ok
+test tests::workload_cardinality_and_order_are_exact_and_balanced ... ok
+test tests::one_trial_serial_transfer_reopens_exact_bytes_and_preserves_existing_output ... ok
+
+successes:
+
+successes:
+    tests::configuration_rejects_ambiguous_or_out_of_bounds_inputs
+    tests::distribution_uses_midpoint_median_and_nearest_rank_p95
+    tests::fixtures_are_paired_and_localized_changes_have_exact_extent
+    tests::one_trial_serial_transfer_reopens_exact_bytes_and_preserves_existing_output
+    tests::workload_cardinality_and_order_are_exact_and_balanced
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.68s
+
+     Running unittests examples/receiver_stages.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/receiver_stages-99cbc3c3bb6a4ddf)
+
+running 5 tests
+test tests::existing_root_is_rejected_without_deleting_user_files ... ok
+test tests::malformed_data_stops_before_finish_and_never_publishes ... ok
+test tests::prepared_frames_are_complete_and_exact_before_receiver_timing ... ok
+test tests::rolling_fixture_has_nine_local_edits_one_escape_and_no_duplicate_object ... ok
+test tests::each_clock_mode_runs_one_seed_ten_updates_and_reopens_all_exactly ... ok
+
+successes:
+
+successes:
+    tests::each_clock_mode_runs_one_seed_ten_updates_and_reopens_all_exactly
+    tests::existing_root_is_rejected_without_deleting_user_files
+    tests::malformed_data_stops_before_finish_and_never_publishes
+    tests::prepared_frames_are_complete_and_exact_before_receiver_timing
+    tests::rolling_fixture_has_nine_local_edits_one_escape_and_no_duplicate_object
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running unittests examples/replay_cpu.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/replay_cpu-567935640f58002b)
+
+running 3 tests
+test tests::registered_order_is_repeatable_complete_and_varies_across_trials ... ok
+test tests::fixtures_change_exactly_one_bit_or_replace_every_byte_deterministically ... ok
+test tests::summary_rejects_missing_trials_and_quantiles_retain_extremes ... ok
+
+successes:
+
+successes:
+    tests::fixtures_change_exactly_one_bit_or_replace_every_byte_deterministically
+    tests::registered_order_is_repeatable_complete_and_varies_across_trials
+    tests::summary_rejects_missing_trials_and_quantiles_retain_extremes
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/schema_context_profile.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/schema_context_profile-7eafefd05f33b5ba)
+
+running 0 tests
+
+successes:
+
+successes:
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/schema_fitting.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/schema_fitting-437fe6fb3746ff24)
+
+running 53 tests
+test persistent_session::tests::persistent_campaign_summary_keeps_unfavorable_gate ... ok
+test persistent_session::tests::persistent_complete_receipts_reject_missing_fits_costs_and_fidelity ... ok
+test persistent_session::tests::persistent_rolling_objects_survive_real_serialized_store_reopen ... ok
+test persistent_session::tests::unrelated_cpu_gates_preserve_negative_controls_and_require_all_pairs ... ok
+test persistent_session::tests::unrelated_mixed_session_publishes_schema_and_reopens_all_exact_objects ... ok
+test persistent_session::tests::unrelated_complete_receipts_require_paid_publication_roles_and_negative_gates ... ok
+test persistent_session::tests::unrelated_sequence_keeps_exact_warm_edits_and_held_out_shapes ... ok
+test persistent_session::tests::unrelated_plan_charges_real_artifact_publication_and_fixed_dose ... ok
+test schema_reuse::tests::observation_validation_rejects_false_fidelity_and_double_counting ... ok
+test schema_reuse::tests::randomized_orders_preserve_all_arms_and_are_repeatable ... ok
+test schema_reuse::tests::real_session_owns_private_store_and_reopens_every_distinct_target ... ok
+test schema_reuse::tests::sessions_assign_distinct_held_out_indexes_and_reject_bad_bounds ... ok
+test schema_selection::tests::cold_seed_charge_cannot_be_omitted ... ok
+test schema_selection::tests::cold_threshold_ties_and_extra_candidates_are_rejected ... ok
+test schema_reuse::tests::historical_fixture_identities_are_unchanged ... ok
+test schema_selection::tests::measured_transport_failure_is_sanitized_and_not_reused_without_exchange ... ok
+test schema_selection::tests::real_persistent_small_sessions_skip_selector_seed_and_reopen_exactly ... ok
+test schema_sender::tests::pairing_balances_source_order_and_rejects_invalid_cells ... ok
+test schema_sender::tests::recorded_sessions_keep_exact_transcripts_and_strict_output_creation ... ok
+test schema_sender::tests::standalone_profile_compressor_matches_the_production_frame ... ok
+test schema_selection::tests::complete_dynamic_seed_summary_and_corruptions ... ok
+test schema_wan::tests::expanded_fixture_range_keeps_historical_identity ... ok
+test schema_wan::tests::family_label_must_match_the_frozen_target ... ok
+test schema_wan::tests::loopback_persistent_session_reopens_all_ten_exact_targets ... ok
+test schema_wan::tests::shard_budget_and_summary_guards_are_fail_closed ... ok
+test schema_wan::tests::thirty_trials_cover_six_orders_and_isolate_every_scope ... ok
+test tests::training_is_frozen_and_disjoint_from_held_out_records ... ok
+test tests::whole_record_batches_and_binary_controls_preserve_actual_lengths ... ok
+test warm_object::tests::bounded_complete_local_summary_checks_roles_frames_fit_and_all_ten_pairs ... ok
+test warm_object::tests::bounded_compressible_control_uses_completed_whole_and_exact_reopen ... ok
+test warm_object::tests::bounded_cpu_gate_requires_ten_complete_pairs_and_preserves_negatives ... ok
+test warm_object::tests::bounded_profile_binds_two_production_sources_and_retains_bounded_doses ... ok
+test warm_object::tests::bounded_receipt_keeps_completed_cost_distinct_from_rejection_certificate ... ok
+test warm_object::tests::persistent_accounting_charges_setup_once_and_keeps_generation_in_outer ... ok
+test schema_wan::tests::complete_summary_accepts_all_shards_and_rejects_missing_or_corrupt_rows ... ok
+test warm_object::tests::persistent_sequence_escapes_once_then_recovers_nine_distinct_warm_edits ... ok
+test warm_object::tests::persistent_shared_budget_rejects_retained_future_targets ... ok
+test warm_object::tests::persistent_plan_binds_once_fitted_sessions_and_bounded_pilot ... ok
+test warm_object::tests::setup_controls_reopen_actual_targets_and_label_deceptive_sampling ... ok
+test warm_object::tests::setup_gates_preserve_all_ten_pairs_and_negative_outcomes ... ok
+test warm_object::tests::setup_profile_keeps_all_fits_and_separates_constructor_from_training ... ok
+test warm_object::tests::setup_complete_summary_checks_three_cases_and_rejects_relabeling ... ok
+test warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption ... ok
+test warm_object::tests::setup_three_cases_bind_paid_dose_and_original_fixtures ... ok
+test warm_object::tests::warm_fixture_changes_exactly_32_midpoint_bytes_and_has_unique_identity ... ok
+test warm_object::tests::warm_selection_actual_fit_and_consumed_plan_preserve_scoped_exact_bytes ... ok
+test warm_object::tests::warm_selection_plan_has_six_bounded_shards_and_all_permutations ... ok
+test warm_object::tests::warm_randomized_pair_orders_are_reproducible_and_exactly_balanced ... ok
+test warm_object::tests::warm_selection_receipt_rejects_fake_bounds_and_omitted_cold_setup ... ok
+test warm_object::tests::warm_sparse_requires_scoped_base_then_commits_absent_target_exactly ... ok
+test warm_object::tests::warm_success_cost_requires_real_seed_and_changed_sparse_update ... ok
+test warm_object::tests::warm_selection_summary_joins_controls_and_rejects_unpaid_fit_and_decision_changes ... ok
+test warm_object::tests::warm_summary_accepts_complete_local_receipts_and_charges_setup_once ... ok
+
+successes:
+
+successes:
+    persistent_session::tests::persistent_campaign_summary_keeps_unfavorable_gate
+    persistent_session::tests::persistent_complete_receipts_reject_missing_fits_costs_and_fidelity
+    persistent_session::tests::persistent_rolling_objects_survive_real_serialized_store_reopen
+    persistent_session::tests::unrelated_complete_receipts_require_paid_publication_roles_and_negative_gates
+    persistent_session::tests::unrelated_cpu_gates_preserve_negative_controls_and_require_all_pairs
+    persistent_session::tests::unrelated_mixed_session_publishes_schema_and_reopens_all_exact_objects
+    persistent_session::tests::unrelated_plan_charges_real_artifact_publication_and_fixed_dose
+    persistent_session::tests::unrelated_sequence_keeps_exact_warm_edits_and_held_out_shapes
+    schema_reuse::tests::historical_fixture_identities_are_unchanged
+    schema_reuse::tests::observation_validation_rejects_false_fidelity_and_double_counting
+    schema_reuse::tests::randomized_orders_preserve_all_arms_and_are_repeatable
+    schema_reuse::tests::real_session_owns_private_store_and_reopens_every_distinct_target
+    schema_reuse::tests::sessions_assign_distinct_held_out_indexes_and_reject_bad_bounds
+    schema_selection::tests::cold_seed_charge_cannot_be_omitted
+    schema_selection::tests::cold_threshold_ties_and_extra_candidates_are_rejected
+    schema_selection::tests::complete_dynamic_seed_summary_and_corruptions
+    schema_selection::tests::measured_transport_failure_is_sanitized_and_not_reused_without_exchange
+    schema_selection::tests::real_persistent_small_sessions_skip_selector_seed_and_reopen_exactly
+    schema_sender::tests::pairing_balances_source_order_and_rejects_invalid_cells
+    schema_sender::tests::recorded_sessions_keep_exact_transcripts_and_strict_output_creation
+    schema_sender::tests::standalone_profile_compressor_matches_the_production_frame
+    schema_wan::tests::complete_summary_accepts_all_shards_and_rejects_missing_or_corrupt_rows
+    schema_wan::tests::expanded_fixture_range_keeps_historical_identity
+    schema_wan::tests::family_label_must_match_the_frozen_target
+    schema_wan::tests::loopback_persistent_session_reopens_all_ten_exact_targets
+    schema_wan::tests::shard_budget_and_summary_guards_are_fail_closed
+    schema_wan::tests::thirty_trials_cover_six_orders_and_isolate_every_scope
+    tests::training_is_frozen_and_disjoint_from_held_out_records
+    tests::whole_record_batches_and_binary_controls_preserve_actual_lengths
+    warm_object::tests::bounded_complete_local_summary_checks_roles_frames_fit_and_all_ten_pairs
+    warm_object::tests::bounded_compressible_control_uses_completed_whole_and_exact_reopen
+    warm_object::tests::bounded_cpu_gate_requires_ten_complete_pairs_and_preserves_negatives
+    warm_object::tests::bounded_profile_binds_two_production_sources_and_retains_bounded_doses
+    warm_object::tests::bounded_receipt_keeps_completed_cost_distinct_from_rejection_certificate
+    warm_object::tests::persistent_accounting_charges_setup_once_and_keeps_generation_in_outer
+    warm_object::tests::persistent_plan_binds_once_fitted_sessions_and_bounded_pilot
+    warm_object::tests::persistent_sequence_escapes_once_then_recovers_nine_distinct_warm_edits
+    warm_object::tests::persistent_shared_budget_rejects_retained_future_targets
+    warm_object::tests::setup_complete_summary_checks_three_cases_and_rejects_relabeling
+    warm_object::tests::setup_controls_reopen_actual_targets_and_label_deceptive_sampling
+    warm_object::tests::setup_gates_preserve_all_ten_pairs_and_negative_outcomes
+    warm_object::tests::setup_profile_keeps_all_fits_and_separates_constructor_from_training
+    warm_object::tests::setup_three_cases_bind_paid_dose_and_original_fixtures
+    warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption
+    warm_object::tests::warm_fixture_changes_exactly_32_midpoint_bytes_and_has_unique_identity
+    warm_object::tests::warm_randomized_pair_orders_are_reproducible_and_exactly_balanced
+    warm_object::tests::warm_selection_actual_fit_and_consumed_plan_preserve_scoped_exact_bytes
+    warm_object::tests::warm_selection_plan_has_six_bounded_shards_and_all_permutations
+    warm_object::tests::warm_selection_receipt_rejects_fake_bounds_and_omitted_cold_setup
+    warm_object::tests::warm_selection_summary_joins_controls_and_rejects_unpaid_fit_and_decision_changes
+    warm_object::tests::warm_sparse_requires_scoped_base_then_commits_absent_target_exactly
+    warm_object::tests::warm_success_cost_requires_real_seed_and_changed_sparse_update
+    warm_object::tests::warm_summary_accepts_complete_local_receipts_and_charges_setup_once
+
+test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.89s
+
+     Running unittests examples/sender_profile.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/sender_profile-6139daee8c0106ab)
+
+running 3 tests
+test harness::tests::fixtures_change_exactly_one_bit_or_replace_every_byte_deterministically ... ok
+test harness::tests::registered_order_is_repeatable_complete_and_varies_across_trials ... ok
+test harness::tests::summary_rejects_missing_trials_and_quantiles_retain_extremes ... ok
+
+successes:
+
+successes:
+    harness::tests::fixtures_change_exactly_one_bit_or_replace_every_byte_deterministically
+    harness::tests::registered_order_is_repeatable_complete_and_varies_across_trials
+    harness::tests::summary_rejects_missing_trials_and_quantiles_retain_extremes
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/shared_runtime.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/shared_runtime-1f0e1b7108f5d95f)
+
+running 5 tests
+test tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial ... ok
+test tests::plan_binds_unique_scopes_and_actual_fixture_sizes ... ok
+test tests::output_creation_never_overwrites_and_fixture_binding_rejects_changes ... ok
+test tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured ... ok
+test tests::remote_http_ack_is_separate_from_stopped_receiver_exact_verification ... ok
+
+successes:
+
+successes:
+    tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial
+    tests::output_creation_never_overwrites_and_fixture_binding_rejects_changes
+    tests::plan_binds_unique_scopes_and_actual_fixture_sizes
+    tests::remote_http_ack_is_separate_from_stopped_receiver_exact_verification
+    tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+     Running unittests examples/sparse_pruning.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/sparse_pruning-e19a467ef540ddb7)
+
+running 3 tests
+test tests::fixtures_have_registered_lengths_and_changes ... ok
+test tests::schedule_is_ten_interleaved_ab_ba_pairs_per_cell ... ok
+test tests::every_registered_fixture_has_exact_legacy_and_current_receipts ... ok
+
+successes:
+
+successes:
+    tests::every_registered_fixture_has_exact_legacy_and_current_receipts
+    tests::fixtures_have_registered_lengths_and_changes
+    tests::schedule_is_ten_interleaved_ab_ba_pairs_per_cell
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running unittests examples/unrelated_profile.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/examples/unrelated_profile-2e211d9e2622f2e9)
+
+running 3 tests
+test tests::profile_record_counts_preserve_trailing_newline_and_schema_limit ... ok
+test tests::registered_profile_has_exactly_seventy_two_unique_observations ... ok
+test tests::profile_fixtures_preserve_warm_edit_and_independent_escape ... ok
+
+successes:
+
+successes:
+    tests::profile_fixtures_preserve_warm_edit_and_independent_escape
+    tests::profile_record_counts_preserve_trailing_newline_and_schema_limit
+    tests::registered_profile_has_exactly_seventy_two_unique_observations
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+	Command being timed: "cargo test --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- --show-output"
+	User time (seconds): 25.68
+	System time (seconds): 2.24
+	Percent of CPU this job got: 70%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:39.56
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 207892
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 878
+	Minor (reclaiming a frame) page faults: 1199775
+	Voluntary context switches: 19841
+	Involuntary context switches: 721
+	Swaps: 0
+	File system inputs: 153696
+	File system outputs: 544944
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

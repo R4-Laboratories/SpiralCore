@@ -1,12 +1,49 @@
 # Networking delivery status
 
-A [15 November upstream coordination check](evidence/2026-11-15-upstream-coordination/README.md)
+Owned publication verification is merged through
+[PR #294](https://github.com/R4-Laboratories/SpiralCore/pull/294) at `6d195a0c`.
+The private Unix preflight/retirement verifier now hashes through fixed 8 KiB
+stack scratch using the same canonical object identity. Exact EOF, integrity
+and Storage errors, original descriptor custody, complete preflight and writer
+lock remain. No dependency, wire, authority, budget, deadline or security guard
+changes. The released, reviewed and CI merge trees match.
+
+All 27 executed checks pass; four manual jobs are skipped/NOT_RUN. Seven native
+rows pass 87 FlowMux tests and 20 ordered regressions each, retaining exact
+64 MiB readback per direction and 10,790,065 actual TLS bytes under unchanged
+2 s/240 s guards. Independent source/security, Wick and native artifact reviews
+are clear; seven original ZIPs verify 222 members and 215 embedded checksums.
+The four Unix filesystem witnesses verify 8,394,880 preloaded record bytes each,
+with 250-byte largest and 109,824–112,532 cumulative new Rust requests. These
+manually populated cache fixtures are not network or MVM admission evidence,
+hard workspace/RSS bounds, allocator overhead or original aggregate permits.
+
+Exact-source Wick passes 530 transfer tests (four pre-existing ignored), one
+doctest, strict all-target Clippy and 87 FlowMux tests, with all 215 input hashes
+and the selected executable unchanged. Its filesystem window records
+591.907039 ms wall / 45.753445 ms process CPU, including coordination, assertions
+and destruction; setup and individual retirement clocks remain separate.
+Original RED and incomplete-export failures are retained. The existing MVM
+consumer `9e56be55` still pins `29393e9b`; this new core slice is not yet an
+adoption into Ari's current MVM source.
+
+A fresh bounded upstream check through MVM `fe544313` preserves Ari's production
+input-lock v2 and execution-role layout path. #5535 now removes a consumed
+preloaded parent's state only after confirmed child exit. #5255's V3/Studio
+key-custody direction remains accepted architecture, not activated authority;
+#5057 still requires maintainer/contributor pin agreement. Future adoption must
+reconcile current layout/contracts and Ari's selected compatible signed runtime.
+Complete #258 workspace/allocator/concurrency/original-permit acceptance, all five
+#42 outcomes, private MVMD, installed backend/WAN/capacity/security gates remain
+open. [Reviewed source, native costs, failures and current upstream alignment](evidence/2026-11-15-owned-verification-workspace/README.md).
+
+The earlier [15 November upstream coordination check](evidence/2026-11-15-upstream-coordination/README.md)
 found newer Ari guidance: #4607/#4634 are superseded by the existing one-flow
 network path and #5057 coordination; #5255 reports accepted-but-unimplemented
 ADR-061 service-blind direction, a new canonical V3 envelope, signed native
 Studio operator custody and unchanged V1/V2 meanings. These are unfinished
 upstream authority/provider contracts, with no GO or stronger security claim.
-Public MVM main `e93f64c9` adds a Proposed crate-layout ADR-061 under #5510,
+At that check, public MVM main `e93f64c9` adds a Proposed crate-layout ADR-061 under #5510,
 distinct from the local service-blind ADR-061 name reported in #5255; identifiers need
 reconciliation. The proposed hostd split has measured dependency cycles.
 Latest-head CI remains in progress; prior product-head aggregate Test gates

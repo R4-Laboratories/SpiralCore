@@ -1,0 +1,365 @@
+[
+  {
+    "name": "flowmux-component-windows11-arm64-1",
+    "api_zip_sha256": "47a11c7ea8f0f64e49457c2ee90efc49021d989be84fe1be22fd14dd5b23eca0",
+    "member_count": 23,
+    "verified_member_checksums": 22,
+    "identity": {
+      "os": "Windows",
+      "lock_sha256": "6E7CFC3F9C7D7EDCCF058641884E6EEC44243192C07D22643A8D62EB9804545D",
+      "image": "20261101.203.1",
+      "run": "43683836394",
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "attempt": "1",
+      "arch": "ARM64",
+      "description": "Microsoft Windows 10.0.26200",
+      "source": "2a9db659ec25f8f085a87e9fd55a56848e852409"
+    },
+    "counts": {
+      "passed": 87,
+      "ignored": 0,
+      "scope": "component only",
+      "failed": 0,
+      "listed": 87
+    },
+    "metadata": {
+      "filtered_other_library_tests": 52,
+      "failed": 0,
+      "ignored": 0,
+      "listed": 4,
+      "passed": 4,
+      "scope": "selected metadata equivalence guards; Windows includes six paired native trials"
+    },
+    "bulk": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=132928 lifecycle_wall_us=129509555 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(109437500) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+  },
+  {
+    "name": "flowmux-component-macos26-arm64-1",
+    "api_zip_sha256": "686c6ce6fed602f62d5f1b9358ca708f084fb3bac80de7bf9024f45f8e7e29e5",
+    "member_count": 38,
+    "verified_member_checksums": 37,
+    "identity": {
+      "source": "2a9db659ec25f8f085a87e9fd55a56848e852409",
+      "description": "macOS 26.7.2",
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "lock_sha256": "37636BE898EB5E54211DD398B4E637D013EBD8C4D756668E16D65DEF61345511",
+      "image": "20261102.0473.1",
+      "os": "macOS",
+      "attempt": "1",
+      "arch": "ARM64",
+      "run": "43683836394"
+    },
+    "counts": {
+      "listed": 87,
+      "failed": 0,
+      "passed": 87,
+      "scope": "component only",
+      "ignored": 0
+    },
+    "metadata": {
+      "ignored": 0,
+      "passed": 7,
+      "filtered_other_library_tests": 76,
+      "listed": 7,
+      "scope": "selected metadata equivalence guards; Windows includes six paired native trials",
+      "failed": 0
+    },
+    "bulk": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=66548 lifecycle_wall_us=23810605 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(23708574) cpu_ticks_per_second=Some(100) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+    "verification": {
+      "allocation_scope": "all process requests while window open; retirement coordination/assertions/fixture destruction included; retained directory buffers predate window",
+      "body_bytes_each": 65536,
+      "cumulative_new_requested_bytes": 112532,
+      "declared_workspace_each": 1048576,
+      "entries_each": 101,
+      "largest_new_requested_allocation": 250,
+      "preloaded_objects_each": 64,
+      "retirement_thread_cpu_ns_each": [
+        148162333,
+        130331917
+      ],
+      "retirement_timing_scope": "each worker opening the original owner probe through return from retire_contents; excludes later assertions/destruction",
+      "retirement_wall_ns_each": [
+        174133042,
+        142639042
+      ],
+      "scope": "filesystem-only private cache fixtures; requested Rust payload only, not allocator overhead/direct libc/stacks/RSS; no network/MVM/WAN",
+      "setup_process_cpu_ns": 65850000,
+      "setup_readback_bytes": 8394880,
+      "setup_wall_ns": 88899375,
+      "stores": 2,
+      "window_process_cpu_ns": 279206000,
+      "window_timing_scope": "before worker release through all joins; includes coordination/assertions/destruction",
+      "window_wall_ns": 174715875
+    },
+    "verification_binding": {
+      "executable_sha256_before": "df4df111d437c2e6410689aa2b3ae2f53ceeb88e7794e635af7645720c241113",
+      "executable_sha256_after": "df4df111d437c2e6410689aa2b3ae2f53ceeb88e7794e635af7645720c241113",
+      "scope": "filesystem-only private cache fixture; no network, MVM, RSS or allocator-overhead bound",
+      "allocator_source_sha256": "f5713a187903149a839a3742ee5871bc6b74d0aa21fe9d7d3c8221caa1752bb1",
+      "witness_source_sha256": "1e684d6c7f59eb804c85f6ace7ac369f2f6ca3e5966984915b16b1e5a75a0bdd"
+    }
+  },
+  {
+    "name": "flowmux-component-ubuntu24-x64-1",
+    "api_zip_sha256": "cbda45d051bff1d5fcef628a4f58704ff04e8523222f2486ffc3bec7678c40f6",
+    "member_count": 38,
+    "verified_member_checksums": 37,
+    "identity": {
+      "attempt": "1",
+      "os": "Linux",
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "description": "Ubuntu 24.04.5 LTS",
+      "image": "20261111.127.1",
+      "arch": "X64",
+      "run": "43683836394",
+      "lock_sha256": "37636BE898EB5E54211DD398B4E637D013EBD8C4D756668E16D65DEF61345511",
+      "source": "2a9db659ec25f8f085a87e9fd55a56848e852409"
+    },
+    "counts": {
+      "passed": 87,
+      "listed": 87,
+      "failed": 0,
+      "ignored": 0,
+      "scope": "component only"
+    },
+    "metadata": {
+      "ignored": 0,
+      "filtered_other_library_tests": 77,
+      "scope": "selected metadata equivalence guards; Windows includes six paired native trials",
+      "listed": 7,
+      "failed": 0,
+      "passed": 7
+    },
+    "bulk": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=6856 lifecycle_wall_us=4083319 cpu_process_before=Some((0, 0)) cpu_process_setup=Some((0, 0)) cpu_process_after=Some((400, 276)) lifecycle_process_cpu_us=Some(6767320) cpu_ticks_per_second=Some(100) rss_before_kib=Some(3528) rss_prepared_kib=Some(5576) process_hwm_kib=Some(6700) core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+    "verification": {
+      "allocation_scope": "all process requests while window open; retirement coordination/assertions/fixture destruction included; retained directory buffers predate window",
+      "body_bytes_each": 65536,
+      "cumulative_new_requested_bytes": 110370,
+      "declared_workspace_each": 1048576,
+      "entries_each": 101,
+      "largest_new_requested_allocation": 250,
+      "preloaded_objects_each": 64,
+      "retirement_thread_cpu_ns_each": [
+        21361929,
+        21265595
+      ],
+      "retirement_timing_scope": "each worker opening the original owner probe through return from retire_contents; excludes later assertions/destruction",
+      "retirement_wall_ns_each": [
+        27267010,
+        27217947
+      ],
+      "scope": "filesystem-only private cache fixtures; requested Rust payload only, not allocator overhead/direct libc/stacks/RSS; no network/MVM/WAN",
+      "setup_process_cpu_ns": 9480123,
+      "setup_readback_bytes": 8394880,
+      "setup_wall_ns": 10134145,
+      "stores": 2,
+      "window_process_cpu_ns": 42817288,
+      "window_timing_scope": "before worker release through all joins; includes coordination/assertions/destruction",
+      "window_wall_ns": 27348249
+    },
+    "verification_binding": {
+      "executable_sha256_before": "bb426840d7a5ea8e7028d2cb5a1802ce1cf36985a2e0e8950c42431c03aad245",
+      "executable_sha256_after": "bb426840d7a5ea8e7028d2cb5a1802ce1cf36985a2e0e8950c42431c03aad245",
+      "witness_source_sha256": "1e684d6c7f59eb804c85f6ace7ac369f2f6ca3e5966984915b16b1e5a75a0bdd",
+      "scope": "filesystem-only private cache fixture; no network, MVM, RSS or allocator-overhead bound",
+      "allocator_source_sha256": "f5713a187903149a839a3742ee5871bc6b74d0aa21fe9d7d3c8221caa1752bb1"
+    }
+  },
+  {
+    "name": "flowmux-component-windows2022-x64-1",
+    "api_zip_sha256": "d2bdcfa08d72b82af46de9c41fdd9a67618e1b29e025347ebc4b701c3a976df3",
+    "member_count": 23,
+    "verified_member_checksums": 22,
+    "identity": {
+      "source": "2a9db659ec25f8f085a87e9fd55a56848e852409",
+      "image": "20261112.366.7",
+      "arch": "X64",
+      "description": "Microsoft Windows 10.0.20348",
+      "os": "Windows",
+      "run": "43683836394",
+      "attempt": "1",
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "lock_sha256": "6E7CFC3F9C7D7EDCCF058641884E6EEC44243192C07D22643A8D62EB9804545D"
+    },
+    "counts": {
+      "ignored": 0,
+      "passed": 87,
+      "listed": 87,
+      "failed": 0,
+      "scope": "component only"
+    },
+    "metadata": {
+      "scope": "selected metadata equivalence guards; Windows includes six paired native trials",
+      "ignored": 0,
+      "filtered_other_library_tests": 52,
+      "listed": 4,
+      "failed": 0,
+      "passed": 4
+    },
+    "bulk": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=90295 lifecycle_wall_us=39204089 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(67187500) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+  },
+  {
+    "name": "flowmux-component-windows2025-x64-1",
+    "api_zip_sha256": "bb6ee504c813349fbf5ebb840d5f5a525a0acc0d7bb76d9c9a68559954003890",
+    "member_count": 24,
+    "verified_member_checksums": 23,
+    "identity": {
+      "run": "43683836394",
+      "lock_sha256": "6E7CFC3F9C7D7EDCCF058641884E6EEC44243192C07D22643A8D62EB9804545D",
+      "arch": "X64",
+      "os": "Windows",
+      "attempt": "1",
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "description": "Microsoft Windows 10.0.26100",
+      "source": "2a9db659ec25f8f085a87e9fd55a56848e852409",
+      "image": "20261103.298.1"
+    },
+    "counts": {
+      "scope": "component only",
+      "failed": 0,
+      "listed": 87,
+      "passed": 87,
+      "ignored": 0
+    },
+    "metadata": {
+      "listed": 4,
+      "scope": "selected metadata equivalence guards; Windows includes six paired native trials",
+      "failed": 0,
+      "passed": 4,
+      "ignored": 0,
+      "filtered_other_library_tests": 52
+    },
+    "bulk": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=64827 lifecycle_wall_us=35283660 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(64437500) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+  },
+  {
+    "name": "flowmux-component-macos26-intel-1",
+    "api_zip_sha256": "0d649a065994e696f5d1630f967142371fd00663009255d4cf776dd4ff31795b",
+    "member_count": 38,
+    "verified_member_checksums": 37,
+    "identity": {
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "description": "macOS 26.6.1",
+      "os": "macOS",
+      "run": "43683836394",
+      "attempt": "1",
+      "image": "20260824.0517.1",
+      "lock_sha256": "37636BE898EB5E54211DD398B4E637D013EBD8C4D756668E16D65DEF61345511",
+      "arch": "X64",
+      "source": "2a9db659ec25f8f085a87e9fd55a56848e852409"
+    },
+    "counts": {
+      "passed": 87,
+      "scope": "component only",
+      "failed": 0,
+      "listed": 87,
+      "ignored": 0
+    },
+    "metadata": {
+      "listed": 7,
+      "failed": 0,
+      "filtered_other_library_tests": 76,
+      "ignored": 0,
+      "passed": 7,
+      "scope": "selected metadata equivalence guards; Windows includes six paired native trials"
+    },
+    "bulk": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=38257 lifecycle_wall_us=53050308 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(38035028) cpu_ticks_per_second=Some(100) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+    "verification": {
+      "allocation_scope": "all process requests while window open; retirement coordination/assertions/fixture destruction included; retained directory buffers predate window",
+      "body_bytes_each": 65536,
+      "cumulative_new_requested_bytes": 112532,
+      "declared_workspace_each": 1048576,
+      "entries_each": 101,
+      "largest_new_requested_allocation": 250,
+      "preloaded_objects_each": 64,
+      "retirement_thread_cpu_ns_each": [
+        123835293,
+        124167426
+      ],
+      "retirement_timing_scope": "each worker opening the original owner probe through return from retire_contents; excludes later assertions/destruction",
+      "retirement_wall_ns_each": [
+        124227883,
+        124941401
+      ],
+      "scope": "filesystem-only private cache fixtures; requested Rust payload only, not allocator overhead/direct libc/stacks/RSS; no network/MVM/WAN",
+      "setup_process_cpu_ns": 88924000,
+      "setup_readback_bytes": 8394880,
+      "setup_wall_ns": 148509640,
+      "stores": 2,
+      "window_process_cpu_ns": 248766000,
+      "window_timing_scope": "before worker release through all joins; includes coordination/assertions/destruction",
+      "window_wall_ns": 125279600
+    },
+    "verification_binding": {
+      "allocator_source_sha256": "f5713a187903149a839a3742ee5871bc6b74d0aa21fe9d7d3c8221caa1752bb1",
+      "executable_sha256_after": "4be495024c6317d82bbe007c724cb2cac93262ab4f4e4a11b288b582ad054597",
+      "scope": "filesystem-only private cache fixture; no network, MVM, RSS or allocator-overhead bound",
+      "executable_sha256_before": "4be495024c6317d82bbe007c724cb2cac93262ab4f4e4a11b288b582ad054597",
+      "witness_source_sha256": "1e684d6c7f59eb804c85f6ace7ac369f2f6ca3e5966984915b16b1e5a75a0bdd"
+    }
+  },
+  {
+    "name": "flowmux-component-ubuntu24-arm64-1",
+    "api_zip_sha256": "f1b6c8fe1bbe8b43a52e9df5674871873b359d768bd9926de69a7dde94eb7242",
+    "member_count": 38,
+    "verified_member_checksums": 37,
+    "identity": {
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "description": "Ubuntu 24.04.5 LTS",
+      "image": "20261111.182.1",
+      "arch": "ARM64",
+      "attempt": "1",
+      "run": "43683836394",
+      "lock_sha256": "37636BE898EB5E54211DD398B4E637D013EBD8C4D756668E16D65DEF61345511",
+      "os": "Linux",
+      "source": "2a9db659ec25f8f085a87e9fd55a56848e852409"
+    },
+    "counts": {
+      "passed": 87,
+      "ignored": 0,
+      "failed": 0,
+      "scope": "component only",
+      "listed": 87
+    },
+    "metadata": {
+      "passed": 7,
+      "failed": 0,
+      "listed": 7,
+      "ignored": 0,
+      "scope": "selected metadata equivalence guards; Windows includes six paired native trials",
+      "filtered_other_library_tests": 77
+    },
+    "bulk": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=8874 lifecycle_wall_us=7616249 cpu_process_before=Some((0, 0)) cpu_process_setup=Some((0, 0)) cpu_process_after=Some((589, 571)) lifecycle_process_cpu_us=Some(11611045) cpu_ticks_per_second=Some(100) rss_before_kib=Some(2812) rss_prepared_kib=Some(4440) process_hwm_kib=Some(5484) core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+    "verification": {
+      "allocation_scope": "all process requests while window open; retirement coordination/assertions/fixture destruction included; retained directory buffers predate window",
+      "body_bytes_each": 65536,
+      "cumulative_new_requested_bytes": 109824,
+      "declared_workspace_each": 1048576,
+      "entries_each": 101,
+      "largest_new_requested_allocation": 250,
+      "preloaded_objects_each": 64,
+      "retirement_thread_cpu_ns_each": [
+        41906592,
+        41706008
+      ],
+      "retirement_timing_scope": "each worker opening the original owner probe through return from retire_contents; excludes later assertions/destruction",
+      "retirement_wall_ns_each": [
+        57984764,
+        56992231
+      ],
+      "scope": "filesystem-only private cache fixtures; requested Rust payload only, not allocator overhead/direct libc/stacks/RSS; no network/MVM/WAN",
+      "setup_process_cpu_ns": 27647232,
+      "setup_readback_bytes": 8394880,
+      "setup_wall_ns": 28948640,
+      "stores": 2,
+      "window_process_cpu_ns": 83887680,
+      "window_timing_scope": "before worker release through all joins; includes coordination/assertions/destruction",
+      "window_wall_ns": 58115695
+    },
+    "verification_binding": {
+      "executable_sha256_after": "1e798bec9cba67b4b888d5bcf01c415b264007dbe242b43c007f5b9c055b3b62",
+      "witness_source_sha256": "1e684d6c7f59eb804c85f6ace7ac369f2f6ca3e5966984915b16b1e5a75a0bdd",
+      "allocator_source_sha256": "f5713a187903149a839a3742ee5871bc6b74d0aa21fe9d7d3c8221caa1752bb1",
+      "scope": "filesystem-only private cache fixture; no network, MVM, RSS or allocator-overhead bound",
+      "executable_sha256_before": "1e798bec9cba67b4b888d5bcf01c415b264007dbe242b43c007f5b9c055b3b62"
+    }
+  }
+]
