@@ -1,10 +1,28 @@
 # Networking delivery status
 
-## Delivered verified-runtime integration
+## Selected endpoint worker funding
+
+The current SDK selects contributor MVM `8345cb68`, retaining reviewed shared
+core `8994951b`. The selected serial Object-TCP runtime now quotes all seven
+concurrent workers: foreground controller, session, three collector workers,
+one owned TCP relay and one codec reader. Provider preflight and the actual
+selected child use the same canonical check before service effects. The
+previous provider admitted a two-worker declaration; its original refusal
+regression is retained under [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258#issuecomment-6899447766).
+
+The original aggregate ceiling remains 24 workers. With the existing shared
+ten-worker helper class and both VM exit-capture workers, two fully selected
+endpoints would require 26. A second endpoint must refuse rather than enlarge
+the allowance. Guest slots alone do not establish simultaneous endpoint
+capacity. The joined original-parent/selected-child store-load witness and
+explicit wrong-owner/mode execution controls remain open under #258, together
+with all five #42 outcomes and the signed-runtime/private-MVMD/WAN gates.
+
+## Delivered verified-runtime integration checkpoint
 
 [PR #301](https://github.com/R4-Laboratories/SpiralCore/pull/301) is merged at
 `ecec011f`. Candidate, CI merge and released source share tree `dc284a07`.
-The active SDK selects contributor MVM `3d52ff7e`, based on Ari's canonical
+At that checkpoint the SDK selected MVM `3d52ff7e`, based on Ari's canonical
 `7eb01574` / MVM #5557. Both direct MVM SpiralCore dependencies and all five
 locked core packages remain at reviewed `8994951b`; canonical journal
 `48fa5b48` aliases remain explicit. Eight normalized dependency/feature graphs

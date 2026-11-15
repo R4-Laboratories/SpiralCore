@@ -145,6 +145,19 @@ jobs:
             -- --test-threads=1 2>&1 | tee endpoint-evidence/collector-tests.txt
           grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/collector-tests.txt
           shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after-collector.txt
+      - name: Selected workers retain the original aggregate ceiling
+        if: runner.os == 'Linux'
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/canonical-endpoint-target
+        run: |
+          set -euo pipefail
+          ulimit -S -s 8192
+          cargo +1.97.1 test --locked \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --lib installed_parent::config_tests::object_tcp_ \
+            -- --test-threads=1 2>&1 | tee endpoint-evidence/worker-tests.txt
+          grep -E '^test result: ok\. 2 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/worker-tests.txt
+          shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after-workers.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -243,8 +256,10 @@ jobs:
         working-directory: consumer
         run: |
           set -euo pipefail
+          ulimit -S -s 8192
           source scripts/dev-env.sh
           evidence="$GITHUB_WORKSPACE/consumer-evidence"
+          printf '%s\n' "$(ulimit -S -s)" > "$evidence/stack-configured-kib.txt"
           if cargo +1.97.1 test --locked -p mvm-hostd --lib --no-run --message-format=json > "$evidence/build.jsonl" 2> "$evidence/build.stderr"; then
             :
           else
@@ -265,6 +280,7 @@ jobs:
             supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge
             supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::installed_store_destruction_precedes_returned_credit
             supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::poisoned_store_ledger_retains_original_buffers_lock_and_debit
+            installed_endpoint::controller::network::worker_tests::serial_worker_quote_includes_all_selected_concurrent_owners
           )
           index=0
           for test in "${tests[@]}"; do
@@ -276,9 +292,9 @@ jobs:
           shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
           cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
           shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
-          test "$index" -eq 8
+          test "$index" -eq 9
           grep -E '^STORE_DROP_ORDER called=true ledger_held=true returned_credit_visible=false original_owner_released=true retirement_wall_ns=[0-9]+$' "$evidence/control-6.txt"
-          printf 'executed_controls=8\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+          printf 'executed_controls=9\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

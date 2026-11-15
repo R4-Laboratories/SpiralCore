@@ -59,6 +59,7 @@ impl QualifiedEndpointProfile {
             runtime.process_address_space_enforced,
             "installed native process memory bound unavailable"
         );
+        runtime.check_worker_limits(&limits)?;
         let stacks = runtime
             .controller
             .main_stack_envelope_bytes
@@ -85,9 +86,6 @@ impl QualifiedEndpointProfile {
         // stream claim needs a different enforced runtime and component model.
         ensure!(
             limits.max_streams == 1
-                && limits.workers
-                    >= 1 + u32::from(runtime.controller.additional_threads)
-                        + u32::from(runtime.additional_threads)
                 && limits.host_stack_bytes >= stacks
                 && limits.host_metadata_bytes >= metadata
                 && limits.host_codec_bytes >= StoreFunding::for_serial_endpoint()?.codec_bytes

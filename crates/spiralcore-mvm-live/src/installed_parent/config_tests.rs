@@ -535,9 +535,144 @@ fn operator_partition() -> mvm_core::host_lifetime::EndpointPartitionLimits {
         host_stack_bytes: 48 << 20,
         cache_disk_bytes: 32 << 20,
         staging_disk_bytes: 4 << 20,
-        workers: 6,
+        workers: 7,
         max_streams: 1,
     }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn object_tcp_profile_refuses_unfunded_selected_workers_before_installation_effects() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_object_tcp_profile_refuses_unfunded_selected_workers_before_installation_effects,
+    );
+}
+
+#[cfg(target_os = "linux")]
+fn probe_object_tcp_profile_refuses_unfunded_selected_workers_before_installation_effects() {
+    let (home, mut supervisor, mut provider) = endpoint_tests::fixture();
+    let before = supervisor.managed_resources().snapshot().unwrap();
+    let names = || {
+        let mut names: Vec<_> = std::fs::read_dir(home.path().join("installation"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        names.sort();
+        names
+    };
+    let original_names = names();
+    for workers in 0..7 {
+        let mut short = operator_partition();
+        short.workers = workers;
+        assert!(
+            provider.configure_object_tcp(&supervisor, short).is_err(),
+            "selected Object-TCP workers must be funded before installing the profile"
+        );
+        assert!(provider.shared.endpoint_inputs.is_none());
+        let after = supervisor.managed_resources().snapshot().unwrap();
+        assert_eq!(after.usage, before.usage);
+        assert_eq!(after.active_reservations, before.active_reservations);
+        assert_eq!(names(), original_names);
+    }
+    provider
+        .configure_object_tcp(&supervisor, operator_partition())
+        .unwrap();
+    drop(provider);
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling,
+    );
+}
+
+#[cfg(target_os = "linux")]
+fn probe_object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
+    let profile = crate::installed_supervisor::InstalledConfig::two_endpoint_witness_profile();
+    assert_eq!(profile.managed_limits().0.workers, 24);
+    let (home, mut supervisor, mut provider) = endpoint_tests::fixture_with_config(profile);
+    provider
+        .configure_object_tcp(&supervisor, operator_partition())
+        .unwrap();
+    let pool = supervisor.managed_resources().clone();
+    // Book the existing tenant helper class without starting test processes.
+    // These are ledger/admission controls, not a live tenant or VM witness.
+    let tenant_workers = pool
+        .reserve(
+            tenant_tag("local"),
+            ManagedClaim {
+                workers: 10,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let policy = selected_policy();
+    let admit = |name| {
+        let admitted = admit_with_network(home.path(), name, Some(&policy));
+        let mut cfg = VmStartConfig {
+            name: name.into(),
+            tenant_id: Some("local".into()),
+            cpus: 1,
+            memory_mib: 1024,
+            network_policy: policy.clone(),
+            plan_json: Some(serde_json::to_string(admitted.signed()).unwrap()),
+            ..Default::default()
+        };
+        let preparation = provider
+            .prepare_vm(&cfg, "local", native_backend())
+            .unwrap();
+        let (lifetime, owner) = preparation.begin_launch().unwrap();
+        let anchor = lifetime.into_anchor();
+        anchor.bind_to_config(&mut cfg).unwrap();
+        let permit = provider
+            .bind_config(&admitted, &cfg, native_backend())
+            .unwrap();
+        anchor
+            .bind_parent_permit(&cfg, native_backend(), permit)
+            .unwrap();
+        (anchor, cfg, owner)
+    };
+    let (first, first_config, original_first) = admit("worker-funded-a");
+    let (second, second_config, original_second) = admit("worker-funded-b");
+    let before = pool.snapshot().unwrap();
+    assert_eq!(before.usage.workers, 12);
+    let held = first
+        .prepare_endpoint_handoff(&first_config, native_backend())
+        .unwrap();
+    held.partition()
+        .check_owned_payload_store_resources()
+        .unwrap();
+    let booked = pool.snapshot().unwrap();
+    assert_eq!(booked.usage.workers, 19);
+    let Err(error) = second.prepare_endpoint_handoff(&second_config, native_backend()) else {
+        panic!("the second endpoint would require 26 aggregate workers");
+    };
+    assert_eq!(
+        error.downcast_ref::<crate::installed_resources::ManagedResourceError>(),
+        Some(&crate::installed_resources::ManagedResourceError::Full)
+    );
+    assert_eq!(pool.snapshot().unwrap().usage, booked.usage);
+    assert_eq!(
+        original_second.grant.lifecycle.lock().unwrap().endpoint,
+        EndpointIssuance::NeverIssued
+    );
+    provider.close_admission();
+    assert!(
+        held.partition()
+            .check_owned_payload_store_resources()
+            .is_err()
+    );
+    drop((held, first, first_config, second, second_config));
+    // No backend ran and no retirement receipt exists. Missing evidence keeps
+    // the original admitted endpoint claim rather than refunding it on Drop.
+    assert_eq!(pool.snapshot().unwrap().usage, booked.usage);
+    drop((original_first, original_second, tenant_workers, provider));
+    supervisor.close_admission();
+    assert!(supervisor.try_finish().is_err());
 }
 
 #[cfg(target_os = "linux")]
@@ -599,7 +734,7 @@ fn probe_public_selected_handoff_charges_one_pool_and_refuses_second_claim_befor
     assert_eq!(projection.limits, operator_partition());
     let after = supervisor.managed_resources().snapshot().unwrap();
     assert_eq!(after.usage.guests, 2);
-    assert_eq!(after.usage.workers - before.usage.workers, 6);
+    assert_eq!(after.usage.workers - before.usage.workers, 7);
     assert_eq!(
         after.usage.cache_disk_bytes - before.usage.cache_disk_bytes,
         32 << 20

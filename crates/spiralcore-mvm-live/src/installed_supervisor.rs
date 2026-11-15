@@ -41,8 +41,8 @@ impl InstalledConfig {
             funded_limits: None,
         }
     }
-    /// Fresh, separate operator profile for two six-worker endpoints plus their
-    /// one shared ten-thread tenant daemon/signer and two original FC exit-capture workers.
+    /// Two guest slots share the unchanged aggregate worker ceiling. Each
+    /// selected endpoint and exit-capture worker must fit alongside the tenant helpers.
     pub fn two_endpoint_witness_profile() -> Self {
         Self {
             canonical: true,
@@ -94,7 +94,7 @@ impl InstalledConfig {
         if self.paired_endpoints {
             // These byte ceilings apply to the aggregate. Actual process
             // reservations may exhaust them before both endpoints fit.
-            host.workers = 10 + 2 * (6 + 1);
+            host.workers = 24;
             tenant.workers = host.workers;
             tenant.host_resident_bytes = host.host_resident_bytes;
         }
