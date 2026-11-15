@@ -124,9 +124,17 @@ jobs:
           set -euo pipefail
           cargo +1.97.1 test --locked \
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features canonical-host --lib installed_parent::endpoint_tests:: \
-            -- --test-threads=1 2>&1 | tee endpoint-evidence/tests.txt
+            --features canonical-host --lib --no-run --message-format=json \
+            > endpoint-evidence/build.jsonl 2> endpoint-evidence/build.stderr
+          executable=$(jq -ers '[.[] | select(.reason == "compiler-artifact" and .target.name == "spiralcore_mvm_live" and .target.kind == ["lib"] and .profile.test and .executable) | .executable] | select(length == 1) | first' endpoint-evidence/build.jsonl)
+          jq -es --arg root "$GITHUB_WORKSPACE/crates/spiralcore-mvm-live/" '[.[] | select(.reason == "compiler-artifact" and .target.name == "spiralcore_mvm_live" and .profile.test and .executable)] | length == 1 and all(.[]; .fresh == false and (.target.src_path | startswith($root)))' endpoint-evidence/build.jsonl
+          [[ "$(realpath "$executable")" == "$(realpath "$CARGO_TARGET_DIR")"/debug/deps/* ]]
+          echo "CANONICAL_TEST_EXECUTABLE=$executable" >> "$GITHUB_ENV"
+          shasum -a 256 "$executable" > endpoint-evidence/executable-before.sha256
+          "$executable" installed_parent::endpoint_tests:: --test-threads=1 \
+            2>&1 | tee endpoint-evidence/tests.txt
           grep -E '^test result: ok\. 8 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/tests.txt
+          shasum -a 256 -c endpoint-evidence/executable-before.sha256 > endpoint-evidence/executable-after.txt
           shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after.txt
       - name: Collector-only profile keeps zero codec-store debit
         if: runner.os == 'Linux'
@@ -158,6 +166,83 @@ jobs:
             -- --test-threads=1 2>&1 | tee endpoint-evidence/worker-tests.txt
           grep -E '^test result: ok\. 2 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/worker-tests.txt
           shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after-workers.txt
+      - name: Original Root funds the selected child through populated-store retirement
+        if: runner.os == 'Linux'
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/canonical-endpoint-target
+          CARGO_BUILD_JOBS: 2
+          CARGO_PROFILE_DEV_DEBUG: 0
+          CARGO_PROFILE_TEST_DEBUG: 0
+        run: |
+          set -euo pipefail
+          ulimit -Sn 4096
+          ulimit -S -s 8192
+          evidence="$GITHUB_WORKSPACE/endpoint-evidence"
+          cargo +1.97.1 metadata --locked --format-version=1 \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host \
+            > "$evidence/root-metadata.json"
+          expected=$(jq -er .mvm_source docs/platforms/mvm-mailbox-portable.json)
+          jq -e --arg expected "$expected" '[.packages[] | select(.name == "mvm-hostd")] | length == 1 and all(.[]; .source == $expected)' "$evidence/root-metadata.json"
+          manifest=$(jq -er '.packages[] | select(.name == "mvm-hostd") | .manifest_path' "$evidence/root-metadata.json")
+          mvm_root=${manifest%/crates/mvm-hostd/Cargo.toml}
+          revision=${expected##*#}
+          test "$(git -C "$mvm_root" rev-parse HEAD)" = "$revision"
+          git -C "$mvm_root" rev-parse HEAD 'HEAD^{tree}' > "$evidence/root-mvm-source-and-tree.txt"
+          git -C "$mvm_root" diff --exit-code HEAD -- > "$evidence/root-mvm-clean-before.txt"
+          (
+            cd "$mvm_root"
+            git ls-files -z | xargs -0 sha256sum > "$evidence/root-mvm-source.sha256"
+            find . -path ./.git -prune -o -path ./.cargo-ok -prune -o -type f -printf '%P\0' \
+              | LC_ALL=C sort -z | xargs -0 sha256sum > "$evidence/root-mvm-file-set-before.sha256"
+            cmp "$evidence/root-mvm-source.sha256" "$evidence/root-mvm-file-set-before.sha256"
+          )
+          finish_root() {
+            rc=$?
+            trap - EXIT
+            if test -f "$evidence/root-executables-before.sha256"; then
+              sha256sum -c "$evidence/root-executables-before.sha256" > "$evidence/root-executables-after.txt" || rc=90
+            fi
+            shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after-root-store.txt" || rc=90
+            (
+              cd "$mvm_root" || exit 90
+              sha256sum -c "$evidence/root-mvm-source.sha256" > "$evidence/root-mvm-source-after.txt" || exit 90
+              find . -path ./.git -prune -o -path ./.cargo-ok -prune -o -type f -printf '%P\0' \
+                | LC_ALL=C sort -z | xargs -0 sha256sum > "$evidence/root-mvm-file-set-after.sha256" || exit 90
+              cmp "$evidence/root-mvm-source.sha256" "$evidence/root-mvm-file-set-after.sha256" || exit 90
+              git diff --exit-code HEAD -- > "$evidence/root-mvm-clean-after.txt" || exit 90
+            ) || rc=90
+            printf '%s\n' "$rc" > "$evidence/root-exit.txt"
+            exit "$rc"
+          }
+          trap finish_root EXIT
+          /usr/bin/time -v -o "$evidence/root-helper-build-time.txt" \
+            cargo +1.97.1 build --locked --manifest-path "$mvm_root/Cargo.toml" \
+            -p mvm-hostd --bin mvm-host-agent --bin mvm-signer-helper --bin mvm-network-endpoint \
+            --message-format=json > "$evidence/root-helper-build.jsonl" 2> "$evidence/root-helper-build.stderr"
+          helpers=(mvm-host-agent mvm-signer-helper mvm-network-endpoint)
+          for helper in "${helpers[@]}"; do
+            jq -e -s --arg name "$helper" --arg path "$CARGO_TARGET_DIR/debug/$helper" \
+              --arg root "$mvm_root/" \
+              '[.[] | select(.reason == "compiler-artifact" and .target.name == $name and .executable)] | length == 1 and all(.[]; .executable == $path and (.target.src_path | startswith($root)))' \
+              "$evidence/root-helper-build.jsonl"
+          done
+          sha256sum "$CANONICAL_TEST_EXECUTABLE" "${helpers[@]/#/$CARGO_TARGET_DIR/debug/}" \
+            > "$evidence/root-executables-before.sha256"
+          shasum -a 256 -c "$evidence/executable-before.sha256" > "$evidence/root-fixture-before.txt"
+          export MVM_HOST_AGENT_PATH="$CARGO_TARGET_DIR/debug/mvm-host-agent"
+          export MVM_SIGNER_HELPER_PATH="$CARGO_TARGET_DIR/debug/mvm-signer-helper"
+          export MVM_SUBSTITUTION_ENDPOINT_PATH="$CARGO_TARGET_DIR/debug/mvm-network-endpoint"
+          export MVM_HOME="$RUNNER_TEMP/root-store-home"
+          TMPDIR=$(mktemp -d /tmp/sc-root.XXXXXXXX)
+          export TMPDIR
+          mkdir -m700 "$MVM_HOME"
+          printf '%s\n' "$TMPDIR" > "$evidence/root-private-tmp.txt"
+          /usr/bin/time -v -o "$evidence/root-store-time.txt" \
+            "$CANONICAL_TEST_EXECUTABLE" \
+            --exact installed_parent::store_load_tests::original_parent_funds_selected_child_populated_store_and_retirement \
+            --ignored --nocapture --test-threads=1 > "$evidence/root-store-tests.txt" 2>&1
+          grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/root-store-tests.txt"
+          printf 'scope=original Root and selected Linux host process; no VM boot or WAN\n' > "$evidence/root-scope.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

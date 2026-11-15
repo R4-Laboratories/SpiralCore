@@ -11,6 +11,15 @@ fn admit_with_network(
     workload: &str,
     network: Option<&mvm_core::policy::network_policy::NetworkPolicy>,
 ) -> AdmittedPlan {
+    admit_with_network_services(home, workload, network, vec![])
+}
+
+pub(super) fn admit_with_network_services(
+    home: &std::path::Path,
+    workload: &str,
+    network: Option<&mvm_core::policy::network_policy::NetworkPolicy>,
+    services: Vec<mvm_core::protocol::broker::ServiceId>,
+) -> AdmittedPlan {
     use mvm_core::plan::{
         PlanSeccompTier, SecretReleasePolicy, SynthesisInput, Variant, synthesize_plan,
     };
@@ -41,7 +50,7 @@ fn admit_with_network(
         .redaction(Default::default())
         .reversible_replacement(Default::default())
         .audit_labels(Default::default())
-        .services(vec![])
+        .services(services)
         .stream_edges(vec![])
         .stream_retention(Default::default())
         .build()
