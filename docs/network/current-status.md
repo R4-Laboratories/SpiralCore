@@ -1,5 +1,32 @@
 # Networking delivery status
 
+Bounded directory work is merged through
+[PR #289](https://github.com/R4-Laboratories/SpiralCore/pull/289) at `29393e9b`.
+Each original Unix store retains two fallibly allocated 16 KiB directory buffers
+through final destruction; actual vector capacity is checked. Linux uses
+caller-buffer RawDir, while the narrow macOS helper uses fixed-buffer
+getattrlistbulk. Whole-walk contention/reentry refuses with Limit and poison
+retains failure; callback errors, original custody and preflight remain intact.
+The core remains safe Rust with one shared codec and no path/iterator fallback.
+
+All 37 executed checks pass; four manual jobs are skipped/NOT_RUN. Both native
+macOS architectures pass ten helper tests, Linux x64/ARM pass eight parser tests,
+and all seven native rows pass 87 FlowMux tests under unchanged security/deadline
+checks. The published, reviewed and CI merge trees match. Seven original ZIPs
+verify 198 member hashes and 191 embedded checksums. Deterministic two-store scans
+hold both original buffer pairs and eight transient FDs before release/join.
+
+The final Wick run verifies all 496 input hashes before/after and unchanged
+helper/allocation executable identities. It recovers 4,194,304 application bytes
+exactly, records 4,250,368/55,808 in-process request/reply bytes, 2,301,533 requested
+Rust heap bytes, 1.671413189 s fixture wall and 128.073500 ms process CPU. The
+32,768-byte directory payload quote excludes allocator overhead, bookkeeping,
+stacks and kernel memory; this does not prove RSS or isolated workspace bounds.
+MVM consumer adoption, destruction-before-credit accounting and broader funding
+acceptance remain pending under #258. All five #42 outcomes and the external
+signed-runtime/private-MVMD/backend/WAN/capacity/security gates remain active.
+[Reviewed source, native artifacts, measurements and original failures](evidence/2026-11-14-bounded-directory-work/README.md).
+
 Populated owned-store qualification is merged through
 [PR #287](https://github.com/R4-Laboratories/SpiralCore/pull/287) at `525cd69f`.
 Two worker threads exercise 64 publications per store, recovery at 101 entries,
