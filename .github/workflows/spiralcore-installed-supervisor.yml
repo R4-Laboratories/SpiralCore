@@ -281,6 +281,7 @@ jobs:
             supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::installed_store_destruction_precedes_returned_credit
             supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::poisoned_store_ledger_retains_original_buffers_lock_and_debit
             installed_endpoint::controller::network::worker_tests::serial_worker_quote_includes_all_selected_concurrent_owners
+            supervisor::endpoint::flowmux::credit_tests::returned_upload_credit_keeps_the_session_validator_current
           )
           index=0
           for test in "${tests[@]}"; do
@@ -292,9 +293,9 @@ jobs:
           shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
           cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
           shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
-          test "$index" -eq 9
+          test "$index" -eq 10
           grep -E '^STORE_DROP_ORDER called=true ledger_held=true returned_credit_visible=false original_owner_released=true retirement_wall_ns=[0-9]+$' "$evidence/control-6.txt"
-          printf 'executed_controls=9\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+          printf 'executed_controls=10\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

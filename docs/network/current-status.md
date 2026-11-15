@@ -1,9 +1,54 @@
 # Networking delivery status
 
+## Current delivery work and upstream alignment
+
+The next source slice is not yet released. Development candidate MVM
+`b2def5fd` incorporates canonical main `dd2af083` and retains the returned
+FlowMux upload-credit repair. The test-only predecessor `54cf0ae1` refuses
+block 17 after the original 256 KiB window; `41169543` passes exact 320 KiB
+upload/echo under the same credit caps and two-second I/O guards. All 119
+scoped FlowMux controls pass. Its completed frozen baseline passes all 86
+policy gates, 21,812 outer binary tests and 27 doctests, with 69/eight explicit
+ignores. All 284 actual executed binaries match the compiler-selected
+prehash set and final hash checks; all 4,717 source inputs remain unchanged.
+Workspace test costs are 9:09.88 wall / 260.94 s user / 111.22 s system.
+These results qualify `41169543`, not the later merged candidate, installed
+MVMs, WAN or capacity.
+
+Merged [MVM #5564](https://github.com/tinylabscom/mvm/pull/5564) at `3fed00e4`
+provides the private library/hostd admission stages. Ari's
+[current sequencing note](https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6901815825)
+retains CLI → `mvm-client` → `mvm-hostd`, one-shot opaque admission custody,
+admission before warm selection, and the existing audit owner/sync boundary.
+Ari is coordinating that overlapping client surface with draft MVM #5569.
+The networking contribution does not take over that migration.
+
+The development candidate resolves the admission and source-accounting
+conflicts with current main. Ordinary launches retain private typed stages;
+the selected direct path retains its signed bundle, original parent, funded
+workspace, backend, kernel/root and runtime checks, then returns the same
+one-use admitted dispatch owner. Signed plans are authenticated and projected
+before runtime effects; each branch admits and records admission once.
+Independent focused source/security review clears that composition. The first
+merged attempt `a0ee61bb` stopped in strict Clippy on its oversized private
+authority enum; the corrected opaque optional carrier adds no heap allocation
+or lint suppression. The failed run is retained separately. Exact measured
+ceilings are 2,997 Rust files / 1,050,561 SLOC / 1,322,770 physical lines,
+with no headroom. Corrected-source full validation and native CI are pending;
+the SDK pin must not merge until those gates and final review pass.
+
+The original Root-budget/selected-child witness still requires all 64 exact
+blocks; its prior block-17 failure is retained. Remaining #258 funding,
+wrong-owner/mode and retirement controls, compatible signed runtime #268,
+private MVMD/source-pin agreement, and all five #42 outcomes remain open.
+MVM rc.6 package labels alone do not establish a compatible signed release;
+its published release endpoint was unavailable at this refresh. No final
+upstream networking contribution has been submitted.
+
 ## Selected endpoint worker funding
 
-The current SDK selects contributor MVM `8345cb68`, retaining reviewed shared
-core `8994951b`. The selected serial Object-TCP runtime now quotes all seven
+The last released SDK checkpoint selects contributor MVM `8345cb68`, retaining
+reviewed shared core `8994951b`. The selected serial Object-TCP runtime now quotes all seven
 concurrent workers: foreground controller, session, three collector workers,
 one owned TCP relay and one codec reader. Provider preflight and the actual
 selected child use the same canonical check before service effects. The
@@ -46,9 +91,9 @@ UID/mode, boot/backend/WAN/capacity gates.
 
 Ari's newer [#5520 architecture decision](https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6900348999)
 selects CLI → `mvm-client` launch facade → `mvm-hostd` admitted executor →
-workload runner, with library/hostd migration first. The first migration remains
-under validation/review; a completed refactor is not claimed. A bounded live
-refresh observed canonical main `870ac13d`, two script-only commits beyond the
+workload runner, with library/hostd migration first. At that checkpoint the first
+migration was under validation/review. Its later merge is recorded above. The
+checkpoint's bounded live refresh observed main `870ac13d`, two script-only commits beyond the
 qualified `7eb01574` base (#5558 installed-release expectations and #5560 demo
 preparation). This frozen run does not silently adopt those scripts. Further
 integration must preserve one typed admission authority and the selected path.
