@@ -44,15 +44,15 @@ anyhow = { version = "1", optional = true }
 chrono = { version = "0.4", optional = true }
 ed25519-dalek = { version = "3", features = ["pkcs8"], optional = true }
 hex = { version = "0.4", optional = true }
-mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "611a3c76bf6f064760e5adef4fa7befbeb4eb650", default-features = false, features = ["protocol"], optional = true }
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "611a3c76bf6f064760e5adef4fa7befbeb4eb650", default-features = false, features = ["host-state","manifest-verify"], optional = true }
-mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "611a3c76bf6f064760e5adef4fa7befbeb4eb650", default-features = false, optional = true }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "9e56be556720e427013cce4076aeecd0b561a065", default-features = false, features = ["protocol"], optional = true }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "9e56be556720e427013cce4076aeecd0b561a065", default-features = false, features = ["host-state","manifest-verify"], optional = true }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "9e56be556720e427013cce4076aeecd0b561a065", default-features = false, optional = true }
 rustix = { version = "1", features = ["fs","event","process"], optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
 sha2 = { version = "0.11", optional = true }
-spiralcore-mvm-flowmux = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "4ea98b9e27116a163c9767f5a351bf177eff3b6b", optional = true }
-spiralcore-transfer = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "4ea98b9e27116a163c9767f5a351bf177eff3b6b", optional = true }
+spiralcore-mvm-flowmux = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "29393e9b476daeef41f51485d2fb8829c4bbefde", optional = true }
+spiralcore-transfer = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "29393e9b476daeef41f51485d2fb8829c4bbefde", optional = true }
 tempfile = { version = "3", optional = true }
 zeroize = { version = "1", optional = true }
 
@@ -79,5 +79,5 @@ opt-level = 3
 
 # The MVM workspace supplies these fixes for its Git object reader.
 [patch.crates-io]
-gix = { git = "https://github.com/Casey-allard/mvm", rev = "611a3c76bf6f064760e5adef4fa7befbeb4eb650" }
-gix-object = { git = "https://github.com/Casey-allard/mvm", rev = "611a3c76bf6f064760e5adef4fa7befbeb4eb650" }
+gix = { git = "https://github.com/Casey-allard/mvm", rev = "9e56be556720e427013cce4076aeecd0b561a065" }
+gix-object = { git = "https://github.com/Casey-allard/mvm", rev = "9e56be556720e427013cce4076aeecd0b561a065" }

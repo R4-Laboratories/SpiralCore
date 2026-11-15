@@ -2244,23 +2244,6 @@ dependencies = [
 [[package]]
 name = "mvm-contract"
 version = "0.28.0-rc.3"
-source = "git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650#611a3c76bf6f064760e5adef4fa7befbeb4eb650"
-dependencies = [
- "anyhow",
- "base64",
- "bytes",
- "chrono",
- "ed25519-dalek",
- "ipnet",
- "serde",
- "serde_json",
- "sha2 0.11.1",
- "thiserror",
-]
-
-[[package]]
-name = "mvm-contract"
-version = "0.28.0-rc.3"
 source = "git+https://github.com/tinylabscom/mvm?rev=48fa5b488c4543f0f7988df722633554663a9764#48fa5b488c4543f0f7988df722633554663a9764"
 dependencies = [
  "anyhow",
@@ -2277,36 +2260,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "mvm-core"
+name = "mvm-contract"
 version = "0.28.0-rc.3"
-source = "git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650#611a3c76bf6f064760e5adef4fa7befbeb4eb650"
+source = "git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065#9e56be556720e427013cce4076aeecd0b561a065"
 dependencies = [
- "aes-gcm",
  "anyhow",
  "base64",
+ "bytes",
  "chrono",
- "core-foundation",
  "ed25519-dalek",
- "hex",
- "hmac",
- "libc",
- "mvm-contract 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650)",
- "mvm-macho-sign 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650)",
- "plist",
- "rand",
- "rustix",
- "secrecy",
- "security-framework",
+ "ipnet",
  "serde",
- "serde_jcs",
  "serde_json",
  "sha2 0.11.1",
- "tempfile",
  "thiserror",
- "tracing",
- "uuid",
- "x25519-dalek",
- "zeroize",
 ]
 
 [[package]]
@@ -2346,6 +2313,39 @@ dependencies = [
  "toml",
  "tracing",
  "unicode-normalization",
+ "uuid",
+ "x25519-dalek",
+ "zeroize",
+]
+
+[[package]]
+name = "mvm-core"
+version = "0.28.0-rc.3"
+source = "git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065#9e56be556720e427013cce4076aeecd0b561a065"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "base64",
+ "chrono",
+ "core-foundation",
+ "ed25519-dalek",
+ "hex",
+ "hmac",
+ "libc",
+ "mvm-contract 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065)",
+ "mvm-macho-sign 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065)",
+ "plist",
+ "rand",
+ "rustix",
+ "secrecy",
+ "security-framework",
+ "serde",
+ "serde_jcs",
+ "serde_json",
+ "sha2 0.11.1",
+ "tempfile",
+ "thiserror",
+ "tracing",
  "uuid",
  "x25519-dalek",
  "zeroize",
@@ -2451,7 +2451,7 @@ dependencies = [
 [[package]]
 name = "mvm-macho-sign"
 version = "0.28.0-rc.3"
-source = "git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650#611a3c76bf6f064760e5adef4fa7befbeb4eb650"
+source = "git+https://github.com/tinylabscom/mvm?rev=48fa5b488c4543f0f7988df722633554663a9764#48fa5b488c4543f0f7988df722633554663a9764"
 dependencies = [
  "plist",
  "sha1",
@@ -2461,7 +2461,7 @@ dependencies = [
 [[package]]
 name = "mvm-macho-sign"
 version = "0.28.0-rc.3"
-source = "git+https://github.com/tinylabscom/mvm?rev=48fa5b488c4543f0f7988df722633554663a9764#48fa5b488c4543f0f7988df722633554663a9764"
+source = "git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065#9e56be556720e427013cce4076aeecd0b561a065"
 dependencies = [
  "plist",
  "sha1",
@@ -3275,13 +3275,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "spiralcore-directory-macos"
+version = "0.1.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "spiralcore-mvm-adapter"
 version = "0.1.0"
 dependencies = [
  "cpu-time",
  "ed25519-dalek",
- "mvm-contract 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650)",
- "mvm-core 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650)",
+ "mvm-contract 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065)",
+ "mvm-core 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065)",
  "rand",
  "serde",
  "serde_jcs",
@@ -3297,10 +3304,10 @@ dependencies = [
  "cpu-time",
  "ed25519-dalek",
  "mvm-agentd",
- "mvm-contract 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650)",
  "mvm-contract 0.28.0-rc.3 (git+https://github.com/tinylabscom/mvm?rev=48fa5b488c4543f0f7988df722633554663a9764)",
- "mvm-core 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=611a3c76bf6f064760e5adef4fa7befbeb4eb650)",
+ "mvm-contract 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065)",
  "mvm-core 0.28.0-rc.3 (git+https://github.com/tinylabscom/mvm?rev=48fa5b488c4543f0f7988df722633554663a9764)",
+ "mvm-core 0.28.0-rc.3 (git+https://github.com/Casey-allard/mvm?rev=9e56be556720e427013cce4076aeecd0b561a065)",
  "mvm-hostd",
  "rand",
  "serde_json",
@@ -3309,13 +3316,6 @@ dependencies = [
  "spiralcore-transfer",
  "tempfile",
  "thiserror",
-]
-
-[[package]]
-name = "spiralcore-directory-macos"
-version = "0.1.0"
-dependencies = [
- "libc",
 ]
 
 [[package]]
