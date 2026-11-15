@@ -18,6 +18,41 @@ capacity. The joined original-parent/selected-child store-load witness and
 explicit wrong-owner/mode execution controls remain open under #258, together
 with all five #42 outcomes and the signed-runtime/private-MVMD/WAN gates.
 
+[PR #303](https://github.com/R4-Laboratories/SpiralCore/pull/303) is merged at
+`959cb7f5`; candidate, native CI merge and release share tree `1c5bb636`.
+Independent source/security and final artifact review clear the exact slice.
+All 86 canonical gates and 21,811 outer binary tests / 27 doctests pass, with
+69/eight explicit ignores. The repaired coherent run binds all 4,716 source
+inputs and all 284 compiler-selected test executables before and after execution;
+no selected executable retains the checked prior checkout roots. Its warm test
+command is 9:07.08 wall / 261.29 s user / 107.87 s system, separate from
+7:50.03 no-run code generation. All 486 SDK inputs remain unchanged; 175 live,
+29 owner and 74 supervisor controls pass, with a distinct addressed-journal
+replacement receipt. The stale-root first full run and overwritten original
+addressed stdout remain disclosed evidence limits.
+
+All 35 executed native checks pass; genuine signed export is skipped/NOT_RUN.
+The 28 original ZIPs verify 821 members, 644 embedded checksums and 15,356
+source-hash rows. Three installed consumers preserve the original eight
+custody controls and add the worker quote; both Linux canonical consumers pass
+the two SDK funding controls. Seven native FlowMux rows retain exact 64 MiB
+each direction and 10,790,065 actual TLS bytes. Windows ARM is 118.463831 s
+lifecycle / 91.687500 s whole-process CPU under unchanged guards. The registered
+host-process fixture retains 5,804 exact application bytes each way and
+3,657/3,234 TLS bytes, but uses fixture credit rather than the original Root
+budget. None of these results closes the remaining original-parent/load,
+UID/mode, boot/backend/WAN/capacity gates.
+[Source identities, original failures, costs and native artifacts](evidence/2026-11-15-selected-worker-funding/README.md).
+
+Ari's newer [#5520 architecture decision](https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6900348999)
+selects CLI → `mvm-client` launch facade → `mvm-hostd` admitted executor →
+workload runner, with library/hostd migration first. The first migration remains
+under validation/review; a completed refactor is not claimed. A bounded live
+refresh observed canonical main `870ac13d`, two script-only commits beyond the
+qualified `7eb01574` base (#5558 installed-release expectations and #5560 demo
+preparation). This frozen run does not silently adopt those scripts. Further
+integration must preserve one typed admission authority and the selected path.
+
 ## Delivered verified-runtime integration checkpoint
 
 [PR #301](https://github.com/R4-Laboratories/SpiralCore/pull/301) is merged at
@@ -67,8 +102,9 @@ verified half-close, and 8.036308 ms retirement including archive retry.
 Whole-fixture GNU time is 0.09 s wall / 0.02 s user / 0.02 s system. Unknown
 per-side CPU remains unavailable; process CPU is not energy or send-only time.
 
-Ari's #5520 single-launch-entry proposal remains design-only; #5417 schema-9
-contract review, protected producer #5425 and fresh admission #5426 retain
+At the #301 checkpoint, #5520 was recorded as design-only; the newer decision
+and active migration are recorded above. #5417 schema-9 contract review,
+protected producer #5425 and fresh admission #5426 retain
 their separate gates. Compatible signed runtime publication/boot qualification,
 private MVMD and MVM #5057 source-pin agreement remain open. Complete #258
 physical/original-enforcement/concurrency acceptance, all five #42 outcomes,
