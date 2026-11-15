@@ -211,6 +211,7 @@ jobs:
           evidence="$GITHUB_WORKSPACE/consumer-evidence"
           git rev-parse HEAD 'HEAD^{tree}' > "$evidence/source-and-tree.txt"
           test "$(git rev-parse HEAD)" = '${{ steps.consumer.outputs.revision }}'
+          printf 'soft=%s\nhard=%s\n' "$(ulimit -Sn)" "$(ulimit -Hn)" > "$evidence/host-nofile.txt"
           rustc +1.97.1 -vV > "$evidence/rustc.txt"
           grep -Fx "host: $EXPECTED_TARGET" "$evidence/rustc.txt"
           git ls-files -z | xargs -0 shasum -a 256 > "$evidence/source.sha256"
@@ -220,13 +221,20 @@ jobs:
           echo "TMPDIR=$RUNNER_TEMP/consumer-tmp" >> "$GITHUB_ENV"
           mkdir -m700 "$RUNNER_TEMP/consumer-home" "$RUNNER_TEMP/consumer-tmp"
           cargo +1.97.1 metadata --locked --format-version 1 --filter-platform "$EXPECTED_TARGET" > "$RUNNER_TEMP/consumer-metadata.json"
-          expected='git+https://github.com/R4-Laboratories/SpiralCore?rev=adcc7197aa277277be5d074383c6267476163206#adcc7197aa277277be5d074383c6267476163206'
+          expected='git+https://github.com/R4-Laboratories/SpiralCore?rev=29393e9b476daeef41f51485d2fb8829c4bbefde#29393e9b476daeef41f51485d2fb8829c4bbefde'
           grep -F 'source = "git+https://github.com/R4-Laboratories/SpiralCore?' Cargo.lock > "$evidence/shared-core-lock-sources.txt"
-          test "$(wc -l < "$evidence/shared-core-lock-sources.txt")" -eq 4
+          test "$(wc -l < "$evidence/shared-core-lock-sources.txt")" -eq 5
           test "$(sort -u "$evidence/shared-core-lock-sources.txt")" = "source = \"$expected\""
-          jq -e --arg expected "$expected" '
+          awk '/^\[\[package\]\]$/ {name=""} /^name = / {name=$3; gsub(/"/, "", name)} /^source = "git[+]https:\/\/github.com\/R4-Laboratories\/SpiralCore\?/ {print name}' Cargo.lock | LC_ALL=C sort > "$evidence/shared-core-lock-names.txt"
+          printf '%s\n' spiralcore-directory-macos spiralcore-mvm-flowmux spiralcore-storage-windows spiralcore-transfer uor-r4-object-store > "$evidence/expected-lock-names.txt"
+          cmp "$evidence/shared-core-lock-names.txt" "$evidence/expected-lock-names.txt"
+          native_names='["spiralcore-mvm-flowmux", "spiralcore-transfer", "uor-r4-object-store"]'
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            native_names='["spiralcore-directory-macos", "spiralcore-mvm-flowmux", "spiralcore-transfer", "uor-r4-object-store"]'
+          fi
+          jq -e --arg expected "$expected" --argjson native_names "$native_names" '
             [.packages[] | select(.name | startswith("spiralcore-") or . == "uor-r4-object-store")] as $core |
-            ($core | map(.name) | sort) == ["spiralcore-mvm-flowmux", "spiralcore-transfer", "uor-r4-object-store"] and
+            ($core | map(.name) | sort) == $native_names and
             all($core[]; .source == $expected)
           ' "$RUNNER_TEMP/consumer-metadata.json"
           jq '[.packages[] | select(.name | startswith("spiralcore-") or . == "uor-r4-object-store") | {name, version, source}]' \
@@ -255,6 +263,8 @@ jobs:
             supervisor::flowmux::spiralcore_payload::resource_pool_tests::partial_installed_store_retains_original_parent_name_and_debit
             supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_workspace_is_charged_before_visits_are_available
             supervisor::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge
+            supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_destruction_precedes_returned_credit
+            supervisor::flowmux::spiralcore_payload::resource_pool_tests::poisoned_store_ledger_retains_original_buffers_lock_and_debit
           )
           index=0
           for test in "${tests[@]}"; do
@@ -266,7 +276,9 @@ jobs:
           shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
           cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
           shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
-          printf 'executed_controls=6\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+          test "$index" -eq 8
+          grep -E '^STORE_DROP_ORDER called=true ledger_held=true returned_credit_visible=false original_owner_released=true retirement_wall_ns=[0-9]+$' "$evidence/control-6.txt"
+          printf 'executed_controls=8\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

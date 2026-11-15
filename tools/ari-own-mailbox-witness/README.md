@@ -2,7 +2,7 @@
 
 ## Current contributor SDK qualification
 
-The current harness targets contributor MVM `611a3c76bf6f064760e5adef4fa7befbeb4eb650`. Place that source at the adjacent `source` path described below. Its journal direction always carries an optional settlement profile: the ordinary paired mode selects `None`, while an explicitly selected ordinal campaign retains `OrdinalV1`. A basic paired run does not qualify sustained ordinal operation.
+The current harness targets contributor MVM `9e56be556720e427013cce4076aeecd0b561a065`. Place that source at the adjacent `source` path described below. Its journal direction always carries an optional settlement profile: the ordinary paired mode selects `None`, while an explicitly selected ordinal campaign retains `OrdinalV1`. A basic paired run does not qualify sustained ordinal operation.
 
 Check both configurations against that same pinned source:
 
