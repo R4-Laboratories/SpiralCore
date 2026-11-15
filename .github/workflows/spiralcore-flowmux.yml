@@ -287,7 +287,9 @@ jobs:
               $row = $rows[0].Groups[1].Value | ConvertFrom-Json
               $executableAfter = (Get-FileHash $executable -Algorithm SHA256).Hash.ToLowerInvariant()
               if ($executableBefore -ne $executableAfter) { throw 'Workspace executable changed' }
-              if ($row.stores -ne 2 -or $row.actual_stack_bytes -ne 2097152 -or @($row.cases).Count -ne 2) { throw 'Incomplete workspace cases/stack receipt' }
+              if ($row.stores -ne 2 -or $row.requested_stack_bytes -ne 1048576 -or
+                  $row.actual_stack_bytes -lt $row.requested_stack_bytes -or $row.actual_stack_bytes -gt 2097152 -or
+                  @($row.cases).Count -ne 2) { throw 'Incomplete workspace cases/stack receipt' }
               $expectedAllocations = if ($env:RUNNER_OS -eq 'Linux') { 5 } else { 8 }
               $expectedLongName = if ($env:RUNNER_OS -eq 'Linux') { 255 } else { 384 }
               if ($row.cases[0].component_bytes -ne 5 -or $row.cases[1].component_bytes -ne $expectedLongName) { throw 'Missing maximal/long component witness' }

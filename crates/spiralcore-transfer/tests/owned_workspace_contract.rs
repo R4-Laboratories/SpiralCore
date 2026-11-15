@@ -30,6 +30,11 @@ use std::{
     time::Instant,
 };
 
+// Qualify the exercised call chain below the existing reservation. A native
+// pthread implementation may add stack space beyond Builder's request; observe
+// it and keep the full reported extent within the unchanged 2 MiB ceiling.
+const WORKER_STACK_REQUEST: usize = 1 << 20;
+
 #[test]
 fn filesystem_work_requires_its_exact_heap_and_existing_stack_before_capture() {
     let limits = ResourceProfile::SmallV1.receiver_limits();
@@ -279,7 +284,7 @@ fn metadata_heavy_stores_keep_their_preallocated_workspace_and_original_custody(
         return;
     }
     std::thread::Builder::new()
-        .stack_size(2 << 20)
+        .stack_size(WORKER_STACK_REQUEST)
         .spawn(metadata_cases)
         .unwrap()
         .join()
@@ -288,7 +293,8 @@ fn metadata_heavy_stores_keep_their_preallocated_workspace_and_original_custody(
 
 fn metadata_cases() {
     let (actual_stack_bytes, stack_guard_bytes) = native_stack::current();
-    assert_eq!(actual_stack_bytes, 2 << 20);
+    assert!(actual_stack_bytes >= WORKER_STACK_REQUEST);
+    assert!(actual_stack_bytes <= 2 << 20);
     let mut rows = Vec::new();
     for index in 0..2u8 {
         let lifecycle_clock = Instant::now();
@@ -498,7 +504,7 @@ fn metadata_cases() {
     }
     println!(
         "OWNED_WORKSPACE {}",
-        serde_json::json!({"stores":2,"actual_stack_bytes":actual_stack_bytes,"stack_guard_bytes":stack_guard_bytes,"cases":rows,"scope":"isolated serial host-process component; manually preloaded records and encoded frames, not network or original MVM permits; requested Rust payload, not rounded allocator/direct-libc/RSS; native current-worker stack queried separately; original owner enforcement remains required"})
+        serde_json::json!({"stores":2,"requested_stack_bytes":WORKER_STACK_REQUEST,"actual_stack_bytes":actual_stack_bytes,"stack_guard_bytes":stack_guard_bytes,"cases":rows,"scope":"isolated serial host-process component; manually preloaded records and encoded frames, not network or original MVM permits; requested Rust payload, not rounded allocator/direct-libc/RSS; smaller witness-worker request and native reported extent within existing 2 MiB ceiling, not production pthread/alternate-stack qualification; original owner enforcement remains required"})
     );
 }
 
