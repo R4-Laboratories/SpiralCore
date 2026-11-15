@@ -648,10 +648,9 @@ fn probe_object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
         .unwrap();
     let booked = pool.snapshot().unwrap();
     assert_eq!(booked.usage.workers, 19);
-    let error = second
-        .prepare_endpoint_handoff(&second_config, native_backend())
-        .err()
-        .expect("the second endpoint would require 26 aggregate workers");
+    let Err(error) = second.prepare_endpoint_handoff(&second_config, native_backend()) else {
+        panic!("the second endpoint would require 26 aggregate workers");
+    };
     assert_eq!(
         error.downcast_ref::<crate::installed_resources::ManagedResourceError>(),
         Some(&crate::installed_resources::ManagedResourceError::Full)
