@@ -1,0 +1,44 @@
+{
+  "checked_on": "2026-11-15",
+  "canonical_qualified_base": "7eb015747545051fb5e26ae2c6d5fa4c86e4de00",
+  "observed_main": "870ac13db73047b20b7dd47280d01a57f8ca4905",
+  "new_commits": [
+    {
+      "sha": "e39660c6ecc4c7041fed2bd5faeddd4ad066447b",
+      "title": "fix(release): expect only the files the installer stages for the selected backend (#5558)"
+    },
+    {
+      "sha": "870ac13db73047b20b7dd47280d01a57f8ca4905",
+      "title": "demo: prepare an unprepared home itself instead of asking for bootstrap (#5560)"
+    }
+  ],
+  "changed_paths": [
+    "scripts/factory-edge-demo.md",
+    "scripts/factory-edge-demo.sh",
+    "scripts/published-installed-boot.py",
+    "scripts/test_published_installed_boot.py"
+  ],
+  "latest_launch_decisions": [
+    {
+      "url": "https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6900048351",
+      "body": "#5520 implementation handoff after prerequisite: #5515 merged as PR #5557 at `7eb015747545051fb5e26ae2c6d5fa4c86e4de00` (`origin/main` currently at this commit). The stable APIs are `mvm_build::guest_runtime::evidence::{VerifiedReleaseRuntime, verify_release_runtime}`, `mvm_runtime::runtime_evidence::{VerifiedRuntimeSet, verify_release_runtime_set, verify_selected_release_runtime_set}`, `mvm_runtime::checkpoint::{VerifiedRetainedRuntime, verify_checkpoint_runtime}` and `mvm_contract::plan::{ExecutionPlan.runtime_identity: Option<RuntimeIdentity>, RuntimeIdentity, RuntimeArtifactDigests}`. `ExecutionPlan::require_runtime_identity` checks the signed pin; `plan.admitted` carries archive/version/arch/signer/declaration/selected-artifact identity labels. The older #5520 proposal to put `RuntimeIdentity` inside `EnvironmentRef` is superseded. #5515 remains open only for authorized live signed-release measurements; that does not block #5520 source-level migration. I am taking the #5520 first migration from current main, without touching #5515's validation lane or Mac HVF slot. This is a handoff/status note, not a claim that #5520 implementation has landed.",
+      "user": "auser"
+    },
+    {
+      "url": "https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6900140091",
+      "body": "Implementation sequencing correction from `origin/main` at #5515 merge `7eb015747545051fb5e26ae2c6d5fa4c86e4de00`: **CLI cold is not the simplest first assembler**. `exec.rs::resolve_launch` attaches/verifies runtime and invokes CLI `SessionAdmit` before `exec/transient.rs::boot_transient_vm` chooses warm claim, template restore or cold. That same resolver serves planless warm parents. The callback returns a publicly constructible `SessionAuditSubstrate` with plan JSON, not a private `AdmittedPlan`; the CLI retains the actual admission context for post-command audit. A hostd wrapper around the cold `.start_custodied` would receive an already-admitted config and *not* own one pipeline. Moving admission after warm selection would change signed-plan eligibility and overlap-aware audit durability. A genuinely typed CLI-first migration would require changing shared resolution/admission, ownership of `AdmittedPlan`, warm handoff and post-command audit together—too broad for a no-behavior-change PR 1. No implementation files were changed by this investigation.\n\n**Recommendation:** reverse the first two migrations: establish the typed `mvm-hostd` executor in the existing library `LocalBackend`/`admit_and_boot_local` path first, which already owns its preflight, `VerifiedRuntimeSet`, admission and backend tail. In a separate CLI PR, introduce a one-shot typed `AdmittedPlan`/audit-owner handoff across warm-vs-cold selection, then route the cold arm through the same executor; do not mint admission from `SessionAuditSubstrate.plan_json`, re-admit, or flatten the CLI audit sync to a serial wait. This supersedes the issue/roadmap's “CLI first” assumption only if the maintainer accepts the sequencing change; all source-order, audit and measured-boundary acceptance criteria remain unchanged. The alternative is a materially wider CLI-first PR touching shared session/warm semantics. Requesting Ari's choice before editing the shared `SessionAdmit` contract.",
+      "user": "auser"
+    },
+    {
+      "url": "https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6900178005",
+      "body": "Sequencing decision: **library/hostd first**, then CLI. This replaces the old “CLI first” order because the library admission tail can establish the typed executor without changing CLI warm/session admission ownership in the same PR. Library-first alone does not yet decide whether the CLI later invokes `mvm-client::LocalBackend` or calls the same lower `mvm-hostd` executor through a CLI adapter; that public API decision remains separate. Preserve the current CLI behavior until its migration.",
+      "user": "auser"
+    },
+    {
+      "url": "https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6900348999",
+      "body": "Architecture decision for the completed refactor: **CLI → `mvm-client` launch facade → `mvm-hostd` admitted executor → workload runner**. The CLI may keep argument parsing, UI, and necessary async artifact acquisition at its boundary, but must not retain its own verification/admission/bind/start assembler. `mvm-client` is the typed local launch surface for both CLI and embedders, converting source-specific requests into the hostd-owned executor; the client does not create a second admission authority. Extend the source enum/builders for actual warm, restore, fork, session and persistent differences without a bag of optional fields. The host-interface DTO remains distinct and converts into the local executor on the receiving host once #5124 defines its transport/authentication; no remote VerifiedRuntimeSet. This decision applies to later migrations; the first library/hostd PR preserves today's CLI behavior and is still under validation/review.",
+      "user": "auser"
+    }
+  ],
+  "scope": "read-only live authority refresh; no #5520 migration or signed runtime qualification claimed"
+}
