@@ -1,0 +1,51 @@
+{
+  "previous_operator_main": "4c48ce2a9f3c15970ca93910d255e3e927a66b97",
+  "upstream_delta_commits": 17,
+  "lookup_scope": "All four authored/involved MVM PRs and five authored/commented/involved MVM issues found by separate issue/PR author, commenter and involves searches; linked coordination issues; global Ari interactions screened for MVM networking; PR reviews/inline threads inspected; public sources only.",
+  "search_limits": "100 per search; largest relevant MVM result set5issues/4PRs, no result-limit saturation. Global Ari result sets28issues/11PRs screened for MVM networking; unrelated UOR work is excluded.",
+  "pr_review_submissions": 0,
+  "pr_inline_threads": 0,
+  "source_build_artifacts": "Only host-helper names/bundles observed in latest source-build metadata; no runtime binary acquired or authenticated.",
+  "rc3_public_release_endpoint": "404",
+  "rc4_public_release_endpoint": "404",
+  "runtime_gate": "UNVERIFIED: an upstream learning note reports rc.4 OCI publication; no compatible signed contribution runtime was verified.",
+  "local_fetch": "Existing missing historical objects prevent upstream fetch; current public head/delta verified through GitHub API. No checkout/history rewrite, build, guest or private source operation.",
+  "initial_observation_at_utc": "2026-11-15T05:07:36Z",
+  "checked_at_utc": "2026-11-15T05:16:38Z",
+  "initial_upstream_head": {
+    "commit": {
+      "date": "2026-11-15T04:20:07Z",
+      "message": "feat(hvf): release memory a restored guest wrote and then freed (#5509)\n\nA restored guest's RAM is a private file mapping, and the balloon device\nskipped every span in one, so a warm-claimed guest never returned memory.\nThe device now asks the backend whether a file-backed span holds private\ncopies and, when it does, releases it like anonymous memory. Unwritten\nfile pages are still left alone."
+    },
+    "sha": "5a27c39c2e4e265d0741daf46ea9b4949dbb0820",
+    "url": "https://github.com/tinylabscom/mvm/commit/5a27c39c2e4e265d0741daf46ea9b4949dbb0820"
+  },
+  "upstream_head": {
+    "sha": "e93f64c96093031e8b00e19a377a18582ef8497c",
+    "tree": {
+      "sha": "ba5d6a0ab107aaa85787f2538049377d2fb0ea20",
+      "url": "https://api.github.com/repos/tinylabscom/mvm/git/trees/ba5d6a0ab107aaa85787f2538049377d2fb0ea20"
+    },
+    "parents": [
+      "5ac92f5719a87101e14e2dbb630562c57db66338"
+    ],
+    "date": "2026-11-15T04:20:30Z",
+    "message": "docs(adr): propose ADR-061, crate layout by where code runs (#5512)\n\n* docs(adr): propose ADR-061, crate layout by where code runs\n\n* docs: record hostd import graph and cycle constraints",
+    "url": "https://github.com/tinylabscom/mvm/commit/e93f64c96093031e8b00e19a377a18582ef8497c"
+  },
+  "initial_delta_commits": 15,
+  "prior_head_checks_summary": {
+    "queued": 1,
+    "failure": 2,
+    "success": 18,
+    "skipped": 11,
+    "cancelled": 19
+  },
+  "latest_head_checks_summary": {
+    "success": 18,
+    "skipped": 13,
+    "in_progress": 17,
+    "queued": 1
+  },
+  "adr_numbering_ambiguity": "Merged Proposed crate-layout ADR061 is distinct from5255-reported local service-blind ADR061; use full titles/paths/source and reconcile before adoption."
+}

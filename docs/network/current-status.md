@@ -1,5 +1,20 @@
 # Networking delivery status
 
+A [15 November upstream coordination check](evidence/2026-11-15-upstream-coordination/README.md)
+found newer Ari guidance: #4607/#4634 are superseded by the existing one-flow
+network path and #5057 coordination; #5255 reports accepted-but-unimplemented
+ADR-061 service-blind direction, a new canonical V3 envelope, signed native
+Studio operator custody and unchanged V1/V2 meanings. These are unfinished
+upstream authority/provider contracts, with no GO or stronger security claim.
+Public MVM main `e93f64c9` adds a Proposed crate-layout ADR-061 under #5510,
+distinct from the local service-blind ADR-061 name reported in #5255; identifiers need
+reconciliation. The proposed hostd split has measured dependency cycles.
+Latest-head CI remains in progress; prior product-head aggregate Test gates
+failed on cancelled prerequisites. An upstream
+note reports rc.4 OCI publication, but no compatible signed contribution runtime
+was authenticated here. Signed-runtime/private-MVMD and all five #42 gates remain
+open. Current qualified #258 storage work retains its exact source scope.
+
 The installed MVM directory-funding and original-store destruction slice is merged
 through [PR #291](https://github.com/R4-Laboratories/SpiralCore/pull/291) at
 `9688efa9`. Both active MVM dependencies use reviewed SpiralCore `29393e9b`
