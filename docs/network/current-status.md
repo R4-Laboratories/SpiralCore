@@ -1,10 +1,68 @@
 # Networking delivery status
 
-## Delivered current-owner integration
+## Delivered verified-runtime integration
+
+[PR #301](https://github.com/R4-Laboratories/SpiralCore/pull/301) is merged at
+`ecec011f`. Candidate, CI merge and released source share tree `dc284a07`.
+The active SDK selects contributor MVM `3d52ff7e`, based on Ari's canonical
+`7eb01574` / MVM #5557. Both direct MVM SpiralCore dependencies and all five
+locked core packages remain at reviewed `8994951b`; canonical journal
+`48fa5b48` aliases remain explicit. Eight normalized dependency/feature graphs
+preserve packages, edges and features apart from the intended source revision.
+
+The original mailbox/object/journal/host-lifetime paths carry the launch-owned
+verified runtime set. Signed top-level runtime identity names that evidence;
+it does not mint verification authority. The mailbox-profile and missing-owner
+dispatch regressions are fixed, with original RED/GREEN retained. Installed
+bundle checks compose canonical application-aware trust, and registered boot
+uses the existing exact guest grant-token contract. Original failure custody,
+independent worker errors, reader/store leases, signed authority, deadlines and
+security checks remain.
+
+All 86 canonical gates pass, including zero unexplained naming pairs. Nine
+oversized files were decomposed without a new file-size exception. Dependency
+cost and full Rust source totals are measured with exact ceilings; these are
+source/supply-chain accounting, not runtime resource grants. #300's historical
+original-executable digest remains NOT_CAPTURED; that criterion stays open. Independent
+source/security, command and artifact review clears the exact source slice.
+
+Frozen-source execution passes 21,810 outer binary executions and 27 doctest
+executions, zero failed, with 69/8 explicit ignores. All 4,715 MVM, 485 SDK and
+17 paired inputs remain unchanged, along with the exact 4,152-byte fixture and
+four selected executable identities for the registered-process witness. SDK controls pass 173 live, 29 owner, 74
+supervisor and one addressed-journal test. Paired application passes 18/one
+ignored; canonical reader passes two/one ignored. Full test-command wall/user/
+system time is 16:00.44 / 1,001.30 s / 193.04 s, including compilation.
+
+All 35 executed native CI checks pass; genuine-export remains skipped/NOT_RUN.
+The 28 original ZIPs verify 811 members, 644 embedded checksums and 15,353
+source-hash rows. Seven native FlowMux component rows each pass 89 plus 20
+ordered controls, exact 64 MiB each direction and 10,790,065 actual TLS bytes.
+Windows ARM records 125.917824 s lifecycle / 93.625 s process CPU within the
+unchanged 240 s bulk guard. Three native installed consumers retain eight
+original controls and destruction before returned credit. Native executable
+assurance is runner-recorded before/after hashing; the ZIPs contain no ELFs.
+
+The registered host-process fixture verifies 5,804 application bytes each way,
+3,657/3,234 TLS bytes, 67.279929 ms setup, 16.110708 ms valid Open through
+verified half-close, and 8.036308 ms retirement including archive retry.
+Whole-fixture GNU time is 0.09 s wall / 0.02 s user / 0.02 s system. Unknown
+per-side CPU remains unavailable; process CPU is not energy or send-only time.
+
+Ari's #5520 single-launch-entry proposal remains design-only; #5417 schema-9
+contract review, protected producer #5425 and fresh admission #5426 retain
+their separate gates. Compatible signed runtime publication/boot qualification,
+private MVMD and MVM #5057 source-pin agreement remain open. Complete #258
+physical/original-enforcement/concurrency acceptance, all five #42 outcomes,
+the backend/WAN/platform matrix, capacity and FIPS/CUI/security gates remain
+active. No final upstream MVM contribution is submitted.
+[Source, exact costs, failures, native artifacts and remaining delivery gates](evidence/2026-11-15-verified-runtime-adoption/README.md).
+
+## Earlier current-owner checkpoint
 
 [PR #298](https://github.com/R4-Laboratories/SpiralCore/pull/298) is merged at
-`aee51549`. The released, reviewed and CI trees are identical. The active SDK
-selects contributor MVM `4031a54d`, based on canonical `61cb9b59`; both MVM core
+`aee51549`. Its released, reviewed and CI trees are identical. At that checkpoint,
+the SDK selected contributor MVM `4031a54d`, based on canonical `61cb9b59`; both MVM core
 dependencies and the installed witness select reviewed SpiralCore `8994951b`.
 The contribution follows Ari's current endpoint/FlowMux module owners while
 retaining the VM-shared registry/rate/session owners, original installed
@@ -34,10 +92,10 @@ and 17 paired inputs remain unchanged through their final qualification. Full
 test-command wall/user/system CPU is 10:18.06 / 366.94 s / 136.96 s, including
 compilation; direct fixture and journal costs retain separate measured scopes.
 
-Ari's current main `7eb01574` / MVM #5557 adds launch-owned verified release
-runtime evidence; ADR-112 remains Proposed. Carrying its authenticated runtime
-owner through the contribution is the next integration, before #268 signed
-runtime/installed-boot acceptance. Signed RuntimeIdentity metadata alone is
+Ari's newer main `7eb01574` / MVM #5557 added launch-owned verified release
+runtime evidence; ADR-112 remained Proposed. That authenticated runtime owner
+is now carried by the delivered integration above; #268 signed-runtime and
+installed-boot acceptance remain separate. Signed RuntimeIdentity metadata alone is
 not proof. Ari's compatible signed publication, private MVMD, complete #258
 physical/original-enforced-runtime/concurrency acceptance, all five #42 outcomes
 and supported backend/WAN/capacity/security gates remain open. No final upstream
