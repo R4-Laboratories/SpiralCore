@@ -117,9 +117,20 @@ jobs:
           grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored;' fixture-evidence/core-test.txt
       - name: Build the fixture producer test executable
         run: |
+          set +e
           cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --features canonical-host --example installed_flowmux_fixture --no-run \
-            --message-format=json > "$RUNNER_TEMP/fixture-build.jsonl"
+            --message-format=json > fixture-evidence/fixture-build.jsonl 2> fixture-evidence/fixture-build.stderr
+          code=$?
+          set -e
+          printf '%s\n' "$code" > fixture-evidence/fixture-build-exit.txt
+          cat fixture-evidence/fixture-build.stderr || {
+            printf '%s\n' 'warning: unable to display retained compiler stderr' >&2 || :
+          }
+          jq -r 'select(.reason=="compiler-message") | .message.rendered // empty' fixture-evidence/fixture-build.jsonl || {
+            printf '%s\n' 'warning: unable to render retained compiler JSON' >&2 || :
+          }
+          exit "$code"
       - name: Run the identified fixture and record its result
         shell: python
         run: |
@@ -129,7 +140,7 @@ jobs:
           root = Path.cwd()
           manifest = root / "crates/spiralcore-mvm-live/Cargo.toml"
           evidence = root / "fixture-evidence"
-          messages = Path(os.environ["RUNNER_TEMP"]) / "fixture-build.jsonl"
+          messages = evidence / "fixture-build.jsonl"
           with messages.open() as src:
               matches = [m for m in map(json.loads, src) if m["reason"] == "compiler-artifact"
                          and m["manifest_path"] == str(manifest) and m["profile"]["test"]
