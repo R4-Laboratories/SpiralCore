@@ -6,6 +6,7 @@ mod allocations;
 #[global_allocator]
 static ALLOCATIONS: allocations::RequestedAllocations = allocations::RequestedAllocations;
 
+use sha2::{Digest, Sha256};
 use spiralcore_transfer::{
     client,
     endpoint::Context,
@@ -19,7 +20,7 @@ use spiralcore_transfer::{
 };
 use std::{
     fs::{self, File, OpenOptions},
-    io::Write,
+    io::{Read, Write},
     os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
     path::PathBuf,
     sync::{mpsc, Arc},
@@ -32,6 +33,20 @@ const WORKSPACE: u64 = 1 << 20;
 const BODY: usize = 16 * 1024;
 const APP: &[u8] = b"spiralcore.allocation.application.v1\0";
 const ART: &[u8] = b"spiralcore.allocation.artifact.v1\0";
+
+fn executable_sha256() -> String {
+    let mut file = File::open(std::env::current_exe().unwrap()).unwrap();
+    let mut hash = Sha256::new();
+    let mut buffer = [0u8; 32768];
+    loop {
+        let count = file.read(&mut buffer).unwrap();
+        if count == 0 {
+            break;
+        }
+        hash.update(&buffer[..count]);
+    }
+    spiralcore_transfer::hex(&hash.finalize().into())
+}
 
 struct Store {
     root: PathBuf,
@@ -375,6 +390,13 @@ fn populated_owned_stores_recover_and_refuse_overload_with_requested_heap_accoun
         println!("{}", rows[0]);
         return;
     }
+    let executable_before = executable_sha256();
+    let witness_source = spiralcore_transfer::hex(
+        &Sha256::digest(include_bytes!("owned_store_allocation.rs")).into(),
+    );
+    let allocator_source = spiralcore_transfer::hex(
+        &Sha256::digest(include_bytes!("support/requested_allocations.rs")).into(),
+    );
     let before = allocations::snapshot();
     let clock = Instant::now();
     let cpu = cpu_time::ProcessTime::now();
@@ -402,6 +424,8 @@ fn populated_owned_stores_recover_and_refuse_overload_with_requested_heap_accoun
             .collect::<Vec<_>>()
     });
     let costs: Vec<_> = results.into_iter().map(Result::unwrap).collect();
+    let wall_ns = clock.elapsed().as_nanos();
+    let process_cpu_ns = cpu.elapsed().as_nanos();
     let measured = allocations::snapshot();
     assert!(
         allocations::valid(),
@@ -413,12 +437,16 @@ fn populated_owned_stores_recover_and_refuse_overload_with_requested_heap_accoun
         (measured.1 as u64) <= funded,
         "requested Rust heap exceeded quoted aggregate"
     );
+    let executable_after = executable_sha256();
+    assert_eq!(executable_before, executable_after);
     let row = serde_json::json!({"stores":STORES,"publications_per_store":64,"recovery_stages_per_store":32,
+        "executable_sha256_before":executable_before,"executable_sha256_after":executable_after,
+        "witness_source_sha256":witness_source,"allocator_source_sha256":allocator_source,
         "admitted_entry_count":101,"overflow_entry_count":102,"declared_workspace_per_store":WORKSPACE,
         "declared_operation_per_store":operation,"aggregate_declared_bytes":funded,
         "counter_bookkeeping_valid":true,
         "rust_live_before":before.0,"rust_live_after":measured.0,"rust_peak_requested":measured.1,
-        "rust_cumulative_requested":measured.2,"wall_ns":clock.elapsed().as_nanos(),"process_cpu_ns":cpu.elapsed().as_nanos(),
+        "rust_cumulative_requested":measured.2,"wall_ns":wall_ns,"process_cpu_ns":process_cpu_ns,
         "application_bytes":costs.iter().map(|c|c.application).sum::<u64>(),
         "request_frame_bytes":costs.iter().map(|c|c.request).sum::<u64>(),
         "reply_frame_bytes":costs.iter().map(|c|c.reply).sum::<u64>(),
