@@ -292,7 +292,11 @@ $descriptor.GetBinaryForm($normalized,0)
         drop(writer);
         let original_descriptor = acl_snapshot(path);
         let original_acl = &original_descriptor.sddl;
-        powershell(path,"","$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE; $sid=[System.Security.Principal.SecurityIdentifier]::new('S-1-1-0'); $rule=[System.Security.AccessControl.FileSystemAccessRule]::new($sid,[System.Security.AccessControl.FileSystemRights]::FullControl,[System.Security.AccessControl.AccessControlType]::Allow); $acl.AddAccessRule($rule); Set-Acl -LiteralPath $env:SC_METADATA_TEST_FILE -AclObject $acl");
+        powershell(
+            path,
+            "",
+            "$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE; $sid=[System.Security.Principal.SecurityIdentifier]::new('S-1-1-0'); $rule=[System.Security.AccessControl.FileSystemAccessRule]::new($sid,[System.Security.AccessControl.FileSystemRights]::FullControl,[System.Security.AccessControl.AccessControlType]::Allow); $acl.AddAccessRule($rule); Set-Acl -LiteralPath $env:SC_METADATA_TEST_FILE -AclObject $acl",
+        );
         let broad = powershell(path, "", ACL_READ);
         assert_ne!(&broad, original_acl);
         both_refuse(path, Error::Storage);
@@ -301,7 +305,11 @@ $descriptor.GetBinaryForm($normalized,0)
             broad,
             "reader must not repair permissions"
         );
-        powershell(path,original_acl,"$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE; $acl.SetSecurityDescriptorSddlForm($env:SC_METADATA_TEST_SDDL,[System.Security.AccessControl.AccessControlSections]::Access); Set-Acl -LiteralPath $env:SC_METADATA_TEST_FILE -AclObject $acl");
+        powershell(
+            path,
+            original_acl,
+            "$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE; $acl.SetSecurityDescriptorSddlForm($env:SC_METADATA_TEST_SDDL,[System.Security.AccessControl.AccessControlSections]::Access); Set-Acl -LiteralPath $env:SC_METADATA_TEST_FILE -AclObject $acl",
+        );
         let restored_descriptor = acl_snapshot(path);
         assert_eq!(
             restored_descriptor.control & !0x0400,
@@ -313,14 +321,20 @@ $descriptor.GetBinaryForm($normalized,0)
             "restoration preserves owner, group, ACL bytes and every other control bit"
         );
         verify_all(&records[..1]);
-        powershell(&namespace,"","$ErrorActionPreference='Stop'; $parent=Split-Path -Parent $env:SC_METADATA_TEST_FILE; New-Item -ItemType Junction -Path (Join-Path $parent 'metadata-junction') -Target $env:SC_METADATA_TEST_FILE | Out-Null");
+        powershell(
+            &namespace,
+            "",
+            "$ErrorActionPreference='Stop'; $parent=Split-Path -Parent $env:SC_METADATA_TEST_FILE; New-Item -ItemType Junction -Path (Join-Path $parent 'metadata-junction') -Target $env:SC_METADATA_TEST_FILE | Out-Null",
+        );
         let junction = fixture.0.join("metadata-junction");
         let through = junction.join(path.file_name().unwrap());
         both_refuse(&through, Error::Storage);
         fs::remove_dir(&junction).unwrap();
         verify_all(&records);
         assert_eq!(fs::read_dir(&namespace).unwrap().count(), FILES);
-        eprintln!("METADATA_OPEN_GUARDS missing=true directory=true hardlink=true conflicting_writer=true broad_acl=true reparse_ancestor=true original_bytes_exact=true serialized_bytes={serialized}");
+        eprintln!(
+            "METADATA_OPEN_GUARDS missing=true directory=true hardlink=true conflicting_writer=true broad_acl=true reparse_ancestor=true original_bytes_exact=true serialized_bytes={serialized}"
+        );
         let root = fixture.0.clone();
         drop(records);
         drop(fixture);
@@ -363,7 +377,16 @@ fn owned_receipts_retry_original_durability_after_ambiguous_rename() {
         Arc::new(File::open(&root.0).unwrap()),
         "cache".as_ref(),
         Arc::new(File::open(&child).unwrap()),
-        OwnedStorePolicy::small_v1(&limits, 102, OwnedLaneNamespaces::One(ns)).unwrap(),
+        OwnedStorePolicy::small_v1(
+            &limits,
+            102,
+            OwnedLaneNamespaces::One(ns),
+            crate::endpoint::OwnedWorkspaceFunding {
+                heap_bytes: 1 << 20,
+                existing_stack_bytes: 2 << 20,
+            },
+        )
+        .unwrap(),
     )
     .unwrap();
     let mut endpoint =

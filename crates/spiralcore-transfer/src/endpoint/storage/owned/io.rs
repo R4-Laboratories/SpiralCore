@@ -1,3 +1,4 @@
+use super::Component;
 use crate::{Error, Result};
 use rustix::{
     fs::{self, AtFlags, FileType, Mode, OFlags, Stat},
@@ -33,8 +34,8 @@ pub(super) fn held(fd: BorrowedFd<'_>) -> Result<Stat> {
     fs::fstat(fd).map_err(|_| Error::Storage)
 }
 pub(super) fn named(dir: BorrowedFd<'_>, name: &OsStr) -> Result<Option<Stat>> {
-    component(name)?;
-    match fs::statat(dir, name, AtFlags::SYMLINK_NOFOLLOW) {
+    let name = Component::new(name)?;
+    match fs::statat(dir, name.as_c_str()?, AtFlags::SYMLINK_NOFOLLOW) {
         Ok(s) => Ok(Some(s)),
         Err(Errno::NOENT) => Ok(None),
         Err(_) => Err(Error::Storage),
@@ -119,16 +120,21 @@ fn flags() -> OFlags {
     OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC
 }
 pub(super) fn open_raw(dir: BorrowedFd<'_>, name: &OsStr, extra: OFlags) -> Result<File> {
-    component(name)?;
-    fs::openat(dir, name, flags() | extra, Mode::from_raw_mode(0o600))
-        .map(File::from)
-        .map_err(|e| {
-            if e == Errno::NOENT {
-                Error::Unknown
-            } else {
-                Error::Storage
-            }
-        })
+    let name = Component::new(name)?;
+    fs::openat(
+        dir,
+        name.as_c_str()?,
+        flags() | extra,
+        Mode::from_raw_mode(0o600),
+    )
+    .map(File::from)
+    .map_err(|e| {
+        if e == Errno::NOENT {
+            Error::Unknown
+        } else {
+            Error::Storage
+        }
+    })
 }
 
 pub(crate) fn open_read_at(dir: BorrowedFd<'_>, name: &OsStr) -> Result<File> {
@@ -161,8 +167,21 @@ pub(crate) fn check_file_at(dir: BorrowedFd<'_>, name: &OsStr, file: &File) -> R
 }
 pub(crate) fn unlink_checked_at(dir: BorrowedFd<'_>, name: &OsStr, expected: &File) -> Result<()> {
     check_file_at(dir, name, expected)?;
-    fs::unlinkat(dir, name, AtFlags::empty()).map_err(|_| Error::Storage)?;
+    unlink_at(dir, name, AtFlags::empty())?;
     sync(dir)
+}
+pub(super) fn unlink_at(dir: BorrowedFd<'_>, name: &OsStr, flags: AtFlags) -> Result<()> {
+    let name = Component::new(name)?;
+    fs::unlinkat(dir, name.as_c_str()?, flags).map_err(|_| Error::Storage)
+}
+pub(super) fn mkdir_at(dir: BorrowedFd<'_>, name: &OsStr) -> Result<()> {
+    let name = Component::new(name)?;
+    fs::mkdirat(dir, name.as_c_str()?, Mode::from_raw_mode(0o700)).map_err(|_| Error::Storage)
+}
+pub(super) fn rename_at(dir: BorrowedFd<'_>, from: &OsStr, to: &OsStr) -> Result<()> {
+    let from = Component::new(from)?;
+    let to = Component::new(to)?;
+    fs::renameat(dir, from.as_c_str()?, dir, to.as_c_str()?).map_err(|_| Error::Storage)
 }
 pub(super) fn sync(dir: BorrowedFd<'_>) -> Result<()> {
     fs::fsync(dir).map_err(|_| Error::Storage)

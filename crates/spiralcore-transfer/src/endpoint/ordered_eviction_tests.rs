@@ -223,7 +223,16 @@ fn owned_ordered_victim_requires_live_authority_and_intact_sibling() {
         Arc::new(File::open(&root.0).unwrap()),
         "cache".as_ref(),
         Arc::new(File::open(&child).unwrap()),
-        OwnedStorePolicy::small_v1(&limits, 102, OwnedLaneNamespaces::One(ns)).unwrap(),
+        OwnedStorePolicy::small_v1(
+            &limits,
+            102,
+            OwnedLaneNamespaces::One(ns),
+            crate::endpoint::OwnedWorkspaceFunding {
+                heap_bytes: 1 << 20,
+                existing_stack_bytes: 2 << 20,
+            },
+        )
+        .unwrap(),
     )
     .unwrap();
     let allowed = Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -236,7 +245,9 @@ fn owned_ordered_victim_requires_live_authority_and_intact_sibling() {
     ] {
         endpoint.publish(&c, ns, offer, body, None).unwrap();
     }
-    assert_eq!(endpoint.ordered_cache_scan(&c).unwrap().len(), 2);
+    let mut scan = endpoint.ordered_workspace().unwrap().scan;
+    endpoint.ordered_cache_scan(&c, &mut scan).unwrap();
+    assert_eq!(scan.len(), 2);
     let victim = |offer: &Offer| OrderedEviction {
         id: offer.object,
         len: offer.len,
@@ -252,7 +263,9 @@ fn owned_ordered_victim_requires_live_authority_and_intact_sibling() {
         Err(Error::Unauthorized)
     );
     allowed.store(true, Ordering::SeqCst);
-    let path = child.join(hex(&ns)).join(object_name(&second.object));
+    let path = child
+        .join(hex(&ns))
+        .join(object_name(&second.object).as_os_str());
     let mut bytes = fs::read(&path).unwrap();
     *bytes.last_mut().unwrap() ^= 1;
     fs::write(&path, &bytes).unwrap();

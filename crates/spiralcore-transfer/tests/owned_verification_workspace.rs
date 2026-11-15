@@ -44,6 +44,10 @@ impl Fixture {
             &limits,
             102,
             OwnedLaneNamespaces::Two(context.namespace().unwrap(), other.namespace().unwrap()),
+            spiralcore_transfer::v1::OwnedWorkspaceFunding {
+                heap_bytes: 1 << 20,
+                existing_stack_bytes: 2 << 20,
+            },
         )
         .unwrap();
         let lease = OwnedStoreLease::capture(

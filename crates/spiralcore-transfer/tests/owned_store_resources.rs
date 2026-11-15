@@ -61,6 +61,10 @@ fn maximal_admitted_owned_store_lifecycle() {
                 &limits,
                 102,
                 OwnedLaneNamespaces::One(c.namespace().unwrap()),
+                spiralcore_transfer::v1::OwnedWorkspaceFunding {
+                    heap_bytes: 1 << 20,
+                    existing_stack_bytes: 2 << 20,
+                },
             )
             .unwrap(),
         )
@@ -99,5 +103,10 @@ fn maximal_admitted_owned_store_lifecycle() {
     drop(parent);
     assert_eq!(fds(), baseline);
     fs::remove_dir_all(root).unwrap();
-    eprintln!("OWNED_RESOURCE stores=2 base_fds={baseline} persistent_fds={peak_persistent} final_fds={} observer_fds=1 wall_ns={} process_cpu_ns={}",fds(),clock.elapsed().as_nanos(),cpu.elapsed().as_nanos());
+    eprintln!(
+        "OWNED_RESOURCE stores=2 base_fds={baseline} persistent_fds={peak_persistent} final_fds={} observer_fds=1 wall_ns={} process_cpu_ns={}",
+        fds(),
+        clock.elapsed().as_nanos(),
+        cpu.elapsed().as_nanos()
+    );
 }

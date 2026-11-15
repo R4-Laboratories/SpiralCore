@@ -1,8 +1,8 @@
-use super::{io, OwnedStoreLease, OWNER, PROFILE};
+use super::{io, Component, OwnedStoreLease, OWNER, PROFILE};
 use crate::{resource_profile::ResourceProfile, Error, Id, Result};
 use rustix::fs::{AtFlags, FileType, Stat};
 use std::{
-    ffi::{OsStr, OsString},
+    ffi::OsStr,
     os::fd::{AsFd, BorrowedFd},
     sync::Arc,
 };
@@ -17,7 +17,7 @@ enum Item {
 
 struct Victim {
     parent: Option<Id>,
-    name: OsString,
+    name: Component,
     stat: Stat,
     kind: Item,
 }
@@ -115,7 +115,7 @@ impl OwnedStoreLease {
             if next.as_ref().is_none_or(|candidate| kind < candidate.kind) {
                 next = Some(Victim {
                     parent,
-                    name: name.to_owned(),
+                    name: Component::new(name)?,
                     stat,
                     kind,
                 });
@@ -140,10 +140,10 @@ impl OwnedStoreLease {
         )?;
         let dir = v
             .parent
-            .map(|ns| io::open_dir(self.root(), crate::hex(&ns).as_ref()))
+            .map(|ns| io::open_dir(self.root(), Component::id(&ns).as_os_str()))
             .transpose()?;
         let parent = dir.as_ref().map(AsFd::as_fd).unwrap_or(self.root());
-        let (kind, actual) = self.classify(v.parent, parent, &v.name, true)?;
+        let (kind, actual) = self.classify(v.parent, parent, v.name.as_os_str(), true)?;
         if kind != v.kind || !io::same(&v.stat, &actual) {
             return Err(Error::Storage);
         }
@@ -152,7 +152,7 @@ impl OwnedStoreLease {
         } else {
             AtFlags::empty()
         };
-        rustix::fs::unlinkat(parent, v.name.as_os_str(), flags).map_err(|_| Error::Storage)?;
+        io::unlink_at(parent, v.name.as_os_str(), flags)?;
         sync(parent)
     }
 

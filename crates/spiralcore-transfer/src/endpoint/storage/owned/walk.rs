@@ -1,6 +1,6 @@
-use super::{io, OwnedStoreLease};
-use crate::{hex, Error, Id, Result};
-use rustix::fs::{FileType, Mode};
+use super::{io, Component, OwnedStoreLease};
+use crate::{Error, Id, Result};
+use rustix::fs::FileType;
 use std::{
     ffi::OsStr,
     fs::File,
@@ -77,12 +77,11 @@ impl OwnedStoreLease {
     pub(crate) fn open_namespace(&self, ns: Id, create: bool) -> Result<File> {
         self.check_lane(ns)?;
         let root = self.root();
-        let name = hex(&ns);
+        let name = Component::id(&ns);
         match io::open_dir(root, name.as_ref()) {
             Err(Error::Unknown) if create => {
                 self.check_room(1)?;
-                rustix::fs::mkdirat(root, name.as_str(), Mode::from_raw_mode(0o700))
-                    .map_err(|_| Error::Storage)?;
+                io::mkdir_at(root, name.as_os_str())?;
                 let file = io::open_dir(root, name.as_ref())?;
                 file.sync_all()?;
                 io::sync(root)?;
@@ -93,7 +92,12 @@ impl OwnedStoreLease {
     }
     pub(crate) fn check_namespace(&self, ns: Id, dir: BorrowedFd<'_>) -> Result<()> {
         self.check_lane(ns)?;
-        io::check_named(self.root(), hex(&ns).as_ref(), dir, FileType::Directory)
+        io::check_named(
+            self.root(),
+            Component::id(&ns).as_os_str(),
+            dir,
+            FileType::Directory,
+        )
     }
     pub(crate) fn sync_namespace(&self, ns: Id, dir: BorrowedFd<'_>) -> Result<()> {
         self.check_namespace(ns, dir)?;
@@ -143,7 +147,7 @@ impl OwnedStoreLease {
         if io::named(dir, dest)?.is_some() {
             return Err(Error::Storage);
         }
-        rustix::fs::renameat(dir, stage, dir, dest).map_err(|_| Error::Storage)?;
+        io::rename_at(dir, stage, dest)?;
         // The caller synced the staged file before authorizing this rename.
         self.sync_published_name(ns, dir, dest, staged)
     }

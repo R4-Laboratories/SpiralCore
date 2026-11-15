@@ -44,7 +44,16 @@ impl Fixture {
             Arc::new(fs::File::open(&parent).unwrap()),
             OsStr::new("payload-1"),
             Arc::new(fs::File::open(&child).unwrap()),
-            OwnedStorePolicy::small_v1(&limits, 102, lanes).unwrap(),
+            OwnedStorePolicy::small_v1(
+                &limits,
+                102,
+                lanes,
+                spiralcore_transfer::v1::OwnedWorkspaceFunding {
+                    heap_bytes: 1 << 20,
+                    existing_stack_bytes: 2 << 20,
+                },
+            )
+            .unwrap(),
         )
         .unwrap();
         Self {
@@ -105,7 +114,12 @@ fn send(
     })?;
     assert_eq!(stats.object, spiralcore_transfer::object_id(body));
     assert_eq!(endpoint.read_object(context, stats.object)?, body);
-    eprintln!("OWNED_V1 warm={warm} body={} request={request_bytes} reply={reply_bytes} wall_ns={} process_cpu_ns={}",body.len(),clock.elapsed().as_nanos(),cpu.elapsed().as_nanos());
+    eprintln!(
+        "OWNED_V1 warm={warm} body={} request={request_bytes} reply={reply_bytes} wall_ns={} process_cpu_ns={}",
+        body.len(),
+        clock.elapsed().as_nanos(),
+        cpu.elapsed().as_nanos()
+    );
     Ok(stats.object)
 }
 
@@ -224,7 +238,16 @@ fn process_exit_recovers_only_the_original_stage_or_verified_publication() {
             Arc::new(fs::File::open(&parent).unwrap()),
             "payload-1".as_ref(),
             Arc::new(fs::File::open(&child).unwrap()),
-            OwnedStorePolicy::small_v1(&limits, 102, OwnedLaneNamespaces::One(ns)).unwrap(),
+            OwnedStorePolicy::small_v1(
+                &limits,
+                102,
+                OwnedLaneNamespaces::One(ns),
+                spiralcore_transfer::v1::OwnedWorkspaceFunding {
+                    heap_bytes: 1 << 20,
+                    existing_stack_bytes: 2 << 20,
+                },
+            )
+            .unwrap(),
         )
         .unwrap();
         let profile = Capabilities::small_v1()

@@ -1,17 +1,43 @@
-use super::{OwnedLaneNamespaces, OwnedStorePolicy};
+use super::{verify_profile_content, OwnedLaneNamespaces, OwnedStorePolicy};
 use crate::{resource_profile::ResourceProfile, Error};
+use std::io::Read;
 
 #[test]
 fn small_v1_funds_overflow_lookahead() {
     let limits = ResourceProfile::SmallV1.receiver_limits();
     let lane = OwnedLaneNamespaces::One([1; 32]);
     assert!(matches!(
-        OwnedStorePolicy::small_v1(&limits, 101, lane),
+        OwnedStorePolicy::small_v1(
+            &limits,
+            101,
+            lane,
+            crate::endpoint::OwnedWorkspaceFunding {
+                heap_bytes: 1 << 20,
+                existing_stack_bytes: 2 << 20
+            },
+        ),
         Err(Error::Limit)
     ));
-    assert!(OwnedStorePolicy::small_v1(&limits, 102, lane).is_ok());
+    assert!(OwnedStorePolicy::small_v1(
+        &limits,
+        102,
+        lane,
+        crate::endpoint::OwnedWorkspaceFunding {
+            heap_bytes: 1 << 20,
+            existing_stack_bytes: 2 << 20
+        },
+    )
+    .is_ok());
     assert!(matches!(
-        OwnedStorePolicy::small_v1(&limits, 102, OwnedLaneNamespaces::Two([1; 32], [1; 32])),
+        OwnedStorePolicy::small_v1(
+            &limits,
+            102,
+            OwnedLaneNamespaces::Two([1; 32], [1; 32]),
+            crate::endpoint::OwnedWorkspaceFunding {
+                heap_bytes: 1 << 20,
+                existing_stack_bytes: 2 << 20
+            },
+        ),
         Err(Error::Limit)
     ));
 }
@@ -36,6 +62,92 @@ struct Store {
     limits: Limits,
     lease: OwnedStoreLease,
 }
+
+#[test]
+fn moved_metadata_retains_the_original_lease_until_both_vectors_drop() {
+    let mut store = Store::new();
+    assert!(matches!(
+        store.lease.take_ordered_workspace(),
+        Err(Error::Storage)
+    ));
+    store.claim();
+    let workspace = store.lease.take_ordered_workspace().unwrap();
+    assert_eq!(workspace.scan.capacity(), 64);
+    assert!(matches!(
+        store.lease.take_ordered_workspace(),
+        Err(Error::Storage)
+    ));
+    assert_eq!(store.lease.retire_contents(), Err(Error::Storage));
+    let owner = File::open(store.parent.join("store/.owner")).unwrap();
+    assert!(matches!(
+        owner.try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+    drop(workspace);
+    store.lease.retire_contents().unwrap();
+    assert!(matches!(
+        owner.try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+}
+
+#[test]
+fn bounded_profile_reader_requires_exact_content_and_retries_partial_interrupts() {
+    struct Fragmented<'a> {
+        bytes: &'a [u8],
+        interrupt: bool,
+    }
+    impl Read for Fragmented<'_> {
+        fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+            if self.interrupt {
+                self.interrupt = false;
+                return Err(std::io::ErrorKind::Interrupted.into());
+            }
+            let len = out.len().min(self.bytes.len()).min(3);
+            out[..len].copy_from_slice(&self.bytes[..len]);
+            self.bytes = &self.bytes[len..];
+            self.interrupt = true;
+            Ok(len)
+        }
+    }
+    let expected = super::super::PROFILE_CONTENT;
+    assert_eq!(
+        verify_profile_content(Fragmented {
+            bytes: expected,
+            interrupt: true
+        }),
+        Ok(())
+    );
+    assert_eq!(
+        verify_profile_content(&expected[..expected.len() - 1]),
+        Err(Error::Storage)
+    );
+    let mut extra = expected.to_vec();
+    extra.push(0);
+    assert_eq!(
+        verify_profile_content(extra.as_slice()),
+        Err(Error::Storage)
+    );
+    assert_eq!(verify_profile_content(&b""[..]), Err(Error::Storage));
+}
+
+#[test]
+fn bounded_profile_reader_keeps_read_and_eof_failures_as_storage() {
+    struct Failure<'a>(&'a [u8]);
+    impl Read for Failure<'_> {
+        fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+            if self.0.is_empty() {
+                return Err(std::io::ErrorKind::PermissionDenied.into());
+            }
+            self.0.read(out)
+        }
+    }
+    assert_eq!(verify_profile_content(Failure(&[])), Err(Error::Storage));
+    assert_eq!(
+        verify_profile_content(Failure(super::super::PROFILE_CONTENT)),
+        Err(Error::Storage)
+    );
+}
 impl Store {
     fn new() -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -50,8 +162,16 @@ impl Store {
             .create(parent.join("store"))
             .unwrap();
         let limits = ResourceProfile::SmallV1.receiver_limits();
-        let policy =
-            OwnedStorePolicy::small_v1(&limits, 102, OwnedLaneNamespaces::One([1; 32])).unwrap();
+        let policy = OwnedStorePolicy::small_v1(
+            &limits,
+            102,
+            OwnedLaneNamespaces::One([1; 32]),
+            crate::endpoint::OwnedWorkspaceFunding {
+                heap_bytes: 1 << 20,
+                existing_stack_bytes: 2 << 20,
+            },
+        )
+        .unwrap();
         let lease = OwnedStoreLease::capture(
             Arc::new(File::open(&parent).unwrap()),
             OsStr::new("store"),
@@ -475,7 +595,11 @@ fn checked_walk_holds_four_transient_fds_at_file_verification() {
         .all(|result| matches!(result, Ok(Ok(_)))));
     assert_eq!(peak - persistent, 8);
     assert_eq!(count(), persistent);
-    println!("OWNED_CONCURRENT_SCAN stores=2 transient_fds=8 persistent_fds={persistent} observed_fds={peak} observer_fds=1 wall_ns={} process_cpu_ns={}", wall.elapsed().as_nanos(), cpu.elapsed().as_nanos());
+    println!(
+        "OWNED_CONCURRENT_SCAN stores=2 transient_fds=8 persistent_fds={persistent} observed_fds={peak} observer_fds=1 wall_ns={} process_cpu_ns={}",
+        wall.elapsed().as_nanos(),
+        cpu.elapsed().as_nanos()
+    );
 }
 
 fn two_publications_and_stage(root: &std::path::Path) -> (PathBuf, Vec<PathBuf>) {
@@ -503,9 +627,16 @@ fn excess_publications_refuse_recovery_and_retirement_before_unlink() {
     for recovery in [true, false] {
         let mut store = Store::new();
         store.limits.max_publications = 1;
-        Arc::get_mut(&mut store.lease.0).unwrap().policy =
-            OwnedStorePolicy::small_v1(&store.limits, 102, OwnedLaneNamespaces::One([1; 32]))
-                .unwrap();
+        Arc::get_mut(&mut store.lease.0).unwrap().policy = OwnedStorePolicy::small_v1(
+            &store.limits,
+            102,
+            OwnedLaneNamespaces::One([1; 32]),
+            crate::endpoint::OwnedWorkspaceFunding {
+                heap_bytes: 1 << 20,
+                existing_stack_bytes: 2 << 20,
+            },
+        )
+        .unwrap();
         let root = store.parent.join("store");
         if recovery {
             private_content(root.join(super::OWNER), b"");

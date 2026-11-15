@@ -17,7 +17,10 @@ use std::{
 };
 mod storage;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-pub use storage::owned::{OwnedLaneNamespaces, OwnedStoreLease, OwnedStorePolicy};
+pub use storage::owned::{
+    OwnedLaneNamespaces, OwnedStoreLease, OwnedStorePolicy, OwnedWorkspaceFunding,
+    OwnedWorkspaceRequirements,
+};
 use storage::{private_dir, private_file};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use {std::os::fd::AsFd, storage::owned};
@@ -36,7 +39,9 @@ pub struct Context {
 }
 impl Context {
     pub fn namespace(&self) -> Result<Id> {
-        let mut b = Vec::new();
+        use sha2::{Digest, Sha256};
+        let mut digest = Sha256::new();
+        digest.update(b"spiralcore.object.namespace.v1\0");
         for s in [
             &self.tenant,
             &self.domain,
@@ -49,12 +54,12 @@ impl Context {
             if s.is_empty() || s.len() > 256 {
                 return Err(Error::Malformed);
             }
-            b.extend_from_slice(&(s.len() as u16).to_le_bytes());
-            b.extend_from_slice(s.as_bytes());
+            digest.update((s.len() as u16).to_le_bytes());
+            digest.update(s.as_bytes());
         }
-        b.extend_from_slice(&self.policy_epoch.to_le_bytes());
-        b.extend_from_slice(&self.execution_epoch.to_le_bytes());
-        Ok(hash(b"spiralcore.object.namespace.v1\0", &[&b]))
+        digest.update(self.policy_epoch.to_le_bytes());
+        digest.update(self.execution_epoch.to_le_bytes());
+        Ok(digest.finalize().into())
     }
 }
 /// Implement this using current authenticated mailbox/application policy, never payload assertions.
@@ -245,6 +250,7 @@ impl<L> Publication<L> {
 static TEMP: AtomicU64 = AtomicU64::new(0);
 
 /// A victim selected by the ordered owner from its bounded verified index.
+#[derive(Clone, Copy)]
 pub(crate) struct OrderedEviction {
     pub(crate) id: Id,
     pub(crate) len: u64,
@@ -1440,19 +1446,18 @@ impl<A: Authority> Endpoint<A> {
         {
             return Err(Error::Limit);
         }
-        let stage = format!(
-            ".stage-{}-{}",
-            std::process::id(),
-            TEMP.fetch_add(1, Ordering::Relaxed)
-        );
+        let stage_pid = std::process::id();
+        let stage_sequence = TEMP.fetch_add(1, Ordering::Relaxed);
         match &self.root {
             StoreRoot::Path { path: root, .. } => {
+                let stage = format!(".stage-{stage_pid}-{stage_sequence}");
                 let path = self.path(ns, offer.object)?;
                 let parent = path.parent().ok_or(Error::Storage)?;
                 private_dir(parent)?;
                 let tmp = parent.join(&stage);
                 #[cfg(feature = "witness-timing")]
-                let diagnostic_create_write = commit_timing::span(commit_timing::Stage::CreateWrite);
+                let diagnostic_create_write =
+                    commit_timing::span(commit_timing::Stage::CreateWrite);
                 let mut f = commit_stage!(StageWrite, storage::create_new_file(&tmp))?;
                 let result = (|| {
                     commit_stage!(StageWrite, write_record(&mut f, offer, mid, bytes))?;
@@ -1464,7 +1469,8 @@ impl<A: Authority> Endpoint<A> {
                     #[cfg(test)]
                     let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
                     #[cfg(feature = "witness-timing")]
-                    let _diagnostic_publish = commit_timing::span(commit_timing::Stage::NamespacePublish);
+                    let _diagnostic_publish =
+                        commit_timing::span(commit_timing::Stage::NamespacePublish);
                     commit_stage!(NamespacePublish, storage::publish(&tmp, &path, root))
                 })();
                 if result.is_err() {
@@ -1481,8 +1487,12 @@ impl<A: Authority> Endpoint<A> {
                 };
                 lease.check_room(extra)?;
                 let dir = lease.open_namespace(ns, true)?;
+                let stage = owned::Component::formatted(format_args!(
+                    ".stage-{stage_pid}-{stage_sequence}"
+                ))?;
                 #[cfg(feature = "witness-timing")]
-                let diagnostic_create_write = commit_timing::span(commit_timing::Stage::CreateWrite);
+                let diagnostic_create_write =
+                    commit_timing::span(commit_timing::Stage::CreateWrite);
                 let mut f = commit_stage!(
                     StageWrite,
                     owned::create_new_at(dir.as_fd(), stage.as_ref())
@@ -1496,7 +1506,8 @@ impl<A: Authority> Endpoint<A> {
                     #[cfg(test)]
                     let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
                     #[cfg(feature = "witness-timing")]
-                    let _diagnostic_publish = commit_timing::span(commit_timing::Stage::NamespacePublish);
+                    let _diagnostic_publish =
+                        commit_timing::span(commit_timing::Stage::NamespacePublish);
                     commit_stage!(
                         NamespacePublish,
                         lease.publish_at(
@@ -1566,19 +1577,22 @@ impl<A: Authority> Endpoint<A> {
         }
         Ok(self.attempts.len())
     }
-    pub(crate) fn ordered_active_objects(&self, c: &Context) -> Result<BTreeSet<Id>> {
+    pub(crate) fn ordered_active_objects(
+        &self,
+        c: &Context,
+    ) -> Result<crate::metadata_work::ProtectedIds> {
         self.authorize(c)?;
         self.ordered_bounds()?;
         let ns = c.namespace()?;
-        let mut pinned = BTreeSet::new();
+        let mut pinned = crate::metadata_work::ProtectedIds::default();
         for ((space, _), attempt) in &self.attempts {
             if *space != ns {
                 return Err(Error::Unauthorized);
             }
             if attempt.state == 0 {
-                pinned.insert(attempt.offer.object);
+                pinned.insert(attempt.offer.object)?;
                 if let Some(base) = attempt.offer.base {
-                    pinned.insert(base);
+                    pinned.insert(base)?;
                 }
             }
         }
@@ -1600,12 +1614,25 @@ impl<A: Authority> Endpoint<A> {
         self.attempts.remove(&key);
         Ok(())
     }
-    pub(crate) fn ordered_cache_scan(&self, c: &Context) -> Result<Vec<(Id, u64, u64)>> {
+    pub(crate) fn ordered_workspace(&self) -> Result<crate::metadata_work::PreparedIndex> {
+        let (limit, _, _) = self.ordered_bounds()?;
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let StoreRoot::Owned(lease) = &self.root {
+            return lease.take_ordered_workspace();
+        }
+        crate::metadata_work::PreparedIndex::new(limit)
+    }
+    pub(crate) fn ordered_cache_scan(
+        &self,
+        c: &Context,
+        records: &mut Vec<crate::metadata_work::ScanRecord>,
+    ) -> Result<()> {
         self.authorize(c)?;
         self.ordered_bounds()?;
         let ns = c.namespace()?;
-        let namespace = hex(&ns);
-        let mut records = Vec::new();
+        if !records.is_empty() || records.capacity() != self.limits.max_publications {
+            return Err(Error::Limit);
+        }
         #[cfg(any(target_os = "linux", target_os = "macos"))]
         if let StoreRoot::Owned(lease) = &self.root {
             lease.visit(None, |space, dir, name| {
@@ -1632,8 +1659,9 @@ impl<A: Authority> Endpoint<A> {
                 Ok(())
             })?;
             self.authorize(c)?;
-            return Ok(records);
+            return Ok(());
         }
+        let namespace = hex(&ns);
         for entry in fs::read_dir(self.root.path()?)? {
             let entry = entry?;
             let name = entry.file_name();
@@ -1663,7 +1691,7 @@ impl<A: Authority> Endpoint<A> {
             }
         }
         self.authorize(c)?;
-        Ok(records)
+        Ok(())
     }
     pub(crate) fn ordered_cache_meta(&self, c: &Context, id: Id) -> Result<(u64, u64)> {
         self.ordered_cache_read(c, id)
@@ -1790,20 +1818,20 @@ impl<A: Authority> Endpoint<A> {
             all = all.checked_sub(bytes).ok_or(Error::Storage)?;
             count = count.checked_sub(1).ok_or(Error::Storage)?;
         }
-        let mut pending = BTreeMap::new();
+        let mut pending = crate::metadata_work::PendingDisk::default();
         for ((space, _), s) in &self.attempts {
             if s.state == 0 && !self.is_stored(*space, s.offer.object)? {
                 if *space == ns && s.offer.object == offer.object && s.offer.len != offer.len {
                     return Err(Error::Integrity);
                 }
-                pending.insert((*space, s.offer.object), s.offer.len + 81);
+                pending.insert((*space, s.offer.object), s.offer.len + 81)?;
             }
         }
-        pending.insert((ns, offer.object), offer.len + 81);
-        for ((space, _), len) in pending {
-            all = all.checked_add(len).ok_or(Error::Limit)?;
-            if space == ns {
-                scoped = scoped.checked_add(len).ok_or(Error::Limit)?;
+        pending.insert((ns, offer.object), offer.len + 81)?;
+        for ((space, _), len) in pending.iter() {
+            all = all.checked_add(*len).ok_or(Error::Limit)?;
+            if *space == ns {
+                scoped = scoped.checked_add(*len).ok_or(Error::Limit)?;
             }
             count += 1;
         }
@@ -1893,7 +1921,7 @@ fn open_owned_meta(
 ) -> Result<(Publication, File)> {
     let f = owned::open_read_at(dir, name)?;
     let p = read_meta_file(Locator::Owned(lease.clone(), ns), &f)?;
-    if name != object_name(&p.object).as_str() {
+    if name != object_name(&p.object).as_os_str() {
         return Err(Error::Integrity);
     }
     if p.len > crate::resource_profile::SMALL_ARTIFACT as u64 {
@@ -2003,8 +2031,8 @@ fn read_verification_chunk(file: &mut impl Read, buffer: &mut [u8]) -> Result<us
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn object_name(id: &Id) -> String {
-    format!("{}.object", hex(id))
+fn object_name(id: &Id) -> owned::Component {
+    owned::Component::object(id)
 }
 
 fn canonical_namespace(s: &str) -> bool {
