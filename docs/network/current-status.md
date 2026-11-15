@@ -1,11 +1,11 @@
 # Networking delivery status
 
 The active SDK selects contributor MVM
-[`d338f528`](https://github.com/Casey-allard/mvm/commit/d338f528601e247bc1e798bfa860213e9f8db865),
+[`4031a54d`](https://github.com/Casey-allard/mvm/commit/4031a54d6596cd5a12d572d12357287d97cc1042),
 which carries the existing original-owner implementation onto canonical
 `61cb9b59`. FlowMux now uses Ari's `supervisor/endpoint` module layout while
 retaining the current VM-shared registry, rate, session, terminated-flow and
-leaf-cache owners. Both MVM dependencies retain reviewed SpiralCore `86497e88`.
+leaf-cache owners. Both MVM dependencies select reviewed SpiralCore `8994951b`.
 The journal bridge keeps its explicit canonical `48fa5b48` aliases and original
 byte-identity checks.
 
@@ -14,7 +14,9 @@ and the canonical five-second production wait. Empty launches keep Ari's
 independent no-volume fast path. Registered-volume fixtures preserve the
 original special-file refusal, contention, timing and no-effects assertions.
 The source adoption preserves signed admission, original resource custody,
-deadlines and codec bytes. Compatible signed runtime/installed boot, private
+deadlines and codec bytes. TLS peek rechecks the original owner after socket
+progress, preserving local shutdown refusal and independent peer truncation.
+Compatible signed runtime/installed boot, private
 MVMD, supported backend/WAN/capacity acceptance and all five #42 outcomes
 remain open. No final upstream MVM contribution is submitted.
 

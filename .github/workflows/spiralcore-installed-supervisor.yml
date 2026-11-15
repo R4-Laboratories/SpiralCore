@@ -221,7 +221,7 @@ jobs:
           echo "TMPDIR=$RUNNER_TEMP/consumer-tmp" >> "$GITHUB_ENV"
           mkdir -m700 "$RUNNER_TEMP/consumer-home" "$RUNNER_TEMP/consumer-tmp"
           cargo +1.97.1 metadata --locked --format-version 1 --filter-platform "$EXPECTED_TARGET" > "$RUNNER_TEMP/consumer-metadata.json"
-          expected='git+https://github.com/R4-Laboratories/SpiralCore?rev=86497e8868146f2a21ba581dd09fcfabfca6486d#86497e8868146f2a21ba581dd09fcfabfca6486d'
+          expected='git+https://github.com/R4-Laboratories/SpiralCore?rev=8994951b7c13fe5acf6f5ea3060ad4e51dc473c2#8994951b7c13fe5acf6f5ea3060ad4e51dc473c2'
           grep -F 'source = "git+https://github.com/R4-Laboratories/SpiralCore?' Cargo.lock > "$evidence/shared-core-lock-sources.txt"
           test "$(wc -l < "$evidence/shared-core-lock-sources.txt")" -eq 5
           test "$(sort -u "$evidence/shared-core-lock-sources.txt")" = "source = \"$expected\""

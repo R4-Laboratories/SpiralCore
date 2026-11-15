@@ -23,7 +23,7 @@ jobs:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
       CARGO_PROFILE_TEST_DEBUG: 0
-      MVM_REVISION: d338f528601e247bc1e798bfa860213e9f8db865
+      MVM_REVISION: 4031a54d6596cd5a12d572d12357287d97cc1042
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -67,7 +67,7 @@ jobs:
             arch: ARM64
             target: aarch64-pc-windows-msvc
     env:
-      MVM_REVISION: d338f528601e247bc1e798bfa860213e9f8db865
+      MVM_REVISION: 4031a54d6596cd5a12d572d12357287d97cc1042
       NATIVE_TARGET: ${{ matrix.target }}
       EXPECTED_ARCH: ${{ matrix.arch }}
       CARGO_BUILD_JOBS: 2
