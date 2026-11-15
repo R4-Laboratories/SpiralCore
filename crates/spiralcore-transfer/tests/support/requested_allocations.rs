@@ -10,8 +10,21 @@ static LIVE: AtomicUsize = AtomicUsize::new(0);
 static PEAK: AtomicUsize = AtomicUsize::new(0);
 static REQUESTED: AtomicUsize = AtomicUsize::new(0);
 static INVALID: AtomicBool = AtomicBool::new(false);
+static WINDOW: AtomicBool = AtomicBool::new(false);
+static WINDOW_LARGEST: AtomicUsize = AtomicUsize::new(0);
+static WINDOW_REQUESTED: AtomicUsize = AtomicUsize::new(0);
 
 fn request(bytes: usize) {
+    if WINDOW.load(Ordering::SeqCst) {
+        WINDOW_LARGEST.fetch_max(bytes, Ordering::SeqCst);
+        if WINDOW_REQUESTED
+            .fetch_add(bytes, Ordering::SeqCst)
+            .checked_add(bytes)
+            .is_none()
+        {
+            INVALID.store(true, Ordering::SeqCst);
+        }
+    }
     let (current, overflow) = LIVE
         .fetch_add(bytes, Ordering::SeqCst)
         .overflowing_add(bytes);
@@ -83,4 +96,29 @@ pub fn snapshot() -> (usize, usize, usize) {
 
 pub fn valid() -> bool {
     !INVALID.load(Ordering::SeqCst)
+}
+
+/// Cumulative requests bound newly requested payload without subtracting frees
+/// of allocations that predate the window. This is not allocator overhead/RSS.
+/// One coordinator owns the window and joins participating workers before return;
+/// every process request while open is included, including fixture overhead.
+pub fn measure_requests<R>(run: impl FnOnce() -> R) -> (R, usize, usize) {
+    assert!(!WINDOW.load(Ordering::SeqCst), "nested allocation window");
+    WINDOW_LARGEST.store(0, Ordering::SeqCst);
+    WINDOW_REQUESTED.store(0, Ordering::SeqCst);
+    assert!(!WINDOW.swap(true, Ordering::SeqCst));
+    struct Close;
+    impl Drop for Close {
+        fn drop(&mut self) {
+            WINDOW.store(false, Ordering::SeqCst);
+        }
+    }
+    let close = Close;
+    let result = run();
+    drop(close);
+    (
+        result,
+        WINDOW_LARGEST.load(Ordering::SeqCst),
+        WINDOW_REQUESTED.load(Ordering::SeqCst),
+    )
 }

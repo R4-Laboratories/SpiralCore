@@ -102,7 +102,7 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $false
           $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
             'crates/spiralcore-transfer/Cargo.toml', '--lib', 'endpoint::metadata_tests')
-          $expected = if ($env:RUNNER_OS -eq 'Windows') { 4 } else { 5 }
+          $expected = if ($env:RUNNER_OS -eq 'Windows') { 4 } else { 7 }
           $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $listing | Set-Content flowmux-evidence/metadata-list.txt
@@ -175,18 +175,41 @@ jobs:
             @{ Name = 'directory-work'; Selector = @('--lib', 'endpoint::storage::owned::work::'); Expected = 2 },
             @{ Name = 'owned-store'; Selector = @('--test', 'owned_store'); Expected = 5 },
             @{ Name = 'owned-resources'; Selector = @('--test', 'owned_store_resources'); Expected = 1 },
-            @{ Name = 'owned-allocation'; Selector = @('--test', 'owned_store_allocation'); Expected = 1 }
+            @{ Name = 'owned-allocation'; Selector = @('--test', 'owned_store_allocation'); Expected = 1 },
+            @{ Name = 'owned-verification'; Selector = @('--test', 'owned_verification_workspace'); Expected = 1 }
           )
           foreach ($scope in $scopes) {
             $name = $scope.Name
             $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
               'crates/spiralcore-transfer/Cargo.toml') + $scope.Selector
-            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            if ($name -eq 'owned-verification') {
+              $build = (& cargo @cargoArgs --no-run --message-format=json 2> flowmux-evidence/owned-verification-build.stderr)
+              $buildCode = $LASTEXITCODE
+              $build | Set-Content flowmux-evidence/owned-verification-build.jsonl
+              if ($buildCode -ne 0) {
+                Get-Content flowmux-evidence/owned-verification-build.stderr | Write-Output
+                $build | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.reason -eq 'compiler-message' } | ForEach-Object { $_.message.rendered | Write-Output }
+                throw 'Owned verification build failed; see retained compiler output'
+              }
+              $artifacts = @($build | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object {
+                $_.reason -eq 'compiler-artifact' -and $_.executable -and $_.profile.test -and $_.target.name -eq 'owned_verification_workspace'
+              })
+              if ($artifacts.Count -ne 1) { throw 'Expected one owned verification executable' }
+              $executable = $artifacts[0].executable
+              $executableBefore = (Get-FileHash $executable -Algorithm SHA256).Hash.ToLowerInvariant()
+              $listing = (& $executable --list --format terse 2>&1 | Out-String)
+            } else {
+              $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            }
             $code = $LASTEXITCODE
             $listing | Set-Content "flowmux-evidence/$name-list.txt"
             $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
             if ($code -ne 0 -or $listed -ne $scope.Expected) { throw "Expected $($scope.Expected) $name tests, listed $listed" }
-            $log = (& cargo @cargoArgs -- --show-output --color never 2>&1 | Out-String)
+            if ($name -eq 'owned-verification') {
+              $log = (& $executable --exact maximal_store_retirement_does_not_allocate_a_publication_body --show-output --test-threads=1 --color never 2>&1 | Out-String)
+            } else {
+              $log = (& cargo @cargoArgs -- --show-output --color never 2>&1 | Out-String)
+            }
             $code = $LASTEXITCODE
             $log | Set-Content "flowmux-evidence/$name-tests.txt"
             $summaries = [regex]::Matches($log, '(?m)^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
@@ -210,6 +233,25 @@ jobs:
                   $row.request_frame_bytes -le 0 -or $row.reply_frame_bytes -le 0 -or
                   $row.rust_peak_requested -gt $row.aggregate_declared_bytes) { throw 'Incomplete populated owned-store qualification' }
               $row | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/owned-allocation.json
+            }
+            if ($name -eq 'owned-verification') {
+              $rows = [regex]::Matches($log, '(?m)^OWNED_VERIFICATION (.+)\r?$')
+              if ($rows.Count -ne 1) { throw 'Missing isolated owned-verification measurement' }
+              $row = $rows[0].Groups[1].Value | ConvertFrom-Json
+              $executableAfter = (Get-FileHash $executable -Algorithm SHA256).Hash.ToLowerInvariant()
+              if ($executableBefore -ne $executableAfter) { throw 'Owned verification executable changed' }
+              if ($row.stores -ne 2 -or $row.preloaded_objects_each -ne 64 -or $row.body_bytes_each -ne 65536 -or
+                  $row.entries_each -ne 101 -or $row.setup_readback_bytes -ne 8394880 -or
+                  $row.declared_workspace_each -ne 1048576 -or $row.largest_new_requested_allocation -gt 8192 -or
+                  $row.cumulative_new_requested_bytes -le 0 -or $row.cumulative_new_requested_bytes -gt 2097152 -or
+                  $row.window_wall_ns -le 0 -or $row.window_process_cpu_ns -lt 0 -or
+                  @($row.retirement_wall_ns_each).Count -ne 2 -or @($row.retirement_thread_cpu_ns_each).Count -ne 2) { throw 'Incomplete owned verification qualification' }
+              $row | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/owned-verification.json
+              @{ executable_sha256_before = $executableBefore; executable_sha256_after = $executableAfter;
+                witness_source_sha256 = (Get-FileHash crates/spiralcore-transfer/tests/owned_verification_workspace.rs -Algorithm SHA256).Hash.ToLowerInvariant();
+                allocator_source_sha256 = (Get-FileHash crates/spiralcore-transfer/tests/support/requested_allocations.rs -Algorithm SHA256).Hash.ToLowerInvariant();
+                scope = 'filesystem-only private cache fixture; no network, MVM, RSS or allocator-overhead bound'
+              } | ConvertTo-Json | Set-Content flowmux-evidence/owned-verification-identity.json
             }
           }
           $lockChanges = git status --porcelain -- crates/spiralcore-transfer/Cargo.lock
