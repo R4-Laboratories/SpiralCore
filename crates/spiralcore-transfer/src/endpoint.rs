@@ -1962,7 +1962,44 @@ fn verify_owned_file(id: Id, file: File, max_body: u64) -> Result<()> {
     if metadata.len > max_body {
         return Err(Error::Limit);
     }
-    read_publication_body(&metadata, file).map(drop)
+    verify_publication_digest(&metadata, file)
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn verify_publication_digest<L>(p: &Publication<L>, mut file: impl Read) -> Result<()> {
+    use sha2::Digest;
+    #[cfg(test)]
+    ordered_eviction_tests::FULL_READS.with(|count| count.set(count.get() + 1));
+    // Authenticate every byte using the same length-prefixed object identity,
+    // with scratch space independent of the publication body size.
+    let mut digest = crate::object_hasher(p.len);
+    let mut remaining = p.len;
+    let mut buffer = [0u8; 8192];
+    while remaining != 0 {
+        let wanted = remaining.min(buffer.len() as u64) as usize;
+        let count = read_verification_chunk(&mut file, &mut buffer[..wanted])?;
+        if count == 0 {
+            return Err(Error::Integrity);
+        }
+        digest.update(&buffer[..count]);
+        remaining -= count as u64;
+    }
+    if read_verification_chunk(&mut file, &mut buffer[..1])? != 0
+        || Id::from(digest.finalize()) != p.object
+    {
+        return Err(Error::Integrity);
+    }
+    Ok(())
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn read_verification_chunk(file: &mut impl Read, buffer: &mut [u8]) -> Result<usize> {
+    loop {
+        match file.read(buffer) {
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            result => return result.map_err(Into::into),
+        }
+    }
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]

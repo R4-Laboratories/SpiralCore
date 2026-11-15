@@ -78,11 +78,16 @@ pub fn hash(domain: &[u8], parts: &[&[u8]]) -> Id {
     }
     h.finalize().into()
 }
+pub(crate) fn object_hasher(len: u64) -> Sha256 {
+    let mut h = Sha256::new();
+    h.update(b"spiralcore.object.bytes.v1\0");
+    h.update(len.to_le_bytes());
+    h
+}
 pub fn object_id(bytes: &[u8]) -> Id {
-    hash(
-        b"spiralcore.object.bytes.v1\0",
-        &[&(bytes.len() as u64).to_le_bytes(), bytes],
-    )
+    let mut h = object_hasher(bytes.len() as u64);
+    h.update(bytes);
+    h.finalize().into()
 }
 pub fn hex(id: &Id) -> String {
     id.iter().map(|b| format!("{b:02x}")).collect()

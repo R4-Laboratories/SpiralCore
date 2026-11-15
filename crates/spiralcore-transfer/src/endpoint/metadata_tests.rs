@@ -448,3 +448,106 @@ fn publication_header_preserves_both_layouts_in_one_complete_write() {
         }
     }
 }
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn streamed_owned_verification_preserves_canonical_bytes_and_exact_end() {
+    struct Fragmented<'a> {
+        bytes: &'a [u8],
+        consumed: usize,
+        interrupt: bool,
+        largest_buffer: usize,
+    }
+    impl Read for Fragmented<'_> {
+        fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+            self.largest_buffer = self.largest_buffer.max(buffer.len());
+            if self.interrupt {
+                self.interrupt = false;
+                return Err(std::io::ErrorKind::Interrupted.into());
+            }
+            let n = buffer.len().min(self.bytes.len()).min(127);
+            buffer[..n].copy_from_slice(&self.bytes[..n]);
+            self.bytes = &self.bytes[n..];
+            self.consumed += n;
+            self.interrupt = true;
+            Ok(n)
+        }
+    }
+    for length in [0, 1, 8191, 8192, 8193, 65536] {
+        let mut bytes = vec![0x51; length];
+        for byte in bytes.iter_mut().rev().take(3) {
+            *byte = 0;
+        }
+        let original = crate::hash(
+            b"spiralcore.object.bytes.v1\0",
+            &[&(length as u64).to_le_bytes(), &bytes],
+        );
+        assert_eq!(object_id(&bytes), original);
+        let metadata = Publication {
+            path: (),
+            len: length as u64,
+            object: original,
+            manifest: None,
+        };
+        let mut fragmented = Fragmented {
+            bytes: &bytes,
+            consumed: 0,
+            interrupt: true,
+            largest_buffer: 0,
+        };
+        assert_eq!(
+            verify_publication_digest(&metadata, &mut fragmented),
+            Ok(())
+        );
+        assert_eq!(fragmented.consumed, length);
+        assert!(fragmented.largest_buffer <= 8192);
+        if length != 0 {
+            assert_eq!(
+                verify_publication_digest(&metadata, &bytes[..length - 1]),
+                Err(Error::Integrity)
+            );
+            let mut corrupt = bytes.clone();
+            *corrupt.last_mut().unwrap() ^= 1;
+            assert_eq!(
+                verify_publication_digest(&metadata, corrupt.as_slice()),
+                Err(Error::Integrity)
+            );
+        }
+        bytes.push(0);
+        assert_eq!(
+            verify_publication_digest(&metadata, bytes.as_slice()),
+            Err(Error::Integrity)
+        );
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn streamed_owned_verification_keeps_body_and_eof_io_errors_as_storage() {
+    struct Failure<'a> {
+        bytes: &'a [u8],
+    }
+    impl Read for Failure<'_> {
+        fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+            if self.bytes.is_empty() {
+                return Err(std::io::ErrorKind::PermissionDenied.into());
+            }
+            self.bytes.read(buffer)
+        }
+    }
+    let bytes = b"read exactly then fail the EOF probe\0\0";
+    let metadata = Publication {
+        path: (),
+        len: bytes.len() as u64,
+        object: object_id(bytes),
+        manifest: None,
+    };
+    assert_eq!(
+        verify_publication_digest(&metadata, Failure { bytes: &[] }),
+        Err(Error::Storage)
+    );
+    assert_eq!(
+        verify_publication_digest(&metadata, Failure { bytes }),
+        Err(Error::Storage)
+    );
+}

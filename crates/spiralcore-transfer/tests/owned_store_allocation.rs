@@ -2,7 +2,7 @@
 
 //! Populated-store qualification, not a native MVM or allocator-resident bound.
 #[path = "support/requested_allocations.rs"]
-mod allocations;
+pub mod allocations;
 #[global_allocator]
 static ALLOCATIONS: allocations::RequestedAllocations = allocations::RequestedAllocations;
 
