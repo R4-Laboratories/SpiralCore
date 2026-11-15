@@ -1,5 +1,39 @@
 # Networking delivery status
 
+The installed MVM directory-funding and original-store destruction slice is merged
+through [PR #291](https://github.com/R4-Laboratories/SpiralCore/pull/291) at
+`9688efa9`. Both active MVM dependencies use reviewed SpiralCore `29393e9b`
+through frozen rc.3 contributor `9e56be55`; the installed tool uses the same core.
+The original store now drops under the ledger lock before credit is published.
+The live 32,768-byte directory quote is checked against the unchanged 1 MiB
+workspace floor; original custody, six per-store FDs plus shared parent, 102
+visits, signed authority, concurrency, security and deadlines remain intact.
+
+All 35 executed checks pass; the manual signed-export job is skipped/NOT_RUN.
+The released, reviewed and CI merge trees match. Eight original reader/store
+controls pass on native Linux x64/ARM and macOS ARM, each bound to 4,679 source
+files and an unchanged executable. Full serial MVM workspace/doctests, strict
+checks, gated builds and SDK qualification pass. Independent source/security
+and native artifact reviews are clear. Nine original consumer/parent/endpoint
+ZIPs verify 113 members. Seven native FlowMux rows each retain exact 64 MiB
+readback each direction and 10,790,065 transmitted TLS bytes under original
+2 s/240 s guards; their ZIPs verify 198 member hashes and 191 checksums.
+
+The fresh isolated registered fixture verifies 5,804 exact bytes each way,
+3,657/3,234 TLS bytes, setup 70.388550 ms, verified Open-to-half-close 20.489519 ms
+and retirement/archive retry 26.071250 ms. Whole-fixture wall/user/system CPU is
+0.12/0.02/0.02 s; separate sender/receiver CPU remains unmeasured. These are
+native host-process/component observations, with no booted MVM or WAN.
+
+The full workspace requires a short private TMP root and recorded soft/hard
+NOFILE 4096/524288. Baseline and candidate each pass 9/10 at inherited 1024 and
+10/10 at 4096; original failures remain. This is an existing host FD-index
+prerequisite, not an allocator fix or capacity envelope. #258 remains open for
+complete workspace/allocator/concurrency and installed memory-funding acceptance.
+All five #42 outcomes, Ari's compatible signed runtime, private MVMD integration,
+installed backend/platform/WAN/capacity and security gates remain active.
+[Reviewed source, exact native artifacts, costs and original failures](evidence/2026-11-14-installed-directory-funding/README.md).
+
 Bounded directory work is merged through
 [PR #289](https://github.com/R4-Laboratories/SpiralCore/pull/289) at `29393e9b`.
 Each original Unix store retains two fallibly allocated 16 KiB directory buffers
@@ -22,8 +56,8 @@ exactly, records 4,250,368/55,808 in-process request/reply bytes, 2,301,533 requ
 Rust heap bytes, 1.671413189 s fixture wall and 128.073500 ms process CPU. The
 32,768-byte directory payload quote excludes allocator overhead, bookkeeping,
 stacks and kernel memory; this does not prove RSS or isolated workspace bounds.
-MVM consumer adoption, destruction-before-credit accounting and broader funding
-acceptance remain pending under #258. All five #42 outcomes and the external
+Consumer adoption and destruction-before-credit accounting followed in #291;
+broader funding acceptance remains open under #258. All five #42 outcomes and the external
 signed-runtime/private-MVMD/backend/WAN/capacity/security gates remain active.
 [Reviewed source, native artifacts, measurements and original failures](evidence/2026-11-14-bounded-directory-work/README.md).
 
@@ -47,10 +81,10 @@ counter; overlapping store lifetimes do not prove simultaneous iterator peaks.
 Full #258 memory/iterator/concurrency acceptance remains open.
 [Native artifacts, source review, actual costs and retained failures](evidence/2026-11-14-populated-store-allocation/README.md).
 
-The installed MVM consumer qualification is merged through
+The earlier installed MVM consumer qualification is merged through
 [PR #285](https://github.com/R4-Laboratories/SpiralCore/pull/285) at `acd39903`.
-Both consumer dependencies use reviewed SpiralCore `adcc7197`; active SDK
-references use frozen MVM rc.3 `611a3c76`. All 35 executed checks passed, with
+At that checkpoint both consumer dependencies use reviewed SpiralCore `adcc7197`
+and SDK references use frozen MVM rc.3 `611a3c76`. All 35 executed checks passed, with
 one manual signed-export job skipped. The released, reviewed and tested CI
 merge trees match. Six original reader/store custody, quarantine, funding and
 retirement controls pass on native Linux x64/ARM and macOS ARM, each bound to
