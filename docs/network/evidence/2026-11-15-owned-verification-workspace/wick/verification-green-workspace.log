@@ -1,0 +1,41 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/verification-work/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 10.40s
+     Running tests/owned_verification_workspace.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/owned_verification_workspace-f7e9cb7b05500c22)
+
+running 1 test
+test maximal_store_retirement_does_not_allocate_a_publication_body ... ok
+
+successes:
+
+---- maximal_store_retirement_does_not_allocate_a_publication_body stdout ----
+OWNED_VERIFICATION {"body_bytes_each":65536,"cumulative_new_requested_bytes":112650,"declared_workspace_each":1048576,"entries_each":101,"largest_new_requested_allocation":250,"preloaded_objects_each":64,"retirement_thread_cpu_ns_each":[11633657,11727992],"retirement_wall_ns_each":[585452707,582840328],"scope":"filesystem-only private cache fixtures; retirement coordination/destruction included; requested Rust payload only, not allocator overhead/stacks/RSS; no network/MVM/WAN","setup_process_cpu_ns":7122044,"setup_readback_bytes":8394880,"setup_wall_ns":19710675,"stores":2}
+
+
+successes:
+    maximal_store_retirement_does_not_allocate_a_publication_body
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+
+	Command being timed: "cargo test --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --test owned_verification_workspace -- --test-threads=1 --show-output"
+	User time (seconds): 18.70
+	System time (seconds): 0.66
+	Percent of CPU this job got: 175%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:11.02
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 333128
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 568
+	Minor (reclaiming a frame) page faults: 453148
+	Voluntary context switches: 15549
+	Involuntary context switches: 795
+	Swaps: 0
+	File system inputs: 95096
+	File system outputs: 71008
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

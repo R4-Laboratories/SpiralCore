@@ -1,0 +1,75 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/verification-work/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/verification-work/crates/uor-r4-object-store)
+    Finished `release` profile [optimized] target(s) in 10.83s
+     Running tests/owned_verification_workspace.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/owned_verification_workspace-f7e9cb7b05500c22)
+
+running 1 test
+test maximal_store_retirement_does_not_allocate_a_publication_body ... FAILED
+
+successes:
+
+successes:
+
+failures:
+
+---- maximal_store_retirement_does_not_allocate_a_publication_body stdout ----
+
+thread 'maximal_store_retirement_does_not_allocate_a_publication_body' (2685203) panicked at tests/owned_verification_workspace.rs:149:9:
+
+running 1 test
+test maximal_store_retirement_does_not_allocate_a_publication_body ... FAILED
+
+successes:
+
+successes:
+
+failures:
+
+---- maximal_store_retirement_does_not_allocate_a_publication_body stdout ----
+OWNED_VERIFICATION {"body_bytes_each":65536,"cumulative_new_requested_bytes":16889866,"declared_workspace_each":1048576,"entries_each":101,"largest_new_requested_allocation":65536,"preloaded_objects_each":64,"retirement_thread_cpu_ns_each":[12979047,12589680],"retirement_wall_ns_each":[567043100,564414469],"scope":"filesystem-only private cache fixtures; retirement coordination/destruction included; requested Rust payload only, not allocator overhead/stacks/RSS; no network/MVM/WAN","setup_process_cpu_ns":7806607,"setup_readback_bytes":8394880,"setup_wall_ns":21483397,"stores":2}
+
+thread 'maximal_store_retirement_does_not_allocate_a_publication_body' (2685205) panicked at tests/owned_verification_workspace.rs:211:5:
+filesystem verification allocated a publication body: 65536
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    maximal_store_retirement_does_not_allocate_a_publication_body
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    maximal_store_retirement_does_not_allocate_a_publication_body
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+error: test failed, to rerun pass `--test owned_verification_workspace`
+Command exited with non-zero status 101
+	Command being timed: "cargo test --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --test owned_verification_workspace -- --test-threads=1 --show-output"
+	User time (seconds): 19.90
+	System time (seconds): 0.77
+	Percent of CPU this job got: 180%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:11.43
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 333080
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1081
+	Minor (reclaiming a frame) page faults: 503698
+	Voluntary context switches: 16066
+	Involuntary context switches: 815
+	Swaps: 0
+	File system inputs: 219632
+	File system outputs: 77200
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 101

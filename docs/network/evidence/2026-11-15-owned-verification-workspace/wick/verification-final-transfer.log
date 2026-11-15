@@ -1,0 +1,523 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/sc-direct-flowmux.iptmjZre/verification-work/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1m 03s
+     Running unittests src/lib.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_transfer-d4d9e341f4213c1f)
+
+running 84 tests
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test delta::sender_delta_checks::unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse ... ok
+test delta::unrelated_cpu_checks::unrelated_cpu_anchor_search_matches_first_maximal_scalar_run ... ok
+test delta::unrelated_cpu_checks::unrelated_cpu_preserves_frozen_frames_on_short_runs_edges_and_operation_cap ... ok
+test endpoint::commit_costs::cold_whole_ordered_commit_after_full_cache ... ignored, explicit native filesystem timing witness
+test endpoint::metadata_tests::metadata_paths_preserve_header_length_missing_and_exact_body_checks ... ok
+test endpoint::metadata_tests::metadata_paths_reject_hardlinks_without_changing_the_original_bytes ... ok
+test endpoint::metadata_tests::original_file_verifies_named_digest_and_small_body_limit ... ok
+test endpoint::metadata_tests::owned_receipts_retry_original_durability_after_ambiguous_rename ... ok
+test endpoint::metadata_tests::publication_header_preserves_both_layouts_in_one_complete_write ... ok
+test endpoint::metadata_tests::streamed_owned_verification_keeps_body_and_eof_io_errors_as_storage ... ok
+test endpoint::metadata_tests::streamed_owned_verification_preserves_canonical_bytes_and_exact_end ... ok
+test endpoint::ordered_eviction_tests::an_ordered_read_uses_the_current_private_file_from_header_through_eof ... ok
+test endpoint::ordered_eviction_tests::application_commit_returns_one_independent_disk_readback ... ok
+test endpoint::ordered_eviction_tests::owned_ordered_victim_requires_live_authority_and_intact_sibling ... ok
+test endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal ... ok
+test endpoint::storage::owned::tests::capture_and_claim_keep_the_original_directory_and_lock ... ok
+test endpoint::storage::owned::tests::checked_opens_refuse_fifo_symlink_and_hardlink ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+test endpoint::storage::owned::tests::directory_buffers_survive_successful_retirement_until_final_store_drop ... ok
+test endpoint::storage::owned::tests::directory_work_contention_reentry_and_callback_errors_keep_original_outcomes ... ok
+test endpoint::storage::owned::tests::excess_publications_refuse_recovery_and_retirement_before_unlink ... ok
+test endpoint::storage::owned::tests::checked_walk_holds_four_transient_fds_at_file_verification ... ok
+test endpoint::storage::owned::tests::failed_locked_recovery_preserves_stages_and_original_lock ... ok
+test endpoint::storage::owned::tests::held_parent_rename_and_clean_retirement_preserve_substitute ... ok
+test endpoint::storage::owned::tests::invalid_original_marker_refuses_before_locking_owner ... ok
+test endpoint::storage::owned::tests::linux_mount_identity_uses_the_held_descriptors ... ok
+test endpoint::storage::owned::tests::missing_initialized_profile_preserves_remaining_contents ... ok
+test endpoint::storage::owned::tests::opened_foreign_lane_blocks_retirement_before_any_unlink ... ok
+test endpoint::storage::owned::tests::oversized_components_are_refused_before_os_path_conversion ... ok
+test endpoint::storage::owned::tests::poisoned_directory_work_refuses_without_cleanup_or_lock_release ... ok
+test endpoint::storage::owned::tests::failed_lock_retains_opened_fd_without_granting_exclusion ... ok
+test endpoint::storage::owned::tests::post_unlink_sync_failure_quarantines_the_original_locked_store ... ok
+test endpoint::storage::owned::tests::small_v1_funds_overflow_lookahead ... ok
+test endpoint::storage::owned::tests::retirement_refuses_unknown_file_before_deleting_known_data ... ok
+test endpoint::storage::owned::tests::stage_substitution_refuses_publish_and_cleanup ... ok
+test endpoint::storage::owned::tests::wrong_root_fd_and_unsafe_leaf_are_refused_without_storage_effects ... ok
+test endpoint::storage::owned::work::scan_tests::fixed_buffer_refills_and_fresh_offsets_preserve_long_names ... ok
+test endpoint::storage::owned::work::tests::actual_retained_capacity_must_match_the_funded_payload ... ok
+test endpoint::storage::owned::tests::walk_charges_unknown_names_and_refuses_unenrolled_lanes ... ok
+test endpoint::storage_tests::contended_handoff_revalidates_the_profile_and_named_owner ... ok
+test endpoint::storage_tests::private_store_refuses_hardlinked_profile_without_resetting_it ... ok
+test endpoint::storage_tests::reopen_waits_for_a_transient_duplicate_of_the_original_lock ... ok
+test endpoint::storage_tests::published_bytes_survive_restart_and_fresh_read_rejects_corruption ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes ... ok
+test schema::sender_checks::cpu_conscious_fast_literal_work_fallback_never_counts_a_template ... ok
+test schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes ... ok
+test schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes ... ok
+test schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget ... ok
+test endpoint::storage_tests::staging_collection_refuses_hardlinks_without_removing_either_name ... ok
+test schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact ... ok
+test schema::sender_checks::impossible_record_preflight_keeps_complete_frozen_encoder_bytes ... ok
+test schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes ... ok
+test schema::sender_checks::fit_order_and_training_schema_limits_match_original ... ok
+test schema::sender_checks::newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries ... ok
+test schema::sender_checks::possible_record_is_only_a_conservative_length_and_json_prefix_check ... ok
+test schema::sender_checks::newline_iterator_capped_count_matches_original_record_limit ... ok
+test schema::sender_checks::record_count_matches_iterator_at_chunk_boundaries_and_saturation ... ok
+test schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_frozen_oracle_covers_fallbacks_lengths_and_equal_basis_receipts ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_schema_loser_is_certified_and_canonical_frames_match_frozen_baseline ... ok
+test schema_selection::cpu_conscious_checks::cpu_conscious_skips_real_compression_only_for_zero_useful_records ... ok
+test schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes ... ok
+test schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode ... ok
+test schema_zstd::cpu_conscious_checks::cpu_conscious_preparation_preserves_resource_and_poison_errors ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_bounds_preserve_domain_ties_and_context_after_prune_or_inconclusive ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test v1::ordered::tests::private_ordinal_fence_cannot_wrap_to_old_zero_identity ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder ... ok
+test zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound ... ok
+test zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+
+successes:
+
+---- endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal stdout ----
+ORDERED_SINGLE_EVICTION bytes=16384 full_reads=1
+
+---- endpoint::storage::owned::tests::poisoned_directory_work_refuses_without_cleanup_or_lock_release stdout ----
+
+thread '<unnamed>' (2728028) panicked at src/endpoint/storage/owned/tests.rs:616:17:
+injected directory work poison
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+successes:
+    dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget
+    dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound
+    dag::fold_memo_tests::rejected_records_never_enter_the_memo
+    delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows
+    delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary
+    delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries
+    delta::sender_delta_checks::unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse
+    delta::unrelated_cpu_checks::unrelated_cpu_anchor_search_matches_first_maximal_scalar_run
+    delta::unrelated_cpu_checks::unrelated_cpu_preserves_frozen_frames_on_short_runs_edges_and_operation_cap
+    endpoint::metadata_tests::metadata_paths_preserve_header_length_missing_and_exact_body_checks
+    endpoint::metadata_tests::metadata_paths_reject_hardlinks_without_changing_the_original_bytes
+    endpoint::metadata_tests::original_file_verifies_named_digest_and_small_body_limit
+    endpoint::metadata_tests::owned_receipts_retry_original_durability_after_ambiguous_rename
+    endpoint::metadata_tests::publication_header_preserves_both_layouts_in_one_complete_write
+    endpoint::metadata_tests::streamed_owned_verification_keeps_body_and_eof_io_errors_as_storage
+    endpoint::metadata_tests::streamed_owned_verification_preserves_canonical_bytes_and_exact_end
+    endpoint::ordered_eviction_tests::an_ordered_read_uses_the_current_private_file_from_header_through_eof
+    endpoint::ordered_eviction_tests::application_commit_returns_one_independent_disk_readback
+    endpoint::ordered_eviction_tests::owned_ordered_victim_requires_live_authority_and_intact_sibling
+    endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal
+    endpoint::storage::owned::tests::capture_and_claim_keep_the_original_directory_and_lock
+    endpoint::storage::owned::tests::checked_opens_refuse_fifo_symlink_and_hardlink
+    endpoint::storage::owned::tests::checked_walk_holds_four_transient_fds_at_file_verification
+    endpoint::storage::owned::tests::directory_buffers_survive_successful_retirement_until_final_store_drop
+    endpoint::storage::owned::tests::directory_work_contention_reentry_and_callback_errors_keep_original_outcomes
+    endpoint::storage::owned::tests::excess_publications_refuse_recovery_and_retirement_before_unlink
+    endpoint::storage::owned::tests::failed_lock_retains_opened_fd_without_granting_exclusion
+    endpoint::storage::owned::tests::failed_locked_recovery_preserves_stages_and_original_lock
+    endpoint::storage::owned::tests::held_parent_rename_and_clean_retirement_preserve_substitute
+    endpoint::storage::owned::tests::invalid_original_marker_refuses_before_locking_owner
+    endpoint::storage::owned::tests::linux_mount_identity_uses_the_held_descriptors
+    endpoint::storage::owned::tests::missing_initialized_profile_preserves_remaining_contents
+    endpoint::storage::owned::tests::opened_foreign_lane_blocks_retirement_before_any_unlink
+    endpoint::storage::owned::tests::oversized_components_are_refused_before_os_path_conversion
+    endpoint::storage::owned::tests::poisoned_directory_work_refuses_without_cleanup_or_lock_release
+    endpoint::storage::owned::tests::post_unlink_sync_failure_quarantines_the_original_locked_store
+    endpoint::storage::owned::tests::retirement_refuses_unknown_file_before_deleting_known_data
+    endpoint::storage::owned::tests::small_v1_funds_overflow_lookahead
+    endpoint::storage::owned::tests::stage_substitution_refuses_publish_and_cleanup
+    endpoint::storage::owned::tests::walk_charges_unknown_names_and_refuses_unenrolled_lanes
+    endpoint::storage::owned::tests::wrong_root_fd_and_unsafe_leaf_are_refused_without_storage_effects
+    endpoint::storage::owned::work::scan_tests::fixed_buffer_refills_and_fresh_offsets_preserve_long_names
+    endpoint::storage::owned::work::tests::actual_retained_capacity_must_match_the_funded_payload
+    endpoint::storage_tests::contended_handoff_revalidates_the_profile_and_named_owner
+    endpoint::storage_tests::private_store_refuses_hardlinked_profile_without_resetting_it
+    endpoint::storage_tests::published_bytes_survive_restart_and_fresh_read_rejects_corruption
+    endpoint::storage_tests::reopen_waits_for_a_transient_duplicate_of_the_original_lock
+    endpoint::storage_tests::staging_collection_refuses_hardlinks_without_removing_either_name
+    fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes
+    schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes
+    schema::sender_checks::cpu_conscious_fast_literal_work_fallback_never_counts_a_template
+    schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes
+    schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes
+    schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget
+    schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact
+    schema::sender_checks::fit_order_and_training_schema_limits_match_original
+    schema::sender_checks::impossible_record_preflight_keeps_complete_frozen_encoder_bytes
+    schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes
+    schema::sender_checks::newline_iterator_capped_count_matches_original_record_limit
+    schema::sender_checks::newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries
+    schema::sender_checks::possible_record_is_only_a_conservative_length_and_json_prefix_check
+    schema::sender_checks::record_count_matches_iterator_at_chunk_boundaries_and_saturation
+    schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes
+    schema_selection::candidate_cpu_checks::candidate_cpu_bounds_preserve_domain_ties_and_context_after_prune_or_inconclusive
+    schema_selection::candidate_cpu_checks::candidate_cpu_frozen_oracle_covers_fallbacks_lengths_and_equal_basis_receipts
+    schema_selection::candidate_cpu_checks::candidate_cpu_schema_loser_is_certified_and_canonical_frames_match_frozen_baseline
+    schema_selection::cpu_conscious_checks::cpu_conscious_skips_real_compression_only_for_zero_useful_records
+    schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes
+    schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode
+    schema_zstd::cpu_conscious_checks::cpu_conscious_preparation_preserves_resource_and_poison_errors
+    selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs
+    selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority
+    selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes
+    selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes
+    selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior
+    shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries
+    shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes
+    v1::ordered::tests::private_ordinal_fence_cannot_wrap_to_old_zero_identity
+    zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent
+    zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries
+    zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder
+    zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound
+    zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly
+
+test result: ok. 83 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.64s
+
+     Running unittests src/bin/spiralcore.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore-3c2aa9c3d4de22c6)
+
+running 1 test
+test tests::frame_deadline_does_not_restart_after_a_partial_read ... ok
+
+successes:
+
+successes:
+    tests::frame_deadline_does_not_restart_after_a_partial_read
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests src/bin/spiralcore-bench.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_bench-6e0dbce04013cf17)
+
+running 10 tests
+test tests::broad_local_http_first_pair_for_every_case_reopens_exactly ... ignored, 88 real 16 MiB-class HTTP operations; explicitly run in release
+test tests::broad_receipts_bind_policy_actual_length_and_fixture_identity ... ok
+test tests::fixture_mutations_are_exact_and_reproducible ... ok
+test tests::large16_local_http_first_pair_reopens_exact_bytes_for_all_arms ... ignored, bounded 16 MiB HTTP qualification; explicitly run with --release --ignored
+test tests::broad_fixtures_cover_length_changes_and_existing_compressed_content ... ok
+test tests::paired_ratios_are_not_ratios_of_unpaired_means ... ok
+test tests::rerun_against_populated_receiver_is_a_retained_failure ... ok
+test tests::summary_includes_seed_cost_and_rejects_missing_seed_or_wrong_pair ... ok
+test tests::transfer_identity_is_fresh_and_cache_hit_policy_covers_every_arm ... ok
+test tests::large16_receipts_require_shard_and_canonical_ids_without_legacy_drift ... ok
+
+successes:
+
+successes:
+    tests::broad_fixtures_cover_length_changes_and_existing_compressed_content
+    tests::broad_receipts_bind_policy_actual_length_and_fixture_identity
+    tests::fixture_mutations_are_exact_and_reproducible
+    tests::large16_receipts_require_shard_and_canonical_ids_without_legacy_drift
+    tests::paired_ratios_are_not_ratios_of_unpaired_means
+    tests::rerun_against_populated_receiver_is_a_retained_failure
+    tests::summary_includes_seed_cost_and_rejects_missing_seed_or_wrong_pair
+    tests::transfer_identity_is_fresh_and_cache_hit_policy_covers_every_arm
+
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+     Running unittests src/bin/spiralcore-capture.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_capture-bc5e0dd2028f46fa)
+
+running 27 tests
+test capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval ... ok
+test capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block ... ok
+test capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence ... ok
+test capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle ... ok
+test capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks ... ok
+test tests::both_endiannesses_and_timestamp_resolutions_are_supported ... ok
+test tests::capture_statistics_matching_counts_are_retained_and_verified ... ok
+test tests::capture_statistics_mismatch_and_truncation_are_incomplete ... ok
+test tests::cooked_headers_vlan_and_ipv6_use_the_ip_length ... ok
+test tests::delayed_fin_is_charged_to_the_connection_owner_not_the_next_row ... ok
+test tests::double_vlan_minimum_frame_padding_is_not_counted_as_ip_bytes ... ok
+test tests::drops_or_missing_drop_summary_never_become_complete ... ok
+test tests::isolated_veth_scope_is_exact_and_never_relaxes_the_wan_port ... ok
+test tests::lifecycle_failure_can_never_leave_an_equal_counter_capture_complete ... ok
+test tests::lifecycle_is_bound_to_the_same_pcap_endpoints_and_final_counters ... ok
+test tests::malformed_or_truncated_packet_headers_are_rejected ... ok
+test tests::missing_syn_and_reused_tuple_are_unattributed_and_incomplete ... ok
+test tests::packet_record_order_does_not_change_owner_and_pre_syn_packets_are_unattributed ... ok
+test tests::published_body_coverage_is_a_required_lower_bound ... ok
+test tests::qualification_port_is_loopback_only_and_wan_default_remains_443 ... ok
+test tests::retransmitted_syn_keeps_its_first_owner ... ok
+test tests::row_order_duplicates_and_timestamp_overflow_are_rejected ... ok
+test tests::setup_and_multiple_connections_keep_ownership_while_gap_syn_is_unattributed ... ok
+test tests::snaplen_is_not_ip_length_and_connection_totals_include_delayed_packets ... ok
+test tests::tcpdump_summary_counter_is_preserved_without_guessing ... ok
+test tests::unknown_packets_are_visible_and_unexpected_flows_are_rejected ... ok
+test tests::capture_statistics_smoke_gap_is_unresolved_even_with_zero_kernel_drops ... ok
+
+successes:
+
+successes:
+    capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval
+    capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block
+    capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence
+    capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle
+    capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks
+    tests::both_endiannesses_and_timestamp_resolutions_are_supported
+    tests::capture_statistics_matching_counts_are_retained_and_verified
+    tests::capture_statistics_mismatch_and_truncation_are_incomplete
+    tests::capture_statistics_smoke_gap_is_unresolved_even_with_zero_kernel_drops
+    tests::cooked_headers_vlan_and_ipv6_use_the_ip_length
+    tests::delayed_fin_is_charged_to_the_connection_owner_not_the_next_row
+    tests::double_vlan_minimum_frame_padding_is_not_counted_as_ip_bytes
+    tests::drops_or_missing_drop_summary_never_become_complete
+    tests::isolated_veth_scope_is_exact_and_never_relaxes_the_wan_port
+    tests::lifecycle_failure_can_never_leave_an_equal_counter_capture_complete
+    tests::lifecycle_is_bound_to_the_same_pcap_endpoints_and_final_counters
+    tests::malformed_or_truncated_packet_headers_are_rejected
+    tests::missing_syn_and_reused_tuple_are_unattributed_and_incomplete
+    tests::packet_record_order_does_not_change_owner_and_pre_syn_packets_are_unattributed
+    tests::published_body_coverage_is_a_required_lower_bound
+    tests::qualification_port_is_loopback_only_and_wan_default_remains_443
+    tests::retransmitted_syn_keeps_its_first_owner
+    tests::row_order_duplicates_and_timestamp_overflow_are_rejected
+    tests::setup_and_multiple_connections_keep_ownership_while_gap_syn_is_unattributed
+    tests::snaplen_is_not_ip_length_and_connection_totals_include_delayed_packets
+    tests::tcpdump_summary_counter_is_preserved_without_guessing
+    tests::unknown_packets_are_visible_and_unexpected_flows_are_rejected
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/bin/spiralcore-capture-control.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_capture_control-fd18abd7a981f20a)
+
+running 13 tests
+test capture_fixture::tests::all_required_offloads_must_be_explicitly_disabled ... ok
+test capture_fixture::tests::fixture_collision_check_accepts_default_route_but_rejects_overlaps ... ok
+test capture_fixture::tests::fixture_tool_output_is_bounded_before_collection_finishes ... ok
+test capture_fixture::tests::privileged_deadline_wraps_the_actual_tool_without_foreground_escape ... ok
+test capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval ... ok
+test capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block ... ok
+test capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence ... ok
+test capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle ... ok
+test capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks ... ok
+test tests::ethernet_capture_filter_has_no_direction_metadata_load ... ok
+test tests::no_shell_text_can_enter_the_interface_and_port ... ok
+test tests::stderr_collection_is_bounded_even_for_a_noisy_child ... ok
+test capture_fixture::tests::successful_creation_remains_owned_when_receipt_writing_fails ... ok
+
+successes:
+
+successes:
+    capture_fixture::tests::all_required_offloads_must_be_explicitly_disabled
+    capture_fixture::tests::fixture_collision_check_accepts_default_route_but_rejects_overlaps
+    capture_fixture::tests::fixture_tool_output_is_bounded_before_collection_finishes
+    capture_fixture::tests::privileged_deadline_wraps_the_actual_tool_without_foreground_escape
+    capture_fixture::tests::successful_creation_remains_owned_when_receipt_writing_fails
+    capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval
+    capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block
+    capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence
+    capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle
+    capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks
+    tests::ethernet_capture_filter_has_no_direction_metadata_load
+    tests::no_shell_text_can_enter_the_interface_and_port
+    tests::stderr_collection_is_bounded_even_for_a_noisy_child
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/bin/spiralcore-wan.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/spiralcore_wan-5c61c33550c9ec1e)
+
+running 0 tests
+
+successes:
+
+successes:
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/adaptive.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/adaptive-40f6571aa1e85960)
+
+running 13 tests
+test cold_structured_data_selects_zstd_before_begin ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test oversized_inputs_fail_before_any_exchange ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+
+successes:
+
+successes:
+    cold_structured_data_selects_zstd_before_begin
+    empty_and_incompressible_ties_prefer_raw_with_exact_full_cost
+    exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart
+    exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload
+    malicious_receipts_are_checked_after_selection
+    missing_base_and_changed_scope_do_not_reoffer_or_publish
+    oversized_inputs_fail_before_any_exchange
+    real_http_codec_selection_cost_matches_bodies_and_reopens_exactly
+    repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer
+    revoked_authority_and_transport_failure_never_retry_selection
+    selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes
+    small_localized_edit_uses_prefix_when_it_costs_less_than_sparse
+    warm_local_edits_choose_sparse_and_reordered_data_choose_prefix
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.53s
+
+     Running tests/batched.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/batched-9dee81e9d0d2bbd1)
+
+running 19 tests
+test capped_raw_checks_offer_reply_and_sequence_limits_before_exchange ... ok
+test capped_raw_fits_each_frame_and_preserves_legacy_wire_at_the_default_cap ... ok
+test cold_raw_and_zstd_each_use_one_exact_batch ... ok
+test empty_object_uses_begin_and_finish_without_fabricated_data ... ok
+test leased_sender_keeps_malformed_or_unrelated_reply_unsettled ... ok
+test leased_sender_settles_each_validated_reply_before_next_call_and_warm_repeat ... ok
+test leased_sender_settles_valid_refusal_and_stops_on_ambiguous_ack ... ok
+test leased_whole_zstd_counts_exact_encoded_fragments_even_when_they_expand ... ok
+test leased_whole_zstd_refuses_more_fragments_than_receiver_can_accept ... ok
+test missing_or_extra_nonterminal_replies_are_rejected ... ok
+test oversized_campaign_object_is_rejected_before_exchange ... ok
+test peer_cannot_request_a_record_outside_the_offered_graph ... ok
+test published_on_data_is_not_a_valid_terminal_prefix ... ok
+test reply_identity_ready_ack_and_published_digest_are_checked ... ok
+test terminal_error_prefix_is_allowed_but_replies_after_it_are_rejected ... ok
+test unsuccessful_repair_stops_after_two_rounds ... ok
+test large_dag_is_split_with_bounded_batches_and_exact_sequence ... ok
+test warm_dag_change_is_exact_and_repairs_missing_descendant_closure ... ok
+test warm_probe_skips_data_but_unprobed_cache_hit_counts_the_actual_upload ... ok
+
+successes:
+
+---- leased_sender_settles_each_validated_reply_before_next_call_and_warm_repeat stdout ----
+data=4096 call_bytes=4376 reply_bytes=282 through_settlement_us=8119 through_readback_us=8137 sender_and_harness_cpu_us=9 receiver_handle_cpu_us=281
+data=0 call_bytes=102 reply_bytes=88 through_settlement_us=20 through_readback_us=37 sender_and_harness_cpu_us=2 receiver_handle_cpu_us=18
+
+
+successes:
+    capped_raw_checks_offer_reply_and_sequence_limits_before_exchange
+    capped_raw_fits_each_frame_and_preserves_legacy_wire_at_the_default_cap
+    cold_raw_and_zstd_each_use_one_exact_batch
+    empty_object_uses_begin_and_finish_without_fabricated_data
+    large_dag_is_split_with_bounded_batches_and_exact_sequence
+    leased_sender_keeps_malformed_or_unrelated_reply_unsettled
+    leased_sender_settles_each_validated_reply_before_next_call_and_warm_repeat
+    leased_sender_settles_valid_refusal_and_stops_on_ambiguous_ack
+    leased_whole_zstd_counts_exact_encoded_fragments_even_when_they_expand
+    leased_whole_zstd_refuses_more_fragments_than_receiver_can_accept
+    missing_or_extra_nonterminal_replies_are_rejected
+    oversized_campaign_object_is_rejected_before_exchange
+    peer_cannot_request_a_record_outside_the_offered_graph
+    published_on_data_is_not_a_valid_terminal_prefix
+    reply_identity_ready_ack_and_published_digest_are_checked
+    terminal_error_prefix_is_allowed_but_replies_after_it_are_rejected
+    unsuccessful_repair_stops_after_two_rounds
+    warm_dag_change_is_exact_and_repairs_missing_descendant_closure
+    warm_probe_skips_data_but_unprobed_cache_hit_counts_the_actual_upload
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.72s
+
+     Running tests/benchmark.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/benchmark-11a664b5ff287f39)
+
+running 8 tests
+test deterministic_plan_is_bounded_and_uses_isolated_scopes ... ok
+test broad16_plans_isolate_all_controls_and_bound_each_fresh_cache ... ok
+test efficiency_suites_preserve_v1_and_bound_each_thirty_trial_cache ... ok
+benchmark: invalid receipt schema, phase or outcome
+benchmark: invalid receipt schema, phase or outcome
+test efficiency_campaigns_retain_prepared_state_and_reopen_exact_bytes ... ok
+test large16_shard_arguments_are_strict_and_canonical ... ok
+test large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches ... ok
+benchmark: --trials must be between 1 and 30
+benchmark: --trials must be between 1 and 30
+benchmark: --trials must be between 1 and 30
+benchmark: File exists (os error 17)
+test plan_rejects_unbounded_trials_and_does_not_replace_output ... ok
+benchmark: receipt metadata differs from canonical plan or repeats an operation
+test full_one_trial_http_campaign_qualifies_exact_bytes_after_restart ... ok
+
+successes:
+
+successes:
+    broad16_plans_isolate_all_controls_and_bound_each_fresh_cache
+    deterministic_plan_is_bounded_and_uses_isolated_scopes
+    efficiency_campaigns_retain_prepared_state_and_reopen_exact_bytes
+    efficiency_suites_preserve_v1_and_bound_each_thirty_trial_cache
+    full_one_trial_http_campaign_qualifies_exact_bytes_after_restart
+    large16_shard_arguments_are_strict_and_canonical
+    large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches
+    plan_rejects_unbounded_trials_and_does_not_replace_output
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.24s
+
+     Running tests/bounded_selection_workflow.rs (/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/release/deps/bounded_selection_workflow-800a0b77d96c38d2)
+
+running 3 tests
+test bounded_selection_workflow_requires_a_full_secret_without_fallback ... FAILED
+test bounded_selection_workflow_accepts_only_the_pinned_first_attempt ... FAILED
+test bounded_selection_workflow_restricts_every_receiver_url ... FAILED
+
+successes:
+
+successes:
+
+failures:
+
+---- bounded_selection_workflow_requires_a_full_secret_without_fallback stdout ----
+
+thread 'bounded_selection_workflow_requires_a_full_secret_without_fallback' (2728427) panicked at tests/bounded_selection_workflow.rs:7:45:
+bounded selection workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- bounded_selection_workflow_accepts_only_the_pinned_first_attempt stdout ----
+
+thread 'bounded_selection_workflow_accepts_only_the_pinned_first_attempt' (2728426) panicked at tests/bounded_selection_workflow.rs:7:45:
+bounded selection workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- bounded_selection_workflow_restricts_every_receiver_url stdout ----
+
+thread 'bounded_selection_workflow_restricts_every_receiver_url' (2728428) panicked at tests/bounded_selection_workflow.rs:7:45:
+bounded selection workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+
+failures:
+    bounded_selection_workflow_accepts_only_the_pinned_first_attempt
+    bounded_selection_workflow_requires_a_full_secret_without_fallback
+    bounded_selection_workflow_restricts_every_receiver_url
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test bounded_selection_workflow`
+Command exited with non-zero status 101
+	Command being timed: "cargo test --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- --show-output"
+	User time (seconds): 126.51
+	System time (seconds): 6.13
+	Percent of CPU this job got: 185%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:11.55
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 451624
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1380
+	Minor (reclaiming a frame) page faults: 3742872
+	Voluntary context switches: 156819
+	Involuntary context switches: 5800
+	Swaps: 0
+	File system inputs: 15792
+	File system outputs: 752736
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 101
