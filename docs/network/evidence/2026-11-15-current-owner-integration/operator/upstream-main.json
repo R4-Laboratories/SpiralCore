@@ -1,0 +1,429 @@
+{
+  "sha": "7eb015747545051fb5e26ae2c6d5fa4c86e4de00",
+  "url": "https://github.com/tinylabscom/mvm/commit/7eb015747545051fb5e26ae2c6d5fa4c86e4de00",
+  "commit": {
+    "author": {
+      "name": "Ari",
+      "email": "me@ari.io",
+      "date": "2026-11-15T13:20:32Z"
+    },
+    "committer": {
+      "name": "GitHub",
+      "email": "noreply@github.com",
+      "date": "2026-11-15T13:20:32Z"
+    },
+    "message": "feat(runtime): retain verified release runtime evidence per launch (#5557)\n\n* feat(plan): sign and audit release runtime identity\n\n* feat(runtime): retain one verified release snapshot per selection\n\n* feat(runtime): thread verified sets through admission and custody\n\n* docs(security): record launch-scoped runtime proof limits\n\n* fix(runtime): preserve legacy fork admission with retained evidence\n\n* refactor(cli): reach runtime evidence through mvm-client\n\nThe check-thin-cli gate requires command code under crates/mvm-cli/src/commands\nto name no crate below mvm-client. The checkpoint fork boot reached\nmvm_runtime::runtime_evidence::verify_release_runtime_set directly, retaining\nlaunch-scoped verified release runtime evidence in a place the host library and\nSDKs cannot reach.\n\nRe-export verify_release_runtime_set (and its VerifiedRuntimeSet result type)\nfrom mvm-client's launch::runtime_source, next to the overlay and initramfs\nattach helpers it completes, and call it from the command through the existing\nmvm_client::launch::runtime_source re-export path. No behavior changes: the\nsame verification runs on the same fully assembled VmStartConfig.\n\n* chore: regenerate the process spawn inventory after the main merge\n\n* chore: satisfy the public-name and footprint gates for verified-runtime siblings\n\ncheck-public-function-names: the nine new f/f_with_verified_* sibling pairs are explained, not narrowed. Every base is pre-existing public API on main and is called from outside its defining scope, and the gate counts pub(crate) as public, so no visibility narrowing can remove a pair without deleting or privatizing shipped API. The _with_verified_* variants thread the launch-verified runtime set through admission and start so retained audit evidence matches what was actually verified; conflating the names would hide the verification boundary. Entries added to EXCEPTIONS with that justification.\n\ncheck-rust-footprint: raise the SLOC ceiling to 991178 and the physical-line ceiling to 1259462, the tree's honest measured totals after this change. The growth reflects the PR's verified-runtime launch-evidence retention work; the ratchet now pins the new totals.",
+    "tree": {
+      "sha": "e6e7349934b161d62c945ceadb639bb6407140a2",
+      "url": "https://api.github.com/repos/tinylabscom/mvm/git/trees/e6e7349934b161d62c945ceadb639bb6407140a2"
+    },
+    "url": "https://api.github.com/repos/tinylabscom/mvm/git/commits/7eb015747545051fb5e26ae2c6d5fa4c86e4de00",
+    "comment_count": 0,
+    "verification": {
+      "verified": true,
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq+bGwCRC1aQ7uu5UhlAAALgAQAD3H7JMn7Zb32WrANSFtPcAn\nePLqU4FDu1zeTQuKmF64xhE8XBtYEPLPDer1OchxEszhfcTIMc0cuZK4AXgx1e8v\nkhW7mF2wXV91Qdfy26e88OgDLLySp3CLBRS541MdYrox2rGKfWMGotdwxXaCxZt2\nOmUxR3g5l7NBcd+VDgYU753GoS37O4r2+bKEs8dCJavyb/RYFay0WwcweMdDOd+1\nDBtF3fxbwcotbq7dvjueMVY+g5GEMuhxZZNDGAWHj9hcOnamN2dyZD8dOHqi7B+Q\n8GTy+jEwuvn8Xhdn0TByLPYMErE6NrvIZJqPN4gdSwsjTPtP57opUzpShYoZJqeT\nzuKr+hQI9qtloj4lUEtFh1Cz1NdQVbUKvPUK/yjbTF8GsfXOYt4+hIWvdNpuvH2I\nkq62gLyySkz//IJ9URyrIh3Un3hLoMNP4IDtJswYhSEhSsbctVlmbA5rRFfpeHhM\nv+2etOuMrmA3Tc9LxtJVXHXiybPJNjL54o2bpl/L9YTR2Kogb9jZtJ4mu129ExFd\nt/auYe3sHQ2kVjf9JyH2mZhl/Mcp3ULgyLEs/k4+7wbJJJS9psZIMEx+OndfThqJ\n7SREdHYNYKBT2LpJHqfTMmQzD39/BBjD/iKJYEdUMc2GjUPgniKzYtODDrRLuMIK\nQ25x5hPaIMly2c6pzMxZ\n=L+AV\n-----END PGP SIGNATURE-----\n",
+      "payload": "tree e6e7349934b161d62c945ceadb639bb6407140a2\nparent 61cb9b59d6ecca19b385f7d69957e286728ecc77\nauthor Ari <me@ari.io> 1794748832 +0000\ncommitter GitHub <noreply@github.com> 1794748832 +0000\n\nfeat(runtime): retain verified release runtime evidence per launch (#5557)\n\n* feat(plan): sign and audit release runtime identity\n\n* feat(runtime): retain one verified release snapshot per selection\n\n* feat(runtime): thread verified sets through admission and custody\n\n* docs(security): record launch-scoped runtime proof limits\n\n* fix(runtime): preserve legacy fork admission with retained evidence\n\n* refactor(cli): reach runtime evidence through mvm-client\n\nThe check-thin-cli gate requires command code under crates/mvm-cli/src/commands\nto name no crate below mvm-client. The checkpoint fork boot reached\nmvm_runtime::runtime_evidence::verify_release_runtime_set directly, retaining\nlaunch-scoped verified release runtime evidence in a place the host library and\nSDKs cannot reach.\n\nRe-export verify_release_runtime_set (and its VerifiedRuntimeSet result type)\nfrom mvm-client's launch::runtime_source, next to the overlay and initramfs\nattach helpers it completes, and call it from the command through the existing\nmvm_client::launch::runtime_source re-export path. No behavior changes: the\nsame verification runs on the same fully assembled VmStartConfig.\n\n* chore: regenerate the process spawn inventory after the main merge\n\n* chore: satisfy the public-name and footprint gates for verified-runtime siblings\n\ncheck-public-function-names: the nine new f/f_with_verified_* sibling pairs are explained, not narrowed. Every base is pre-existing public API on main and is called from outside its defining scope, and the gate counts pub(crate) as public, so no visibility narrowing can remove a pair without deleting or privatizing shipped API. The _with_verified_* variants thread the launch-verified runtime set through admission and start so retained audit evidence matches what was actually verified; conflating the names would hide the verification boundary. Entries added to EXCEPTIONS with that justification.\n\ncheck-rust-footprint: raise the SLOC ceiling to 991178 and the physical-line ceiling to 1259462, the tree's honest measured totals after this change. The growth reflects the PR's verified-runtime launch-evidence retention work; the ratchet now pins the new totals.",
+      "verified_at": "2026-11-15T13:20:49Z"
+    }
+  },
+  "parents": [
+    {
+      "sha": "61cb9b59d6ecca19b385f7d69957e286728ecc77",
+      "url": "https://api.github.com/repos/tinylabscom/mvm/commits/61cb9b59d6ecca19b385f7d69957e286728ecc77",
+      "html_url": "https://github.com/tinylabscom/mvm/commit/61cb9b59d6ecca19b385f7d69957e286728ecc77"
+    }
+  ],
+  "stats": {
+    "total": 3156,
+    "additions": 2524,
+    "deletions": 632
+  },
+  "files": [
+    {
+      "filename": "crates/mvm-build/src/guest_runtime.rs",
+      "status": "modified",
+      "sha": "9d0fc39334d3308bf65f820308cf43d8bf984219",
+      "additions": 17,
+      "deletions": 2
+    },
+    {
+      "filename": "crates/mvm-build/src/guest_runtime/evidence.rs",
+      "status": "modified",
+      "sha": "a4a08c4bb90aa92d9b49bbf5d464aada5937bc22",
+      "additions": 143,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-build/src/release_signature.rs",
+      "status": "modified",
+      "sha": "d3f7d5ad82a6e8296d4c43f460f402334b13f185",
+      "additions": 74,
+      "deletions": 11
+    },
+    {
+      "filename": "crates/mvm-cli/src/commands/vm/checkpoint.rs",
+      "status": "modified",
+      "sha": "4fadaac3510cd974e08d9b8a44a7d820336fecc4",
+      "additions": 23,
+      "deletions": 7
+    },
+    {
+      "filename": "crates/mvm-cli/src/commands/vm/checkpoint/fork_vm_full.rs",
+      "status": "modified",
+      "sha": "737d4be7e7fa607349bc5eb4031a02d26032690a",
+      "additions": 13,
+      "deletions": 5
+    },
+    {
+      "filename": "crates/mvm-cli/src/commands/vm/exec.rs",
+      "status": "modified",
+      "sha": "ff0a1db0ab04337105be87a30d262fd29704c217",
+      "additions": 9,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-cli/src/commands/vm/up/mod.rs",
+      "status": "modified",
+      "sha": "d67e05ca01adc4b1c72e1ff6dfc7ace55ef62b63",
+      "additions": 8,
+      "deletions": 5
+    },
+    {
+      "filename": "crates/mvm-cli/src/exec.rs",
+      "status": "modified",
+      "sha": "30ae0d1760a28cf87e06f621c93a603241bba1d0",
+      "additions": 26,
+      "deletions": 6
+    },
+    {
+      "filename": "crates/mvm-cli/src/exec/transient.rs",
+      "status": "modified",
+      "sha": "f35c9dc08cc27e2b53d8bd1b1dd3ef43b3098476",
+      "additions": 9,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-client/src/admission/durability.rs",
+      "status": "modified",
+      "sha": "f56431cf4fbbf4f859fe75a4f6e2e7b66a3f4360",
+      "additions": 21,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-client/src/admission/mod.rs",
+      "status": "modified",
+      "sha": "adbe97d1d63e0eafac9da616c063c10c9718a6df",
+      "additions": 73,
+      "deletions": 2
+    },
+    {
+      "filename": "crates/mvm-client/src/boot.rs",
+      "status": "modified",
+      "sha": "132d4d20bacaed53ec1a271514f4a3f3bbfab42c",
+      "additions": 12,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-client/src/checkpoint.rs",
+      "status": "modified",
+      "sha": "6e9a2904a7438aa06c1c369302b1281fadeabdc7",
+      "additions": 4,
+      "deletions": 3
+    },
+    {
+      "filename": "crates/mvm-client/src/entrypoint/admission.rs",
+      "status": "modified",
+      "sha": "2c41c4ce3a8a3b316bd8e6233f70a7b6575a8474",
+      "additions": 13,
+      "deletions": 3
+    },
+    {
+      "filename": "crates/mvm-client/src/entrypoint/boot.rs",
+      "status": "modified",
+      "sha": "9dbea3d08288908207ef7dbe577c18e877e6009c",
+      "additions": 40,
+      "deletions": 8
+    },
+    {
+      "filename": "crates/mvm-client/src/launch/persistent.rs",
+      "status": "modified",
+      "sha": "8d17746655a7b8c06fac9ef07adfa50d1653ea4b",
+      "additions": 108,
+      "deletions": 73
+    },
+    {
+      "filename": "crates/mvm-client/src/launch/runtime_overlay.rs",
+      "status": "modified",
+      "sha": "8e22a9d015119b0ae5632d95dcae1d20430e46b0",
+      "additions": 27,
+      "deletions": 15
+    },
+    {
+      "filename": "crates/mvm-client/src/launch/runtime_source.rs",
+      "status": "modified",
+      "sha": "48b69139ead975873abf722dcd3b3df330bbec9f",
+      "additions": 58,
+      "deletions": 13
+    },
+    {
+      "filename": "crates/mvm-contract/src/plan/execution_plan.rs",
+      "status": "modified",
+      "sha": "a8da765a96c0ba2007f775142b8bd2656d812ab5",
+      "additions": 109,
+      "deletions": 3
+    },
+    {
+      "filename": "crates/mvm-contract/src/plan/mod.rs",
+      "status": "modified",
+      "sha": "7c08504be7c13a90c2093da074a95f581979c5d9",
+      "additions": 4,
+      "deletions": 3
+    },
+    {
+      "filename": "crates/mvm-contract/src/plan/types.rs",
+      "status": "modified",
+      "sha": "d09c8881f80940b7263f3f0c482af9fa7a6797de",
+      "additions": 36,
+      "deletions": 2
+    },
+    {
+      "filename": "crates/mvm-contract/tests/runtime_plan_identity.rs",
+      "status": "added",
+      "sha": "a97b279ad22fce6de0407767acee845c01086ab6",
+      "additions": 16,
+      "deletions": 0
+    },
+    {
+      "filename": "crates/mvm-core/src/plan/mod.rs",
+      "status": "modified",
+      "sha": "7519f6412d3d31a2db45d865918c970aee4802e8",
+      "additions": 4,
+      "deletions": 3
+    },
+    {
+      "filename": "crates/mvm-core/src/plan/signing.rs",
+      "status": "modified",
+      "sha": "7c402dc2ff8988c2d51270f484b44c4d81851971",
+      "additions": 38,
+      "deletions": 0
+    },
+    {
+      "filename": "crates/mvm-core/src/plan/synthesis.rs",
+      "status": "modified",
+      "sha": "aa43bdbb54f942a48d6de151b6d671061200d6d7",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "filename": "crates/mvm-core/src/plan/test_support.rs",
+      "status": "modified",
+      "sha": "ef6c4efd2cedb50b3df984b5e33ce0e27a1c011e",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "filename": "crates/mvm-core/tests/replay_protection.rs",
+      "status": "modified",
+      "sha": "5c161826617226fa43cb4df192fa1f6b53b64cba",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "filename": "crates/mvm-hostd/src/audit/durability.rs",
+      "status": "modified",
+      "sha": "be2f1bd2627002734c9e0e63a9fba4874321e031",
+      "additions": 52,
+      "deletions": 2
+    },
+    {
+      "filename": "crates/mvm-hostd/src/audit/emitter.rs",
+      "status": "modified",
+      "sha": "72bf5a70f75c19b43c1b2a4e6909343487467f30",
+      "additions": 48,
+      "deletions": 32
+    },
+    {
+      "filename": "crates/mvm-hostd/src/audit/emitter/atomic_sync.rs",
+      "status": "modified",
+      "sha": "82298913c502c134542f6c657fb029ea2be4ce98",
+      "additions": 32,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-hostd/src/audit/emitter/decisions.rs",
+      "status": "modified",
+      "sha": "8a98070f5745656f248cde517a89133732bc0bed",
+      "additions": 7,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-hostd/src/audit/emitter/runtime_identity.rs",
+      "status": "added",
+      "sha": "52d1e00dfd17d9bbbd2ec68c51150b36ddfeaefc",
+      "additions": 49,
+      "deletions": 0
+    },
+    {
+      "filename": "crates/mvm-hostd/src/operator_admitted_trial_booter.rs",
+      "status": "modified",
+      "sha": "edd6abecaf71a8c5333719b45b505f4ece12753f",
+      "additions": 1,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-hostd/src/plan_admission.rs",
+      "status": "modified",
+      "sha": "9d13fda5fbeddf145733354c686676230f6dcd69",
+      "additions": 287,
+      "deletions": 206
+    },
+    {
+      "filename": "crates/mvm-hostd/src/plan_admission/assurance_runtime.rs",
+      "status": "modified",
+      "sha": "6ccf1f86e2d83097f7955f26ec6987cb01971f42",
+      "additions": 100,
+      "deletions": 17
+    },
+    {
+      "filename": "crates/mvm-hostd/src/plan_admission/grant_validation.rs",
+      "status": "modified",
+      "sha": "77fd3491ecf25da32a806990f69c4095a28fd390",
+      "additions": 192,
+      "deletions": 2
+    },
+    {
+      "filename": "crates/mvm-hostd/src/run.rs",
+      "status": "modified",
+      "sha": "1af21f785181aaa1c9b22b44357fd232edecbacd",
+      "additions": 90,
+      "deletions": 49
+    },
+    {
+      "filename": "crates/mvm-hostd/src/supervisor/aggregate.rs",
+      "status": "modified",
+      "sha": "da1a2d42e1ed7aec17bf1636972ca0b9a02b4384",
+      "additions": 5,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-hostd/src/supervisor/audit/signer.rs",
+      "status": "modified",
+      "sha": "f35ae96549b45f1f2097c8b963d44fe1ec3747f7",
+      "additions": 1,
+      "deletions": 0
+    },
+    {
+      "filename": "crates/mvm-runtime/src/backend.rs",
+      "status": "modified",
+      "sha": "b2ea17a476bbc58d5cf69ea0e3a9cc1a82152158",
+      "additions": 59,
+      "deletions": 6
+    },
+    {
+      "filename": "crates/mvm-runtime/src/checkpoint/mod.rs",
+      "status": "modified",
+      "sha": "408f7e427169f5b9c4d0e42edce602ebba60c246",
+      "additions": 31,
+      "deletions": 2
+    },
+    {
+      "filename": "crates/mvm-runtime/src/checkpoint/protected_tests.rs",
+      "status": "modified",
+      "sha": "aab9d82fd9161149aa17200cef4ef57bbdec2d46",
+      "additions": 11,
+      "deletions": 1
+    },
+    {
+      "filename": "crates/mvm-runtime/src/checkpoint/runtime_binding.rs",
+      "status": "modified",
+      "sha": "9053c2e86f09c903ad7a0d0c77149f1fe587eace",
+      "additions": 71,
+      "deletions": 9
+    },
+    {
+      "filename": "crates/mvm-runtime/src/legacy_bundle_runtime.rs",
+      "status": "modified",
+      "sha": "6854b42846f31ddfcb56a66b01d0f51c68debc73",
+      "additions": 4,
+      "deletions": 2
+    },
+    {
+      "filename": "crates/mvm-runtime/src/runtime_evidence.rs",
+      "status": "modified",
+      "sha": "d6d75d87b83ce20248a966089c3f437cf0ddf8a0",
+      "additions": 330,
+      "deletions": 37
+    },
+    {
+      "filename": "crates/mvm-runtime/src/universal_initramfs.rs",
+      "status": "modified",
+      "sha": "12f08ec959a2e72de9287f36064cc412100ab93c",
+      "additions": 43,
+      "deletions": 5
+    },
+    {
+      "filename": "crates/mvm-runtime/src/workload_runner/runner.rs",
+      "status": "modified",
+      "sha": "8b13223cea1d3592f9e5be4c115fd9871e15841a",
+      "additions": 8,
+      "deletions": 40
+    },
+    {
+      "filename": "crates/mvm-runtime/src/workload_runner/runner/backend.rs",
+      "status": "modified",
+      "sha": "12871fc4565579c1d49db7274fd4c3a1dd169d69",
+      "additions": 75,
+      "deletions": 5
+    },
+    {
+      "filename": "model/CONFORMANCE.md",
+      "status": "modified",
+      "sha": "cbc5cd49c5f1e48a76766a181e9894fbf556d249",
+      "additions": 2,
+      "deletions": 2
+    },
+    {
+      "filename": "model/claims.toml",
+      "status": "modified",
+      "sha": "aca0e19c94656c0827103a9007b3b112d2e96ba2",
+      "additions": 10,
+      "deletions": 3
+    },
+    {
+      "filename": "specs/adrs/001-microvm-security-posture.md",
+      "status": "modified",
+      "sha": "83d6ac2234ae9634debbe65f9b92d55fedc9d578",
+      "additions": 22,
+      "deletions": 12
+    },
+    {
+      "filename": "specs/adrs/112-verify-the-runtime-release-proof-once-per-launch.md",
+      "status": "modified",
+      "sha": "42382b611ac7398db008ff7042d6d05e97f92144",
+      "additions": 38,
+      "deletions": 20
+    },
+    {
+      "filename": "specs/contracts/process-spawn-inventory.md",
+      "status": "modified",
+      "sha": "79dad41efb15714f3b4536356d6f967d4c1e9ea6",
+      "additions": 4,
+      "deletions": 4
+    },
+    {
+      "filename": "xtask/src/check_public_function_names.rs",
+      "status": "modified",
+      "sha": "69ad0198b2861eab485f669832df4b56ae578c2f",
+      "additions": 60,
+      "deletions": 0
+    },
+    {
+      "filename": "xtask/src/check_rust_footprint.rs",
+      "status": "modified",
+      "sha": "ba2733adaeb5c22d6a8b15b3c685ec1c3cfe5be6",
+      "additions": 4,
+      "deletions": 3
+    }
+  ]
+}

@@ -1,24 +1,48 @@
 # Networking delivery status
 
-The active SDK selects contributor MVM
-[`4031a54d`](https://github.com/Casey-allard/mvm/commit/4031a54d6596cd5a12d572d12357287d97cc1042),
-which carries the existing original-owner implementation onto canonical
-`61cb9b59`. FlowMux now uses Ari's `supervisor/endpoint` module layout while
-retaining the current VM-shared registry, rate, session, terminated-flow and
-leaf-cache owners. Both MVM dependencies select reviewed SpiralCore `8994951b`.
-The journal bridge keeps its explicit canonical `48fa5b48` aliases and original
-byte-identity checks.
+## Delivered current-owner integration
 
-Volume-bearing Unix launches retain the original lock-file type/name checks
-and the canonical five-second production wait. Empty launches keep Ari's
-independent no-volume fast path. Registered-volume fixtures preserve the
-original special-file refusal, contention, timing and no-effects assertions.
-The source adoption preserves signed admission, original resource custody,
-deadlines and codec bytes. TLS peek rechecks the original owner after socket
-progress, preserving local shutdown refusal and independent peer truncation.
-Compatible signed runtime/installed boot, private
-MVMD, supported backend/WAN/capacity acceptance and all five #42 outcomes
-remain open. No final upstream MVM contribution is submitted.
+[PR #298](https://github.com/R4-Laboratories/SpiralCore/pull/298) is merged at
+`aee51549`. The released, reviewed and CI trees are identical. The active SDK
+selects contributor MVM `4031a54d`, based on canonical `61cb9b59`; both MVM core
+dependencies and the installed witness select reviewed SpiralCore `8994951b`.
+The contribution follows Ari's current endpoint/FlowMux module owners while
+retaining the VM-shared registry/rate/session owners, original installed
+reader/store custody, signed admission, canonical bytes and all security checks.
+The journal retains its explicit canonical `48fa5b48` aliases.
+
+Volume-bearing Unix launches preserve original lock-file type/name custody
+under canonical five-second production / 150 ms test waits; empty launches
+retain Ari's independent no-volume fast path. TLS peek rechecks its original
+owner after successful socket progress, preserving shutdown refusal while
+independent pump errors and peer truncation remain unchanged. Original tests,
+assertions and two-second / 240-second guards remain.
+
+All 40 executed CI checks pass; genuine signed export is skipped/NOT_RUN.
+Independent source/security, full-command and native artifact reviews clear
+the exact candidate. The 33 original success ZIPs verify 845 members and 673
+embedded checksums. Seven native rows each pass 89 FlowMux tests and 20 ordered
+controls, reconstructing exactly 64 MiB each direction with 10,790,065 actual
+TLS bytes. Windows ARM records 118.302958 s lifecycle / 98.515625 s process CPU.
+Three native consumer rows retain eight original controls and destruction
+before returned credit. These are native process/component observations.
+
+Full final default-profile MVM workspace tests/doctests, strict Clippy, format,
+all-target and explicit BDD checks pass: 21,792 outer binary executions and 27
+doctest executions, with zero failed and 68/8 ignored. All 4,703 MVM, 485 SDK
+and 17 paired inputs remain unchanged through their final qualification. Full
+test-command wall/user/system CPU is 10:18.06 / 366.94 s / 136.96 s, including
+compilation; direct fixture and journal costs retain separate measured scopes.
+
+Ari's current main `7eb01574` / MVM #5557 adds launch-owned verified release
+runtime evidence; ADR-112 remains Proposed. Carrying its authenticated runtime
+owner through the contribution is the next integration, before #268 signed
+runtime/installed-boot acceptance. Signed RuntimeIdentity metadata alone is
+not proof. Ari's compatible signed publication, private MVMD, complete #258
+physical/original-enforced-runtime/concurrency acceptance, all five #42 outcomes
+and supported backend/WAN/capacity/security gates remain open. No final upstream
+MVM contribution is submitted.
+[Source, costs, original failures, native artifacts and next runtime gate](evidence/2026-11-15-current-owner-integration/README.md).
 
 ## Delivered owned-workspace checkpoint
 
@@ -57,8 +81,8 @@ endpoint/FlowMux ownership, independent owner grants and warm-claim audit
 identity. Merged ADR-057/#5513 and #5292 choose a keyless host scheduler with
 VM-scoped keyholders; Proposed ADR-062/#5544 still needs custody reconciliation
 before daemon cutover. rc.4 runtime/signature-bundle metadata is visible, but
-compatible signed bytes and installed boot are not qualified. Current-owner
-integration is the next implementation boundary. Complete #258 physical,
+compatible signed bytes and installed boot are not qualified. That checkpoint preceded the
+current-owner integration recorded above. Complete #258 physical,
 original-enforced-runtime and concurrency acceptance, all five #42 outcomes,
 private MVMD, supported backend/WAN/capacity and separate security gates remain
 open. No final upstream MVM contribution is submitted.
