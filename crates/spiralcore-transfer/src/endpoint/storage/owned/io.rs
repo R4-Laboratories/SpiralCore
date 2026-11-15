@@ -7,7 +7,7 @@ use std::{
     ffi::OsStr,
     fs::File,
     os::{
-        fd::{AsFd, BorrowedFd},
+        fd::{AsFd, BorrowedFd, OwnedFd},
         unix::ffi::OsStrExt,
     },
 };
@@ -172,7 +172,7 @@ pub(super) fn open_dir(dir: BorrowedFd<'_>, name: &OsStr) -> Result<File> {
     check_named(dir, name, file.as_fd(), FileType::Directory)?;
     Ok(file)
 }
-pub(super) fn iterator(fd: BorrowedFd<'_>) -> Result<fs::Dir> {
+pub(super) fn iterator_fd(fd: BorrowedFd<'_>) -> Result<OwnedFd> {
     private(&held(fd)?, FileType::Directory)?;
     let original = fs::openat(
         fd,
@@ -185,5 +185,5 @@ pub(super) fn iterator(fd: BorrowedFd<'_>) -> Result<fs::Dir> {
         return Err(Error::Storage);
     }
     check_mount(fd, original.as_fd())?;
-    fs::Dir::new(original).map_err(|_| Error::Storage)
+    Ok(original)
 }

@@ -4,28 +4,8 @@ use rustix::fs::{FileType, Mode};
 use std::{
     ffi::OsStr,
     fs::File,
-    os::{
-        fd::{AsFd, BorrowedFd},
-        unix::ffi::OsStrExt,
-    },
+    os::fd::{AsFd, BorrowedFd},
 };
-
-fn entries(
-    fd: BorrowedFd<'_>,
-    remaining: &mut usize,
-    mut visit: impl FnMut(&OsStr) -> Result<()>,
-) -> Result<()> {
-    for entry in io::iterator(fd)? {
-        let entry = entry.map_err(|_| Error::Storage)?;
-        let name = entry.file_name().to_bytes();
-        if name == b"." || name == b".." {
-            continue;
-        }
-        *remaining = remaining.checked_sub(1).ok_or(Error::Limit)?;
-        visit(OsStr::from_bytes(name))?;
-    }
-    io::private(&io::held(fd)?, FileType::Directory)
-}
 
 impl OwnedStoreLease {
     pub(super) fn walk(
@@ -39,21 +19,23 @@ impl OwnedStoreLease {
         self.original()?;
         let root = self.root();
         let mut remaining = self.0.policy.max_entries;
-        // Keep an independent iterator offset for each level, sharing a single visit budget.
-        let mut root_iter = io::iterator(root)?;
-        for entry in &mut root_iter {
-            let entry = entry.map_err(|_| Error::Storage)?;
-            let name = OsStr::from_bytes(entry.file_name().to_bytes());
-            if name == "." || name == ".." {
-                continue;
-            }
+        // Never wait with the claim lock held, and refuse before opening iterator FDs.
+        let mut work = self.0.work.try_lock().map_err(|error| match error {
+            std::sync::TryLockError::WouldBlock => Error::Limit,
+            std::sync::TryLockError::Poisoned(_) => Error::Storage,
+        })?;
+        let super::work::Buffers {
+            root: root_buffer,
+            child: child_buffer,
+        } = &mut *work;
+        root_buffer.scan(root, |name| {
             remaining = remaining.checked_sub(1).ok_or(Error::Limit)?;
             let stat = io::named(root, name)?.ok_or(Error::Storage)?;
             if FileType::from_raw_mode(stat.st_mode) != FileType::Directory {
                 if scope.is_none() {
                     visit(None, root, name)?;
                 }
-                continue;
+                return Ok(());
             }
             let ns = crate::wan::parse_id(name.to_str().ok_or(Error::Storage)?)
                 .map_err(|_| Error::Storage)?;
@@ -62,14 +44,15 @@ impl OwnedStoreLease {
                 visit(None, root, name)?;
             }
             if scope.is_some_and(|selected| selected != ns) {
-                continue;
+                return Ok(());
             }
             let dir = io::open_dir(root, name)?;
-            entries(dir.as_fd(), &mut remaining, |child| {
+            child_buffer.scan(dir.as_fd(), |child| {
+                remaining = remaining.checked_sub(1).ok_or(Error::Limit)?;
                 visit(Some(ns), dir.as_fd(), child)
             })?;
-            io::check_named(root, name, dir.as_fd(), FileType::Directory)?;
-        }
+            io::check_named(root, name, dir.as_fd(), FileType::Directory)
+        })?;
         self.original()?;
         Ok(self.0.policy.max_entries - remaining)
     }
