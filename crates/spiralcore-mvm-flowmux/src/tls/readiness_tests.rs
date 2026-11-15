@@ -77,6 +77,15 @@ fn readiness_one_owner_and_internal_notification_wake_parked_poll() {
 
 thread_local! {
     static ENTER_POLL: std::cell::RefCell<Option<mpsc::Sender<()>>> = const { std::cell::RefCell::new(None) };
+    static ENTER_PEEK_PUMP: std::cell::RefCell<Option<(mpsc::Sender<()>, mpsc::Receiver<()>)>> = const { std::cell::RefCell::new(None) };
+}
+pub(super) fn before_peek_pump() {
+    ENTER_PEEK_PUMP.with(|slot| {
+        if let Some((entered, resume)) = slot.borrow_mut().take() {
+            entered.send(()).unwrap();
+            resume.recv_timeout(Duration::from_secs(1)).unwrap();
+        }
+    });
 }
 pub(super) fn before_poll() {
     ENTER_POLL.with(|slot| {
@@ -211,6 +220,35 @@ fn competing_peek_readers_preserve_exact_bytes_and_shutdown_wakes_wait_entry() {
         control.shutdown(Shutdown::Both).unwrap();
         assert_eq!(waiter.join().unwrap(), io::ErrorKind::BrokenPipe);
     });
+}
+
+#[test]
+fn shutdown_after_session_entry_preserves_original_owner_refusal() {
+    let (mut client, _server) = carriers();
+    let control = client.try_clone().unwrap();
+    let (entered, entry) = mpsc::channel();
+    let (resume, resumed) = mpsc::channel();
+    std::thread::scope(|scope| {
+        let waiter = scope.spawn(move || {
+            ENTER_PEEK_PUMP.with(|slot| *slot.borrow_mut() = Some((entered, resumed)));
+            client.peek(&mut [0]).unwrap_err().kind()
+        });
+        entry.recv_timeout(Duration::from_secs(1)).unwrap();
+        control.shutdown(Shutdown::Both).unwrap();
+        resume.send(()).unwrap();
+        assert_eq!(waiter.join().unwrap(), io::ErrorKind::BrokenPipe);
+    });
+}
+
+#[test]
+fn peer_truncation_preserves_original_tls_eof_without_a_local_stop() {
+    let (mut client, server) = carriers();
+    assert!(!client.shared.stopped.load(Ordering::Acquire));
+    server.shutdown(Shutdown::Both).unwrap();
+    assert_eq!(
+        client.peek(&mut [0]).unwrap_err().kind(),
+        io::ErrorKind::UnexpectedEof
+    );
 }
 
 thread_local! {

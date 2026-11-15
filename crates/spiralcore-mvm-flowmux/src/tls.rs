@@ -718,7 +718,10 @@ impl TlsCarrier {
                     // sleeping so edge readiness cannot strand buffered input.
                     self.shared.readiness.interest(session)?;
                     let before = self.shared.received.load(Ordering::Relaxed);
+                    #[cfg(test)]
+                    readiness_tests::before_peek_pump();
                     pump(session, &self.shared.received, &self.shared.sent)?;
+                    self.shared.check()?;
                     let mut reader = session.tls.reader();
                     match reader.fill_buf() {
                         Ok(available) => {

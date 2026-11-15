@@ -9,7 +9,7 @@ use installed_flowmux_witness::input::{
 use mvm_contract::policy::network_policy::CooperatingPayloadPolicy;
 use mvm_core::plan::{PlanArtifact, SignedExecutionPlan, verify_plan};
 use mvm_core::policy::direct_plan::AdmittedNetworkPlan;
-use mvm_hostd::supervisor::flowmux::{
+use mvm_hostd::supervisor::endpoint::flowmux::{
     PayloadResourceLimits, PayloadResourcePool, PreparedPayloadSession, accept_enrolled_payload,
 };
 use serde::Deserialize;
