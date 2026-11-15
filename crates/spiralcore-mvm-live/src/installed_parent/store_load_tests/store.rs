@@ -49,10 +49,9 @@ pub(super) fn observe(
     .into();
     let names: BTreeSet<_> = fs::read_dir(&directory)?
         .map(|e| {
-            Ok(e?
-                .file_name()
+            e?.file_name()
                 .into_string()
-                .map_err(|_| anyhow!("non-UTF8 store observation"))?)
+                .map_err(|_| anyhow!("non-UTF8 store observation"))
         })
         .collect::<Result<_>>()?;
     ensure!(
@@ -81,10 +80,9 @@ pub(super) fn observe(
         .collect();
     let names: BTreeSet<_> = fs::read_dir(&lane)?
         .map(|e| {
-            Ok(e?
-                .file_name()
+            e?.file_name()
                 .into_string()
-                .map_err(|_| anyhow!("non-UTF8 publication"))?)
+                .map_err(|_| anyhow!("non-UTF8 publication"))
         })
         .collect::<Result<_>>()?;
     ensure!(

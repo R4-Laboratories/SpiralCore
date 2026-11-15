@@ -421,7 +421,6 @@ fn run() -> Result<()> {
         after_cleanup.usage.staging_disk_bytes
             == charged.usage.staging_disk_bytes - partition().staging_disk_bytes
     );
-    drop(original);
     registration.shutdown()?;
     let after = pool.snapshot()?;
     ensure!(

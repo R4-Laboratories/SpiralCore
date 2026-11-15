@@ -91,10 +91,10 @@ pub(super) fn children_cpu_ns() -> Result<u128> {
     // SAFETY: the successful syscall initialized every rusage field.
     let usage = unsafe { usage.assume_init() };
     let ns = |v: libc::timeval| -> Result<u128> {
-        Ok(u128::try_from(v.tv_sec)?
+        u128::try_from(v.tv_sec)?
             .checked_mul(1_000_000_000)
             .and_then(|s| s.checked_add(u128::try_from(v.tv_usec).ok()?.checked_mul(1000)?))
-            .context("child CPU overflow")?)
+            .context("child CPU overflow")
     };
     ns(usage.ru_utime)?
         .checked_add(ns(usage.ru_stime)?)
