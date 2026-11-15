@@ -1,0 +1,17 @@
+# Focused source and evidence review
+
+No outstanding actionable source, security or evidence findings remain for candidate `084b1c8c32b8bf5678b678596838a0229d781b11`. Independent review recommended the bounded PR #287 merge after all 27 executed checks passed and manual genuine-export was skipped. The candidate, CI merge and released trees equal `fe030e73d1971d2baea9d3733cd7c7d2f1aed5a1`.
+
+The scope is the allocation witness, its test-only allocator and CI guards, plus their raw qualification packet. Runtime product code and existing MVM consumer pins remain unchanged. The review is advisory and does not close #258 or the complete five-part MVM delivery goal.
+
+The allocator forwards pointer/layout ownership unchanged to System, preserves old allocation accounting after failed reallocations, and conservatively counts old/new bytes together. Review corrected potential checked-arithmetic unwinding: overflow/underflow now invalidates the observation without unwinding in the callbacks. All workers join before that flag is checked and a measurement accepted. The fixed stack buffer for executable hashing is outside the timed workload; post-fixture hashing and JSON preparation occur after the clocks stop.
+
+Preservation checks cover all publication, recovery-stage, profile-marker and overflow bytes, the original held/named owner identity, and the unchanged 102-entry count on refusal. Successful recovery leaves 68 entries after removing 33 stage files; all 64 publications read back exactly. Content retirement retains the original writer lock until lease drop. All phase coordination has a finite timeout and both original threads are collected.
+
+Independent verification reran the native artifact parser against all seven original ZIPs. Their outer API digests/sizes, 170 safe unique member hashes and 163 embedded checksums verify. The four Unix allocation rows match raw single-test logs, current witness/helper hashes, unchanged executable hashes and all required fixture/measurement guards. Windows archives have no allocation row.
+
+All 166 current Wick source/fixture hashes match all four complete before/after check sets. External executable hashes match the final self-reported digest. Focused 5/1/1 scopes, 18 owned primitives, strict all-target/all-feature Clippy and the final direct command have matching raw successes and exit zero. All 46 safe unique Wick archive members match reviewed files; SHA-256 is `685f114c689e9d23f86468bc3815fc2fe3fff2b609bf0e25d9a09a5f0277202d`.
+
+The reviewer examined source and original artifacts and reran verification; this is not an independent platform rebuild. Retained API CI receipts record 27 SUCCESS/one SKIPPED and the expected merge parents/tree. No product-code, authority, codec or deadline change appears in the reviewed scope.
+
+Claim limits are essential: the 18,681,720-byte comparison is a modeled two-component quote, not an original-parent permit or hard memory bound. Requested Rust heap includes fixture/startup data and excludes libc allocation, allocator overhead, native stacks and RSS. Concurrent store lifetimes do not prove deterministic simultaneous iterator peaks. Encoded frame counts are not network traffic. Worker wall sums can overlap. No booted MVM, WAN, fleet, Windows MVM hosting, energy or FIPS/CUI result is established. Full #258 memory/iterator/concurrency acceptance and all five #42 outcomes remain open.
