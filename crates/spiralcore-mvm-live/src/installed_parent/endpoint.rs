@@ -17,7 +17,7 @@ struct StoreFunding {
 impl StoreFunding {
     fn for_serial_endpoint() -> Result<Self> {
         let quote =
-            mvm_hostd::supervisor::flowmux::SpiralCorePayloadFactory::owned_store_requirements()?;
+            mvm_hostd::supervisor::endpoint::flowmux::SpiralCorePayloadFactory::owned_store_requirements()?;
         // One shared parent and one active store in the installed serial profile.
         let file_descriptors = u64::from(quote.shared_parent_fds) + u64::from(quote.fds_per_store);
         let codec_bytes = spiralcore_transfer::resource_profile::ResourceProfile::SmallV1

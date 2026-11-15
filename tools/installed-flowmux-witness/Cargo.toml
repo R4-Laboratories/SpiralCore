@@ -44,9 +44,9 @@ anyhow = { version = "1", optional = true }
 chrono = { version = "0.4", optional = true }
 ed25519-dalek = { version = "3", features = ["pkcs8"], optional = true }
 hex = { version = "0.4", optional = true }
-mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "04a5e3e06f4fc48bc2c122518c42605b8032aa32", default-features = false, features = ["protocol"], optional = true }
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "04a5e3e06f4fc48bc2c122518c42605b8032aa32", default-features = false, features = ["host-state","manifest-verify"], optional = true }
-mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "04a5e3e06f4fc48bc2c122518c42605b8032aa32", default-features = false, optional = true }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "d338f528601e247bc1e798bfa860213e9f8db865", default-features = false, features = ["protocol"], optional = true }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "d338f528601e247bc1e798bfa860213e9f8db865", default-features = false, features = ["host-state","manifest-verify"], optional = true }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "d338f528601e247bc1e798bfa860213e9f8db865", default-features = false, optional = true }
 rustix = { version = "1", features = ["fs","event","process"], optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
@@ -79,5 +79,5 @@ opt-level = 3
 
 # The MVM workspace supplies these fixes for its Git object reader.
 [patch.crates-io]
-gix = { git = "https://github.com/Casey-allard/mvm", rev = "04a5e3e06f4fc48bc2c122518c42605b8032aa32" }
-gix-object = { git = "https://github.com/Casey-allard/mvm", rev = "04a5e3e06f4fc48bc2c122518c42605b8032aa32" }
+gix = { git = "https://github.com/Casey-allard/mvm", rev = "d338f528601e247bc1e798bfa860213e9f8db865" }
+gix-object = { git = "https://github.com/Casey-allard/mvm", rev = "d338f528601e247bc1e798bfa860213e9f8db865" }

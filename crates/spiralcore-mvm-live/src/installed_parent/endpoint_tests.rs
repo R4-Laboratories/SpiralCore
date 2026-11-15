@@ -243,7 +243,7 @@ fn store_guard_requires_original_codec_workspace_and_descriptor_debit() {
 fn probe_original_store_funding() {
     use mvm_core::host_lifetime::EndpointPartitionGuard;
     let quote =
-        mvm_hostd::supervisor::flowmux::SpiralCorePayloadFactory::owned_store_requirements()
+        mvm_hostd::supervisor::endpoint::flowmux::SpiralCorePayloadFactory::owned_store_requirements()
             .unwrap();
     let codec = spiralcore_transfer::resource_profile::ResourceProfile::SmallV1
         .operation_charge()

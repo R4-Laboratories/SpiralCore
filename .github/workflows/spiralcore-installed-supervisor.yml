@@ -257,14 +257,14 @@ jobs:
           shasum -a 256 "$executable" > "$evidence/executable-before.sha256"
           "$executable" --list --format terse > "$evidence/test-list.txt"
           tests=(
-            supervisor::flowmux::owned_relays::custody_tests::close_between_core_creation_and_attach_retains_original_reader_until_join
-            supervisor::flowmux::owned_relays::custody_tests::poison_between_core_creation_and_attach_retains_original_reader_without_drain
-            supervisor::flowmux::spiralcore_payload::resource_pool_tests::replaced_installed_store_quarantines_original_locked_owner_after_endpoint_drop
-            supervisor::flowmux::spiralcore_payload::resource_pool_tests::partial_installed_store_retains_original_parent_name_and_debit
-            supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_workspace_is_charged_before_visits_are_available
-            supervisor::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge
-            supervisor::flowmux::spiralcore_payload::resource_pool_tests::installed_store_destruction_precedes_returned_credit
-            supervisor::flowmux::spiralcore_payload::resource_pool_tests::poisoned_store_ledger_retains_original_buffers_lock_and_debit
+            supervisor::endpoint::flowmux::owned_relays::custody_tests::close_between_core_creation_and_attach_retains_original_reader_until_join
+            supervisor::endpoint::flowmux::owned_relays::custody_tests::poison_between_core_creation_and_attach_retains_original_reader_without_drain
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::replaced_installed_store_quarantines_original_locked_owner_after_endpoint_drop
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::partial_installed_store_retains_original_parent_name_and_debit
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::installed_store_workspace_is_charged_before_visits_are_available
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::store_cleanup_releases_only_exact_owned_identity_and_retains_failed_charge
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::installed_store_destruction_precedes_returned_credit
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::poisoned_store_ledger_retains_original_buffers_lock_and_debit
           )
           index=0
           for test in "${tests[@]}"; do

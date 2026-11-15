@@ -1,5 +1,25 @@
 # Networking delivery status
 
+The active SDK selects contributor MVM
+[`d338f528`](https://github.com/Casey-allard/mvm/commit/d338f528601e247bc1e798bfa860213e9f8db865),
+which carries the existing original-owner implementation onto canonical
+`61cb9b59`. FlowMux now uses Ari's `supervisor/endpoint` module layout while
+retaining the current VM-shared registry, rate, session, terminated-flow and
+leaf-cache owners. Both MVM dependencies retain reviewed SpiralCore `86497e88`.
+The journal bridge keeps its explicit canonical `48fa5b48` aliases and original
+byte-identity checks.
+
+Volume-bearing Unix launches retain the original lock-file type/name checks
+and the canonical five-second production wait. Empty launches keep Ari's
+independent no-volume fast path. Registered-volume fixtures preserve the
+original special-file refusal, contention, timing and no-effects assertions.
+The source adoption preserves signed admission, original resource custody,
+deadlines and codec bytes. Compatible signed runtime/installed boot, private
+MVMD, supported backend/WAN/capacity acceptance and all five #42 outcomes
+remain open. No final upstream MVM contribution is submitted.
+
+## Delivered owned-workspace checkpoint
+
 Owned filesystem workspace funding is merged through
 [PR #296](https://github.com/R4-Laboratories/SpiralCore/pull/296) at `a0b9b32e`.
 The core now quotes Store/Arc, index/scan, names and platform synchronization
