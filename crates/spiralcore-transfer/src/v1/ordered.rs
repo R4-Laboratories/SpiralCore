@@ -3,11 +3,11 @@ use super::ObjectEndpoint;
 use crate::{
     endpoint::{Authority, Context, OrderedEviction},
     hash,
+    metadata_work::{CacheIndex, CacheRecord as Record, Evictions},
     protocol::{Frame, Offer},
     resource_profile::SMALL_TARGET,
     Error, Id, Result,
 };
-use std::collections::BTreeMap;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OrderedLane {
     Application,
@@ -71,13 +71,6 @@ struct Current {
     offer: Offer,
     complete: bool,
 }
-#[derive(Clone, Copy)]
-struct Record {
-    len: u64,
-    disk: u64,
-    age: u64,
-    pinned: bool,
-}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct OrderedSnapshot {
     pub attempts: usize,
@@ -91,7 +84,7 @@ pub struct OrderedObjectEndpoint<A: Authority> {
     inner: ObjectEndpoint<A>,
     binding: OrderedBinding,
     lanes: [Option<Current>; 2],
-    cache: BTreeMap<Id, Record>,
+    cache: CacheIndex,
     age: u64,
     evictions: u64,
     fenced: bool,
@@ -113,17 +106,20 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         if inner.inner.ordered_attempt_count(context)? != 0 {
             return Err(Error::Sequence);
         }
-        let records = inner.inner.ordered_cache_scan(context)?;
+        let mut workspace = inner.inner.ordered_workspace()?;
+        inner
+            .inner
+            .ordered_cache_scan(context, &mut workspace.scan)?;
         let mut endpoint = Self {
             inner,
             binding,
             lanes: [None, None],
-            cache: BTreeMap::new(),
+            cache: workspace.cache,
             age: 0,
             evictions: 0,
             fenced: false,
         };
-        for (id, len, disk) in records {
+        for (id, len, disk) in workspace.scan {
             endpoint.record(id, len, disk, false)?;
         }
         endpoint.check_cache_bound()?;
@@ -167,7 +163,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
                 age,
                 pinned,
             },
-        );
+        )?;
         self.check_cache_bound()
     }
     fn verify_cached(&mut self, c: &Context, id: Id) -> Result<()> {
@@ -185,41 +181,36 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         self.cache.get_mut(&id).ok_or(Error::Storage)?.age = age;
         Ok(())
     }
-    fn plan_space(&mut self, c: &Context, offer: &Offer) -> Result<Vec<OrderedEviction>> {
+    fn plan_space(&mut self, c: &Context, offer: &Offer) -> Result<Evictions> {
         if let Some(known) = self.cache.get(&offer.object) {
             if known.len != offer.len {
                 return Err(Error::Integrity);
             }
             self.verify_cached(c, offer.object)?;
-            return Ok(Vec::new());
+            return Ok(Evictions::default());
         }
         let mut protected = self.inner.inner.ordered_active_objects(c)?;
         for current in self.lanes.iter().flatten() {
-            protected.insert(current.offer.object);
+            protected.insert(current.offer.object)?;
         }
         if let Some(base) = offer.base {
             self.verify_cached(c, base)?;
-            protected.insert(base);
+            protected.insert(base)?;
         }
         let pending = offer.len.checked_add(81).ok_or(Error::Limit)?;
         let (count, namespace, all) = self.inner.inner.ordered_bounds()?;
         let capacity = namespace.min(all);
         let mut bytes = self.bytes()?.checked_add(pending).ok_or(Error::Limit)?;
         let mut publications = self.cache.len().checked_add(1).ok_or(Error::Limit)?;
-        let mut victims = Vec::new();
+        let mut victims = Evictions::default();
         if publications > count || bytes > capacity {
-            let mut candidates: Vec<_> = self
-                .cache
-                .iter()
-                .filter(|(id, record)| !record.pinned && !protected.contains(*id))
-                .collect();
-            candidates.sort_by_key(|(id, record)| (record.age, **id));
-            for (&id, record) in candidates {
+            let candidates = self.cache.candidates(&protected)?;
+            for (id, record) in candidates.iter() {
                 victims.push(OrderedEviction {
-                    id,
+                    id: *id,
                     len: record.len,
                     disk: record.disk,
-                });
+                })?;
                 publications -= 1;
                 bytes -= record.disk;
                 if publications <= count && bytes <= capacity {
@@ -277,7 +268,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         if fresh && (!start || frame.seq != 0) {
             return Err(Error::Sequence);
         }
-        let mut evictions = Vec::new();
+        let mut evictions = Evictions::default();
         let offer = if start {
             let body = if frame.kind == 4 {
                 frame.body.get(32..).ok_or(Error::Malformed)?
@@ -316,19 +307,20 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
             .evictions
             .checked_add(evictions.len() as u64)
             .ok_or(Error::Limit)?;
-        let reply = match self
-            .inner
-            .inner
-            .handle_with_evictions(c, frame, now, &evictions)
-        {
-            Ok(reply) => reply,
-            Err(error) => {
-                if error == Error::Storage {
-                    self.fenced = true;
+        let reply =
+            match self
+                .inner
+                .inner
+                .handle_with_evictions(c, frame, now, evictions.as_slice())
+            {
+                Ok(reply) => reply,
+                Err(error) => {
+                    if error == Error::Storage {
+                        self.fenced = true;
+                    }
+                    return Err(error);
                 }
-                return Err(error);
-            }
-        };
+            };
         if fresh && !matches!(reply.kind, 101 | 103) {
             self.fenced = true;
             return Err(Error::Integrity);
@@ -338,7 +330,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
                 self.fenced = true;
                 return Err(Error::Integrity);
             }
-            for victim in evictions {
+            for victim in evictions.as_slice() {
                 self.cache.remove(&victim.id);
             }
             self.evictions = eviction_count;

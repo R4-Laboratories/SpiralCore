@@ -13,9 +13,19 @@ static INVALID: AtomicBool = AtomicBool::new(false);
 static WINDOW: AtomicBool = AtomicBool::new(false);
 static WINDOW_LARGEST: AtomicUsize = AtomicUsize::new(0);
 static WINDOW_REQUESTED: AtomicUsize = AtomicUsize::new(0);
+static WINDOW_PEAK: AtomicUsize = AtomicUsize::new(0);
+static WINDOW_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 fn request(bytes: usize) {
-    if WINDOW.load(Ordering::SeqCst) {
+    let in_window = WINDOW.load(Ordering::SeqCst);
+    if in_window {
+        if WINDOW_COUNT
+            .fetch_add(1, Ordering::SeqCst)
+            .checked_add(1)
+            .is_none()
+        {
+            INVALID.store(true, Ordering::SeqCst);
+        }
         WINDOW_LARGEST.fetch_max(bytes, Ordering::SeqCst);
         if WINDOW_REQUESTED
             .fetch_add(bytes, Ordering::SeqCst)
@@ -32,6 +42,9 @@ fn request(bytes: usize) {
         INVALID.store(true, Ordering::SeqCst);
     }
     PEAK.fetch_max(current, Ordering::SeqCst);
+    if in_window {
+        WINDOW_PEAK.fetch_max(current, Ordering::SeqCst);
+    }
     if REQUESTED
         .fetch_add(bytes, Ordering::SeqCst)
         .checked_add(bytes)
@@ -103,9 +116,27 @@ pub fn valid() -> bool {
 /// One coordinator owns the window and joins participating workers before return;
 /// every process request while open is included, including fixture overhead.
 pub fn measure_requests<R>(run: impl FnOnce() -> R) -> (R, usize, usize) {
+    let (result, window) = measure_heap(run);
+    (result, window.largest, window.cumulative)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct HeapWindow {
+    pub count: usize,
+    pub largest: usize,
+    pub cumulative: usize,
+    pub live_before: usize,
+    pub peak_live: usize,
+    pub live_after: usize,
+}
+
+pub fn measure_heap<R>(run: impl FnOnce() -> R) -> (R, HeapWindow) {
     assert!(!WINDOW.load(Ordering::SeqCst), "nested allocation window");
+    let before = LIVE.load(Ordering::SeqCst);
     WINDOW_LARGEST.store(0, Ordering::SeqCst);
     WINDOW_REQUESTED.store(0, Ordering::SeqCst);
+    WINDOW_PEAK.store(before, Ordering::SeqCst);
+    WINDOW_COUNT.store(0, Ordering::SeqCst);
     assert!(!WINDOW.swap(true, Ordering::SeqCst));
     struct Close;
     impl Drop for Close {
@@ -118,7 +149,13 @@ pub fn measure_requests<R>(run: impl FnOnce() -> R) -> (R, usize, usize) {
     drop(close);
     (
         result,
-        WINDOW_LARGEST.load(Ordering::SeqCst),
-        WINDOW_REQUESTED.load(Ordering::SeqCst),
+        HeapWindow {
+            count: WINDOW_COUNT.load(Ordering::SeqCst),
+            largest: WINDOW_LARGEST.load(Ordering::SeqCst),
+            cumulative: WINDOW_REQUESTED.load(Ordering::SeqCst),
+            live_before: before,
+            peak_live: WINDOW_PEAK.load(Ordering::SeqCst),
+            live_after: LIVE.load(Ordering::SeqCst),
+        },
     )
 }

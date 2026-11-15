@@ -164,37 +164,63 @@ jobs:
           & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-directory-macos/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/directory-clippy.txt
           if ($LASTEXITCODE -ne 0) { throw 'Directory helper Clippy failed' }
           if (git status --porcelain -- crates/spiralcore-directory-macos/Cargo.lock) { throw 'Directory lockfile changed' }
-      - name: Execute native Unix owned-store guards
-        if: runner.os == 'Linux' || runner.os == 'macOS'
+      - name: Execute bounded metadata and layout-model guards
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $false
-          $primitiveCount = if ($env:RUNNER_OS -eq 'Linux') { 21 } else { 20 }
           $scopes = @(
-            @{ Name = 'owned-primitives'; Selector = @('--lib', 'endpoint::storage::owned::tests::'); Expected = $primitiveCount },
-            @{ Name = 'directory-work'; Selector = @('--lib', 'endpoint::storage::owned::work::'); Expected = 2 },
-            @{ Name = 'owned-store'; Selector = @('--test', 'owned_store'); Expected = 5 },
-            @{ Name = 'owned-resources'; Selector = @('--test', 'owned_store_resources'); Expected = 1 },
-            @{ Name = 'owned-allocation'; Selector = @('--test', 'owned_store_allocation'); Expected = 1 },
-            @{ Name = 'owned-verification'; Selector = @('--test', 'owned_verification_workspace'); Expected = 1 }
+            @{ Name = 'bounded-metadata'; Selector = @('--lib', 'metadata_work::tests::'); Expected = 4 },
+            @{ Name = 'workspace-layout'; Selector = @('--test', 'owned_workspace_layout'); Expected = 1 }
           )
           foreach ($scope in $scopes) {
             $name = $scope.Name
             $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
               'crates/spiralcore-transfer/Cargo.toml') + $scope.Selector
-            if ($name -eq 'owned-verification') {
-              $build = (& cargo @cargoArgs --no-run --message-format=json 2> flowmux-evidence/owned-verification-build.stderr)
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "flowmux-evidence/$name-list.txt"
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($code -ne 0 -or $listed -ne $scope.Expected) { throw "Expected $($scope.Expected) $name tests, listed $listed" }
+            $log = (& cargo @cargoArgs -- --show-output --test-threads=1 --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "flowmux-evidence/$name-tests.txt"
+            if ($code -ne 0 -or $log -notmatch "test result: ok\. $($scope.Expected) passed; 0 failed; 0 ignored; 0 measured;") { throw "Incomplete $name guards" }
+          }
+      - name: Execute native Unix owned-store guards
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $primitiveCount = if ($env:RUNNER_OS -eq 'Linux') { 24 } else { 23 }
+          $componentCount = if ($env:RUNNER_OS -eq 'Linux') { 2 } else { 3 }
+          $scopes = @(
+            @{ Name = 'owned-primitives'; Selector = @('--lib', 'endpoint::storage::owned::tests::'); Expected = $primitiveCount },
+            @{ Name = 'directory-work'; Selector = @('--lib', 'endpoint::storage::owned::work::'); Expected = 2 },
+            @{ Name = 'bounded-components'; Selector = @('--lib', 'endpoint::storage::owned::component::tests::'); Expected = $componentCount },
+            @{ Name = 'owned-store'; Selector = @('--test', 'owned_store'); Expected = 5 },
+            @{ Name = 'owned-resources'; Selector = @('--test', 'owned_store_resources'); Expected = 1 },
+            @{ Name = 'owned-allocation'; Selector = @('--test', 'owned_store_allocation'); Expected = 1 },
+            @{ Name = 'owned-verification'; Selector = @('--test', 'owned_verification_workspace'); Expected = 1 },
+            @{ Name = 'owned-workspace'; Selector = @('--test', 'owned_workspace_contract'); Expected = 3 }
+          )
+          foreach ($scope in $scopes) {
+            $name = $scope.Name
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+              'crates/spiralcore-transfer/Cargo.toml') + $scope.Selector
+            if ($name -in @('owned-verification', 'owned-workspace')) {
+              $build = (& cargo @cargoArgs --no-run --message-format=json 2> "flowmux-evidence/$name-build.stderr")
               $buildCode = $LASTEXITCODE
-              $build | Set-Content flowmux-evidence/owned-verification-build.jsonl
+              $build | Set-Content "flowmux-evidence/$name-build.jsonl"
               if ($buildCode -ne 0) {
-                Get-Content flowmux-evidence/owned-verification-build.stderr | Write-Output
+                Get-Content "flowmux-evidence/$name-build.stderr" | Write-Output
                 $build | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.reason -eq 'compiler-message' } | ForEach-Object { $_.message.rendered | Write-Output }
-                throw 'Owned verification build failed; see retained compiler output'
+                throw "$name build failed; see retained compiler output"
               }
+              $target = if ($name -eq 'owned-verification') { 'owned_verification_workspace' } else { 'owned_workspace_contract' }
               $artifacts = @($build | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object {
-                $_.reason -eq 'compiler-artifact' -and $_.executable -and $_.profile.test -and $_.target.name -eq 'owned_verification_workspace'
+                $_.reason -eq 'compiler-artifact' -and $_.executable -and $_.profile.test -and $_.target.name -eq $target
               })
-              if ($artifacts.Count -ne 1) { throw 'Expected one owned verification executable' }
+              if ($artifacts.Count -ne 1) { throw "Expected one $name executable" }
               $executable = $artifacts[0].executable
               $executableBefore = (Get-FileHash $executable -Algorithm SHA256).Hash.ToLowerInvariant()
               $listing = (& $executable --list --format terse 2>&1 | Out-String)
@@ -207,6 +233,8 @@ jobs:
             if ($code -ne 0 -or $listed -ne $scope.Expected) { throw "Expected $($scope.Expected) $name tests, listed $listed" }
             if ($name -eq 'owned-verification') {
               $log = (& $executable --exact maximal_store_retirement_does_not_allocate_a_publication_body --show-output --test-threads=1 --color never 2>&1 | Out-String)
+            } elseif ($name -eq 'owned-workspace') {
+              $log = (& $executable --show-output --test-threads=1 --color never 2>&1 | Out-String)
             } else {
               $log = (& cargo @cargoArgs -- --show-output --color never 2>&1 | Out-String)
             }
@@ -216,7 +244,7 @@ jobs:
             if ($code -ne 0 -or $summaries.Count -ne 1) { throw "Failed $name tests; see $name-tests.txt" }
             $g = $summaries[0].Groups
             if ([int]$g[1].Value -ne $scope.Expected -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw "Incomplete $name test execution" }
-            if ($name -notin @('owned-primitives', 'directory-work') -and [int]$g[5].Value -ne 0) { throw "Filtered integration tests in $name" }
+            if ($name -notin @('owned-primitives', 'directory-work', 'bounded-components') -and [int]$g[5].Value -ne 0) { throw "Filtered integration tests in $name" }
             if ($name -eq 'owned-allocation') {
               $rows = [regex]::Matches($log, '(?m)^OWNED_ALLOCATION (.+)\r?$')
               if ($rows.Count -ne 1) { throw 'Missing isolated owned-allocation measurement' }
@@ -252,6 +280,39 @@ jobs:
                 allocator_source_sha256 = (Get-FileHash crates/spiralcore-transfer/tests/support/requested_allocations.rs -Algorithm SHA256).Hash.ToLowerInvariant();
                 scope = 'filesystem-only private cache fixture; no network, MVM, RSS or allocator-overhead bound'
               } | ConvertTo-Json | Set-Content flowmux-evidence/owned-verification-identity.json
+            }
+            if ($name -eq 'owned-workspace') {
+              $rows = [regex]::Matches($log, '(?m)^OWNED_WORKSPACE (.+)\r?$')
+              if ($rows.Count -ne 1) { throw 'Missing isolated workspace measurement' }
+              $row = $rows[0].Groups[1].Value | ConvertFrom-Json
+              $executableAfter = (Get-FileHash $executable -Algorithm SHA256).Hash.ToLowerInvariant()
+              if ($executableBefore -ne $executableAfter) { throw 'Workspace executable changed' }
+              if ($row.stores -ne 2 -or $row.actual_stack_bytes -ne 2097152 -or @($row.cases).Count -ne 2) { throw 'Incomplete workspace cases/stack receipt' }
+              $expectedAllocations = if ($env:RUNNER_OS -eq 'Linux') { 5 } else { 8 }
+              $expectedLongName = if ($env:RUNNER_OS -eq 'Linux') { 255 } else { 384 }
+              if ($row.cases[0].component_bytes -ne 5 -or $row.cases[1].component_bytes -ne $expectedLongName) { throw 'Missing maximal/long component witness' }
+              foreach ($case in $row.cases) {
+                if ($case.publications -ne 64 -or $case.body_bytes_each -ne 1 -or $case.initial_entries -ne 101 -or
+                    $case.post_recovery_entries -ne 68 -or $case.setup_readback_bytes -ne 3200 -or
+                    $case.post_eviction_readback_bytes -ne 3100 -or $case.evictions -ne 2 -or
+                    $case.request_frame_bytes -ne 236 -or $case.reply_frame_bytes -ne 154 -or
+                    $case.required_heap_bytes -le 32768 -or $case.required_heap_bytes -gt 1048576 -or
+                    $case.required_existing_stack_bytes -ne 2097152 -or $case.original_owner_memory_enforcement_required -ne $true -or
+                    $case.capture_heap.allocation_requests -ne $expectedAllocations -or
+                    $case.capture_heap.cumulative_requested -gt $case.required_heap_bytes -or
+                    $case.recovery_heap.cumulative_requested -ne 0 -or $case.index_heap.largest_requested -gt 2 -or
+                    $case.index_heap.cumulative_requested -gt 128 -or $case.retirement_heap.cumulative_requested -ne 0 -or
+                    $case.lease_release_heap.cumulative_requested -ne 0 -or $case.lifecycle_wall_ns -le 0 -or
+                    $case.lifecycle_process_cpu_ns -lt 0 -or $null -ne $case.network_bytes -or $null -ne $case.sender_cpu_ns) { throw 'Incomplete workspace/readback/accounting controls' }
+              }
+              $row | ConvertTo-Json -Depth 8 | Set-Content flowmux-evidence/owned-workspace.json
+              @{ executable_sha256_before = $executableBefore; executable_sha256_after = $executableAfter;
+                witness_source_sha256 = (Get-FileHash crates/spiralcore-transfer/tests/owned_workspace_contract.rs -Algorithm SHA256).Hash.ToLowerInvariant();
+                allocator_source_sha256 = (Get-FileHash crates/spiralcore-transfer/tests/support/requested_allocations.rs -Algorithm SHA256).Hash.ToLowerInvariant();
+                stack_observer_source_sha256 = (Get-FileHash crates/spiralcore-transfer/tests/support/native_stack.rs -Algorithm SHA256).Hash.ToLowerInvariant();
+                layout_model_source_sha256 = (Get-FileHash crates/spiralcore-transfer/build_support/owned_workspace_layout.rs -Algorithm SHA256).Hash.ToLowerInvariant();
+                scope = 'filesystem component requested-layout and actual current-worker stack; original owner enforcement and MVM adoption remain gates'
+              } | ConvertTo-Json | Set-Content flowmux-evidence/owned-workspace-identity.json
             }
           }
           $lockChanges = git status --porcelain -- crates/spiralcore-transfer/Cargo.lock

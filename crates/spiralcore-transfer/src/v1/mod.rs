@@ -1,7 +1,10 @@
 //! Transport-neutral object-v1 contract. Capabilities require authenticated
 //! carrier binding or explicit trusted pinning; they grant no authority.
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-pub use crate::endpoint::{OwnedLaneNamespaces, OwnedStoreLease, OwnedStorePolicy};
+pub use crate::endpoint::{
+    OwnedLaneNamespaces, OwnedStoreLease, OwnedStorePolicy, OwnedWorkspaceFunding,
+    OwnedWorkspaceRequirements,
+};
 use crate::{
     endpoint::{
         Authority, CodecCacheStats, ColdGraphPolicy, Context, Endpoint, GraphCacheStats, Limits,

@@ -83,6 +83,10 @@ impl Store {
                     self.context.namespace().unwrap(),
                     self.other.namespace().unwrap(),
                 ),
+                spiralcore_transfer::v1::OwnedWorkspaceFunding {
+                    heap_bytes: 1 << 20,
+                    existing_stack_bytes: 2 << 20,
+                },
             )
             .unwrap(),
         )

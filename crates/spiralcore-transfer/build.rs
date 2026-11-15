@@ -1,7 +1,42 @@
 #[path = "build_support/zstd_probe_guard.rs"]
 mod guard;
+#[path = "build_support/owned_workspace_layout.rs"]
+mod owned_layout;
+
+fn owned_workspace_layout() {
+    println!("cargo:rerun-if-env-changed=RUSTC");
+    println!("cargo:rerun-if-env-changed=TARGET");
+    let qualified = (|| {
+        let rustc = std::env::var_os("RUSTC")?;
+        let output = std::process::Command::new(rustc)
+            .args(["--version", "--verbose"])
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        let version = std::str::from_utf8(&output.stdout).ok()?;
+        let value = |prefix: &str| version.lines().find_map(|line| line.strip_prefix(prefix));
+        let target = std::env::var("TARGET").ok()?;
+        Some(owned_layout::qualified(
+            value("release: ")?,
+            value("commit-hash: ")?,
+            &target,
+        ))
+    })()
+    .unwrap_or(false);
+    println!(
+        "cargo:rustc-env=SPIRALCORE_OWNED_STD_LAYOUT={}",
+        if qualified {
+            "qualified-v1"
+        } else {
+            "unsupported"
+        }
+    );
+}
 
 fn main() {
+    owned_workspace_layout();
     println!("cargo:rustc-check-cfg=cfg(spiralcore_bundled_zstd_probe)");
     println!("cargo:rerun-if-env-changed=DEP_ZSTD_INCLUDE");
     for key in [

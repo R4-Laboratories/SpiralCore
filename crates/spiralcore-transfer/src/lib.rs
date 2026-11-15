@@ -21,6 +21,7 @@ pub mod dag;
 pub mod delta;
 pub mod endpoint;
 mod fitted_transfer;
+mod metadata_work;
 pub mod prepared;
 pub mod protocol;
 pub mod resource_profile;
@@ -90,5 +91,14 @@ pub fn object_id(bytes: &[u8]) -> Id {
     h.finalize().into()
 }
 pub fn hex(id: &Id) -> String {
-    id.iter().map(|b| format!("{b:02x}")).collect()
+    String::from_utf8(hex_bytes(id).to_vec()).expect("ASCII hex")
+}
+pub(crate) fn hex_bytes(id: &Id) -> [u8; 64] {
+    let mut out = [0; 64];
+    for (pair, byte) in out.chunks_exact_mut(2).zip(id) {
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        pair[0] = HEX[usize::from(byte >> 4)];
+        pair[1] = HEX[usize::from(byte & 15)];
+    }
+    out
 }
