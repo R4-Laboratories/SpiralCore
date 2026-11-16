@@ -3,12 +3,16 @@
 ## Worker budget candidate: two endpoint partitions at 24
 
 Reviewed development MVM
-[`c20c090`](https://github.com/Casey-allard/mvm/commit/c20c09006f4b306b42f6c8803df32e54272827a5)
+[`3a4f687`](https://github.com/Casey-allard/mvm/commit/3a4f6870e44e11aa66bcccc7e6f2f2e69db947a0)
 reduces each owned helper's scheduler pool from two workers to one while
 retaining both blocking slots, the multithread runtime, original ownership and
-all existing checks/deadlines. Eight helper workers plus two VM observer charges
+all existing checks/deadlines. Synchronous signer dispatch hands off its scheduler
+core under the same original mutex; an actual-handler regression proves the
+original parse timeout completes while dispatch remains held. Eight helper
+workers plus two VM observer charges
 and two unchanged seven-worker endpoints total the original 24-worker ceiling.
-The new native helper and blocking-progress tests pass, as do five repeated
+The 38 focused library tests, native helper and blocking-progress tests pass,
+as do five repeated
 runs; the old configuration completes exact signing/retirement but fails the
 26-worker funding assertion. The SpiralCore ledger suite passes 19 tests,
 preserving the old 26-worker refusal and proving the conditional eight-helper
@@ -17,10 +21,12 @@ case admits both original partitions at 24 and refuses one additional worker.
 This is helper and conditional ledger evidence. The original installed TCP test
 still refuses before Ready for the bound audit sink below; selected delivery
 remains `f2ddbcbf` / `8994951b`. Ari's
-[latest ownership decision brief](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6928741837)
-recommends a separate host-wide keyless scheduling role for review, with approval
-and resource costs still open. This existing owned pair is not that proposed
-role; any approved addition needs its own accounting. No new reply has arrived
+[approved scheduler direction](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6929441703)
+names a keyless mvm-mailbox-scheduler in the existing mvm-hostd package, one per
+explicit OS-user/canonical runtime instance across its tenants. Its contract
+review and costs remain open. This existing pair does not implement or reserve
+that additional role. The reviewed launch-proof operation remains private and
+unwired. No new reply has arrived
 on the [installed integration request](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6928066239).
 [Source, exact bytes/CPU/time, retained failures and limits](evidence/2026-11-16-worker-budget/README.md).
 
