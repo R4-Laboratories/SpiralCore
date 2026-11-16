@@ -27,6 +27,15 @@ installed MVM networking contribution is still in development. The
 the delivery authority; a component merge or green platform test is an intermediate
 checkpoint, not completion of that program.
 
+The latest [reviewed source checkpoint, PR #311](https://github.com/R4-Laboratories/SpiralCore/pull/311),
+qualifies 45 native installed-store custody controls, SDK/paired consumers and
+current MVM `cc2ed208` source. Its full-source tests pass, while the overall
+campaign retains an exit-1 historical-preservation failure: 79 older executable
+preimages were overwritten in the shared Cargo target. The [current report](docs/network/evidence/2026-11-16-final-store-removal/README.md)
+preserves that loss, actual byte/CPU/time observations and the remaining
+storage/resource, signed-runtime, platform/WAN and capacity gates. These component
+results do not qualify a new booted-MVM or WAN delivery.
+
 **Linux/Firecracker and Apple Silicon/HVF both passed clean delivery and automatic retry on the same mailbox code.** In four single-host runs, guest A staged a 313-byte SpiralCore frame. Guest B recovered all 257 payload bytes, including the trailing zero, synced and reopened its local copy, and acknowledged its lease. Both original helpers stopped unassisted in each run. The loss trials withheld B’s first signed receipt. A’s agent retried the original envelope, B returned the identical receipt, and an authenticated read after the ACK found the queue empty.
 
 **One installed Firecracker pair completed 2,049 distinct durable transfers in a single session.** B independently read back all 526,593 payload bytes, and A verified each signed B receipt and advanced its contiguous settlement prefix. The relay carried 12,052,072 bytes toward B and 2,487,009 bytes back. Median stage-to-settlement time was 1.764 s and p95 was 1.878 s. The series took 3,588.550 s with one transfer outstanding, interleaved with a sequential authorized empty Receive per transfer. Both original helpers exited unassisted. The first larger trial stopped at 1,480 completed transfers. Multi-tenant concurrency and cross-host durable delivery remain open. [Sustained measurements and earlier failure](docs/network/evidence/2026-11-12-paired-mailbox/sender-ordinal/native-2049-checkpoint.md) · [Earlier 65-transfer result](docs/network/evidence/2026-11-12-paired-mailbox/sender-ordinal/native-65.json)

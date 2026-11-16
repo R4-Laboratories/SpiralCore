@@ -1,12 +1,51 @@
 # Networking delivery status
 
-## Installed store metadata controls and current runtime source
+## Final store-removal refusal and current selected source
+
+[PR #311](https://github.com/R4-Laboratories/SpiralCore/pull/311) merged at
+`00ec196b`, with identical reviewed/CI/release tree `ff95d485`.
+Consumers now select contributor MVM `cc2ed208` on canonical `2b1cd835`, retaining
+reviewed shared core `8994951b` in both direct dependencies and all five locked
+packages. [Source, measurements and retained failures](evidence/2026-11-16-final-store-removal/README.md).
+
+All **45 native installed-store controls** pass on Linux x64/ARM64 and macOS
+ARM64. The added explicit non-root control reaches a real final directory-removal
+refusal after the owner filename is unlinked, retaining the original lock,
+child, lease and resident/disk/carrier charges. The original destruction-before-credit
+assertion remains. All 35 executed CI checks pass; genuine signed export remains
+skipped/NOT_RUN. The SDK passes 175 live / 29 owner / 74 supervisor plus addressed
+controls; paired execution passes 18 tests with one explicit ignore.
+
+Current frozen source passes **21,884 binary tests / 27 doctests**, zero failures,
+72/eight ignored and all 86 policy gates. All 4,757 inputs/full file sets and 286
+current executed ELF hashes match. **The overall full2 campaign exits 1:** shared
+Cargo output paths overwrote 79 older executable preimages despite a separate
+source export. Original outcomes and the irreparable historical-byte loss remain
+explicit. Independent review clears the separately bound current-source result;
+it does not make preservation green. Verified lossless archives now protect
+current/surviving executables before further compilation.
+
+The 28 original native ZIPs verify 894 members, 644 embedded checksums and 25,005
+source-hash rows. Both Linux original-Root/store-load rows and seven native
+FlowMux rows pass unchanged guards. Windows ARM records 183.000709 s lifecycle /
+96.578125 s whole-process CPU; all seven FlowMux rows recover 64 MiB each direction
+and cross-match 10,790,065 actual TLS bytes. These remain host-process results,
+not booted-MVM, WAN or capacity acceptance.
+
+Next under [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258):
+prepare and explicitly fund quarantine metadata before effects, then execute the
+joined original-owner simultaneous iterator/allocator peak witness. All five
+#42 outcomes, Ari's compatible signed runtime/actual boot, separately admitted
+access, supported platform/WAN/capacity, accepted source pins and private MVMD
+remain open. No final upstream contribution is submitted.
+
+## Earlier installed-store metadata checkpoint
 
 [PR309](https://github.com/R4-Laboratories/SpiralCore/pull/309) merged at
 `dacd7eb3`, identical reviewed/CI/release tree `9edebbbb`.
 [Permanent source, failure and measurement packet](evidence/2026-11-15-installed-store-metadata/README.md).
 
-Consumer manifests select contributor MVM
+At that checkpoint, consumer manifests selected contributor MVM
 [`e95f1119`](https://github.com/Casey-allard/mvm/commit/e95f1119dac66e45a81c4eead8f4e747a1286a86)
 on canonical `4047e48`, retaining reviewed shared core `8994951b` in both MVM
 dependencies and all five locked packages. The frozen MVM source passes
