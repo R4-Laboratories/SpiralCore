@@ -1,8 +1,32 @@
 # Networking delivery status
 
+## Worker budget candidate: two endpoint partitions at 24
+
+Reviewed development MVM
+[`c20c090`](https://github.com/Casey-allard/mvm/commit/c20c09006f4b306b42f6c8803df32e54272827a5)
+reduces each owned helper's scheduler pool from two workers to one while
+retaining both blocking slots, the multithread runtime, original ownership and
+all existing checks/deadlines. Eight helper workers plus two VM observer charges
+and two unchanged seven-worker endpoints total the original 24-worker ceiling.
+The new native helper and blocking-progress tests pass, as do five repeated
+runs; the old configuration completes exact signing/retirement but fails the
+26-worker funding assertion. The SpiralCore ledger suite passes 19 tests,
+preserving the old 26-worker refusal and proving the conditional eight-helper
+case admits both original partitions at 24 and refuses one additional worker.
+
+This is helper and conditional ledger evidence. The original installed TCP test
+still refuses before Ready for the bound audit sink below; selected delivery
+remains `f2ddbcbf` / `8994951b`. Ari's
+[latest ownership decision brief](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6928741837)
+recommends a separate host-wide keyless scheduling role for review, with approval
+and resource costs still open. This existing owned pair is not that proposed
+role; any approved addition needs its own accounting. No new reply has arrived
+on the [installed integration request](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6928066239).
+[Source, exact bytes/CPU/time, retained failures and limits](evidence/2026-11-16-worker-budget/README.md).
+
 ## Current integration gate: installed audit provider
 
-The current development port is published at MVM
+The frozen audit-port checkpoint is published at MVM
 [`b8f9883`](https://github.com/Casey-allard/mvm/commit/b8f9883f6dd6823118bc5cc62fd306a4d4d717ff),
 tree `9ea45b43`, on canonical `c5de1cc7`. It incorporates the landed bound-flow
 audit changes and signed-runtime handoff repair. This is development evidence;
@@ -42,11 +66,13 @@ after the real selected endpoint can pass audit readiness; this host-process
 witness does not itself require a new guest runtime or MVMD. Both unchecked
 [#258 criteria](https://github.com/R4-Laboratories/SpiralCore/issues/258) remain open.
 
-A subsequent read-only refresh observes canonical `1d29e637`: the audit-client
-relocation preserves its broker facade, and launch-scoped runtime verification
-sharing has landed. Neither supplies the missing installed audit interface;
-both are outside the frozen `b8f9883` qualification. Ari's
-[original-admission/launch-witness sequence](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6910030849)
+A subsequent read-only refresh observes canonical `9a0a2f6`: the audit-client
+relocation preserves its broker facade, launch-scoped runtime verification
+sharing has landed, and #5629 carries admitted audit identity into session
+launches. These changes are outside the frozen `b8f9883` qualification and do
+not supply the missing installed sink/health interface. Current-main launch-path
+reconciliation requires separate qualification before consumer adoption. Ari's
+[ownership/launch-witness sequence](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6928741837)
 and [protocol cutover gates](https://github.com/tinylabscom/mvm/pull/5628) remain
 authoritative. All five #42 outcomes, accepted pins, compatible signed guest
 runtime/boot, private MVMD, platform/WAN and measured capacity stay open.
