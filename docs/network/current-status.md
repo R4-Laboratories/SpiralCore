@@ -1,6 +1,46 @@
 # Networking delivery status
 
-## Current source qualification and runtime handoff
+## Installed store metadata controls and current runtime source
+
+Consumer manifests select contributor MVM
+[`e95f1119`](https://github.com/Casey-allard/mvm/commit/e95f1119dac66e45a81c4eead8f4e747a1286a86)
+on canonical `4047e48`, retaining reviewed shared core `8994951b` in both MVM
+dependencies and all five locked packages. The frozen MVM source passes
+**21,847 outer binary tests / 27 doctests**, zero failures, 71/eight ignored and
+all 86 policy gates. All 4,747 immutable inputs and 285 recompiled/executed ELF
+identities match before and after. Independent source and artifact reviews
+cover this exact MVM source; SDK/native-consumer qualification remains a
+separate gate tracked in [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258).
+
+Real Linux directory metadata controls pass before capture and after claim:
+mode `0750` and a genuinely foreign UID refuse at the original identity check,
+retain original parent/name/FD, accepted bytes, lease/lock and all resource
+charges in quarantine. Twelve ordinary resource-pool tests pass; the two UID
+tests remain ignored by ordinary suites and each passes in an explicit root
+execution through the same selected test ELF. The successful original
+destruction-before-credit assertion remains unchanged. The fixture publishes
+and exactly reads back 49 bytes through canonical frames, with 268/218 actual
+serialized in-memory request/reply bytes and zero network traffic.
+
+Native consumer CI requires all ten existing controls in their original order,
+two ordinary mode controls and two explicit root UID controls on Linux x64/ARM
+and macOS ARM. No missing privilege or ignored test is silently counted as a
+pass. Invoking SDK workspaces preserve `opt-level = 2` for the canonical
+`mvm-crypto` leaf as well as `mvm-core`; actual compiler-profile and execution
+results must qualify that build configuration. Seven consumer graph comparisons
+permit only reviewed prerelease labels and the new crypto leaf wrapping the
+unchanged AES-GCM dependency. The MVM graph comparison against the qualified
+5819 foundation permits only prerelease labels; all other edges/features match.
+
+The [source-pin/runtime-producer handoff](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6906088779)
+is published for maintainer coordination. Compatible signed runtime publication,
+authentication/boot, private MVMD, remaining resource/concurrency qualification
+and the complete platform/WAN/capacity program remain required. These source and
+filesystem fixtures establish no new live guest, WAN, fleet, FIPS/CUI or energy
+acceptance. All five #42 outcomes stay active; no final upstream contribution
+has been submitted.
+
+## Earlier source qualification and runtime handoff
 
 Contributor MVM
 [`5819ec8d`](https://github.com/Casey-allard/mvm/commit/5819ec8dc2d2ed897cc4716aa242131acef9f5c5)
@@ -14,14 +54,14 @@ BDD targets compile; Cucumber scenarios are NOT_RUN. Source-footprint accounting
 is measured under the canonical suspended ratchet, not claimed enforced.
 [Source, retained failures, measurements and records](evidence/2026-11-15-current-mvm-foundation/README.md).
 
-This publication does not change the selected B2 SDK dependency described below.
-Later canonical `4047e48` and new real owner/mode capture/retirement controls are
-being qualified separately. Compatible signed guest runtime publication,
+That publication did not change the then-selected B2 SDK dependency described
+below. Its frozen result excludes the successor source and controls above.
+Compatible signed guest runtime publication,
 authentication/boot, source-pin agreement/private MVMD and the complete
 platform/WAN/capacity program remain open. Ari's CLI → mvm-client → hostd path
 remains the integration authority. All five #42 outcomes stay active.
 
-## Current delivery: returned credit and original-store retirement
+## Earlier B2 delivery: returned credit and original-store retirement
 
 [PR #305](https://github.com/R4-Laboratories/SpiralCore/pull/305) merged at
 `758c7ee0`, selecting contributor MVM `b2def5fd` on canonical `dd2af083` /

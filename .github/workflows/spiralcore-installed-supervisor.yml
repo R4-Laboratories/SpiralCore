@@ -367,6 +367,8 @@ jobs:
             supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::poisoned_store_ledger_retains_original_buffers_lock_and_debit
             installed_endpoint::controller::network::worker_tests::serial_worker_quote_includes_all_selected_concurrent_owners
             supervisor::endpoint::flowmux::credit_tests::returned_upload_credit_keeps_the_session_validator_current
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::owner_mode_tests::broad_mode_capture_refuses_and_retains_original_store_and_debit
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::owner_mode_tests::broad_mode_retirement_refuses_and_retains_original_lease_lock_and_debit
           )
           index=0
           for test in "${tests[@]}"; do
@@ -375,12 +377,28 @@ jobs:
             grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
             index=$((index + 1))
           done
+          test "$index" -eq 12
+          root_home=$(sudo -n mktemp -d "$RUNNER_TEMP/consumer-root-home.XXXXXX")
+          root_tmp=$(sudo -n mktemp -d "$RUNNER_TEMP/consumer-root-tmp.XXXXXX")
+          printf '%s\n%s\n' "$root_home" "$root_tmp" > "$evidence/root-fixture-paths.txt"
+          privileged_tests=(
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::owner_mode_tests::foreign_uid_capture_refuses_and_retains_original_store_and_debit
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::owner_mode_tests::foreign_uid_retirement_refuses_and_retains_original_lease_lock_and_debit
+          )
+          for test in "${privileged_tests[@]}"; do
+            grep -Fx "$test: test" "$evidence/test-list.txt"
+            sudo -n env MVM_HOME="$root_home" TMPDIR="$root_tmp" \
+              /usr/bin/time -p "$executable" --exact "$test" --ignored --show-output --test-threads=1 \
+              > "$evidence/control-$index.txt" 2>&1
+            grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
+            index=$((index + 1))
+          done
           shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
           cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
           shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
-          test "$index" -eq 10
+          test "$index" -eq 14
           grep -E '^STORE_DROP_ORDER called=true ledger_held=true returned_credit_visible=false original_owner_released=true retirement_wall_ns=[0-9]+$' "$evidence/control-6.txt"
-          printf 'executed_controls=10\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+          printf 'executed_controls=14\nordinary_controls=12\nexplicit_root_uid_controls=2\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
