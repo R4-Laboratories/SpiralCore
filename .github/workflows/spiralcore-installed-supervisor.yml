@@ -401,12 +401,26 @@ jobs:
           grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
           grep -E '^FINAL_RMDIR_REFUSAL owner_links=0 original_lock_retained=true original_child_retained=true quarantined=1 active=1 resident_bytes=[1-9][0-9]* disk_bytes=[1-9][0-9]* carrier_bytes=[1-9][0-9]* refusal_wall_ns=[0-9]+ network_bytes=0$' "$evidence/control-$index.txt"
           index=$((index + 1))
+          test "$index" -eq 15
+          retention_tests=(
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::retention_slots_exist_before_first_reservation
+            supervisor::endpoint::flowmux::spiralcore_payload::pool_close_tests::generic_parent_retention_is_funded_before_operations_and_survives_drain
+            installed_endpoint::auxiliary_tests::store_retention_precedes_other_metadata_spending_and_cannot_be_reclaimed
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::installed_retention_tests::original_installed_metadata_permits_store_cleanup_after_admission_close
+            supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::installed_retention_tests::original_installed_metadata_poison_retains_store_and_all_debits
+          )
+          for test in "${retention_tests[@]}"; do
+            grep -Fx "$test: test" "$evidence/test-list.txt"
+            /usr/bin/time -p "$executable" --exact "$test" --show-output --test-threads=1 > "$evidence/control-$index.txt" 2>&1
+            grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
+            index=$((index + 1))
+          done
           shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
           cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
           shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
-          test "$index" -eq 15
+          test "$index" -eq 20
           grep -E '^STORE_DROP_ORDER called=true ledger_held=true returned_credit_visible=false original_owner_released=true retirement_wall_ns=[0-9]+$' "$evidence/control-6.txt"
-          printf 'executed_controls=15\nordinary_controls=12\nexplicit_root_uid_controls=2\nexplicit_unprivileged_late_cleanup_controls=1\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+          printf 'executed_controls=20\nordinary_controls=17\nexplicit_root_uid_controls=2\nexplicit_unprivileged_late_cleanup_controls=1\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
