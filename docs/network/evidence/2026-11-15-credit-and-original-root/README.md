@@ -82,7 +82,9 @@ identical. Whole bounded qualification: **20:57.371 wall / 27:32.520 aggregate
 CPU / 6 GiB cgroup peak**. SDK invocation `af891af6384f4f98ac60a6986d262c75`
 records **4:10.304 wall / 5:53.505 aggregate CPU / 3.7 GiB cgroup peak**.
 These are command costs, not transfer latency, endpoint memory or energy.
-Runs retain two CPUs, zero swap, TasksMax 512, NOFILE 4096 and 8192 KiB stack.
+Runs retain two CPUs, zero swap, NOFILE 4096 and 8192 KiB stack. Queue scripts
+request TasksMax 512, but the final MVM/Root snapshots do not record that field;
+this packet does not prove its effective value for those final invocations.
 
 The separate `41169543` baseline passes 21,812 binary/27 doc tests and 86 gates;
 it does not qualify the later admission merge. The first merged `a0ee61bb`
