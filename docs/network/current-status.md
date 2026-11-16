@@ -1,6 +1,56 @@
 # Networking delivery status
 
-## Prepared retention funding and current selected source
+## Original custody after final parent-sync refusal
+
+[PR #315](https://github.com/R4-Laboratories/SpiralCore/pull/315) merged at
+`a0068f9b`, preserving reviewed/CI/source tree `8438038d`. Consumers select
+contributor MVM `f2ddbcbf`, tree `165f5cc9`, on canonical basis `2b1cd835`.
+Both direct dependencies/all five shared-core packages retain reviewed core
+`8994951b`. The MVM change is confined to tests; production behavior, authority,
+wire meanings, budgets, deadlines and existing assertions remain.
+[Source, failures, measurements and read-only replay](evidence/2026-11-16-parent-fsync-custody/README.md).
+
+The Linux fixture retains an original O_PATH parent from preparation. A
+nondestructive errno probe is separate from the permit's first cleanup in Drop.
+Final rmdir completes and parent fsync refuses; the same unlinked child/owner,
+writer lock, lease and full charges remain in prepared quarantine. Admission
+is fenced and drain refuses. All native controls 0–19 retain their original
+order/privileges/assertions. Linux x64/ARM64 add exact control 20; macOS ARM64
+retains 20 with explicit NOT_RUN for the Linux mechanism. All 62 controls pass.
+This new case is a funded pool fixture, not a registered-child fsync failure.
+
+All 35 executed source-PR checks succeed; genuine signed export is skipped/NOT_RUN.
+The frozen workspace passes 21,891 binary tests/27 doctests, zero failures,
+72/eight ignored, and all 86 policies plus strict workspace Clippy/all-target/BDD
+compilation. BDD scenarios are NOT_RUN. All 4,758 inputs/full sets and 286 actual
+executed ELFs match original pre/post records: 260 rebuilt and 26 verified
+same-root reuse. SDK 175/29/74/addressed and paired 18 scopes pass with explicit
+ignores, source/profile/graph custody and four exact reused paired ELFs. Four
+SDK roots retain opt2/debug/overflow; paired opt0 remains separate. Eight strict
+graphs plus the canonical Linux alias match the predecessor.
+
+All 28 original native ZIPs verify 912 members, 644 embedded hashes and 25,010 source
+rows. Seven FlowMux rows recover 64 MiB each direction with 10,790,065 actual TLS
+bytes under unchanged 2 s/240 s guards. Windows ARM records 138.934894 s lifecycle /
+96.609375 s whole-process CPU. Both Linux original-Root rows retain 64 publications /
+exact 1 MiB each direction and existing 2 GiB/295,698,432-byte bounds, with VM debit
+retained. These are component/host-process observations, not new VM/WAN/capacity
+acceptance. Original test-ordering, naming/format failures and the earlier 79 lost
+preimages remain explicit. Verified private archives protect observed executables
+before later builds. The compact packet retains 478 operator records in 1,352,013
+compressed bytes for 74,612,613 raw file bytes; public replay executes no archived
+code/binary. Documentation-only publication selects no runtime CI (NOT_RUN).
+
+Next remains the joined original-owner simultaneous iterator/allocator phases,
+complete transient/native allocation funding and other #258 recovery/negative
+criteria, including default-profile/platform and registered-child boundaries.
+All five #42 outcomes remain active. Ari's canonical/V3 ownership, accepted pins,
+compatible signed runtime/authentication/actual boot, private MVMD, supported
+platform/WAN and measured capacity remain gates. No final upstream contribution
+is submitted. The verified 107 GiB scratch archive and shared build target remain
+on HDD; torrent/media paths are untouched.
+
+## Earlier prepared-retention source checkpoint
 
 [PR #313](https://github.com/R4-Laboratories/SpiralCore/pull/313) merged at
 `3eb6fefb`, with identical reviewed/CI/release tree `17067b9b`.
