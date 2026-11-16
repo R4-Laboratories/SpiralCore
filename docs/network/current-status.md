@@ -45,8 +45,10 @@ A post-qualification read-only refresh observed canonical MVM `d5fb0873`, merged
 [bound-flow audit PR #5590](https://github.com/tinylabscom/mvm/pull/5590). Its
 plan/epoch-bound decisions and surrounding network audit contract are not covered
 by this frozen packet. The next current-owner port must retain that path and
-bounded writes before the joined witness. Post-boot custody remains a production
-gate; keeper notification does not prove original-owner rollback.
+bounded writes before the joined witness. The final PR leaves VM lifecycle
+unchanged. Exact-workload stop after three consecutive production audit-write
+failures remains unimplemented under #5538/#5522; notifications/health metadata
+do not prove original-owner rollback.
 
 Remaining work includes the joined original-owner simultaneous iterator/allocator phases,
 complete transient/native allocation funding and other #258 recovery/negative

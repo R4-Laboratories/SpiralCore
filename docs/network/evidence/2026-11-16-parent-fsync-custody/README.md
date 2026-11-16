@@ -200,8 +200,10 @@ A read-only refresh after this qualification observed canonical MVM
 Its new decision-audit path binds the admitted plan/epoch before network effects;
 this frozen packet does not qualify that delta. The next current-owner port must
 retain that audit path, bounded writes and original cleanup/resource custody
-before the joined witness. Keeper notification alone does not establish original
-owner rollback; post-boot custody remains a separate production gate.
+before the joined witness. The final PR leaves VM lifecycle behavior unchanged. Stopping the exact workload
+after three consecutive production audit-write failures remains unimplemented
+under #5538/#5522; notifications or health metadata do not establish original-owner
+rollback.
 
 Both unchecked #258 criteria stay open: joined original-Root/selected-process
 simultaneous iterator/allocation phases, complete transient/native allocation
