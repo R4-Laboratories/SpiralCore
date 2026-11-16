@@ -20,6 +20,11 @@ The original complete archives remain preserved privately, without rewriting the
 
 ## Choose a track
 
+The latest source checkpoint has a compact [final store-removal evidence packet](evidence/2026-11-16-final-store-removal/README.md)
+directly in Git: 28 original native ZIPs and 560 captured source/test/failure
+records. It records current source qualification and the permanent loss of 79
+older executable preimages; it is not an installer or new MVM/WAN acceptance.
+
 | Track | Public download | Measured SpiralCore source | Report |
 |---|---|---|---|
 | Current MVM Combined: actual guests, encrypted mailbox/vsock, reboot readback | [mvm-combined-public.tar.gz](https://github.com/R4-Laboratories/SpiralCore/releases/download/evidence-2026-11-02/mvm-combined-public.tar.gz) | `9ceaeef5070c87fd17b8519a1e8630b7f7888fd6` | [MVM results](mvm-combined-results-2026-11-02.md) |
