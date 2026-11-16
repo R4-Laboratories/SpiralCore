@@ -393,12 +393,20 @@ jobs:
             grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
             index=$((index + 1))
           done
+          test "$index" -eq 14
+          test=supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::retirement_failure_tests::final_rmdir_refusal_retains_unlinked_owner_lease_and_original_debit
+          grep -Fx "$test: test" "$evidence/test-list.txt"
+          /usr/bin/time -p "$executable" --exact "$test" --ignored --show-output --test-threads=1 \
+            > "$evidence/control-$index.txt" 2>&1
+          grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
+          grep -E '^FINAL_RMDIR_REFUSAL owner_links=0 original_lock_retained=true original_child_retained=true quarantined=1 active=1 resident_bytes=[1-9][0-9]* disk_bytes=[1-9][0-9]* carrier_bytes=[1-9][0-9]* refusal_wall_ns=[0-9]+ network_bytes=0$' "$evidence/control-$index.txt"
+          index=$((index + 1))
           shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
           cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
           shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
-          test "$index" -eq 14
+          test "$index" -eq 15
           grep -E '^STORE_DROP_ORDER called=true ledger_held=true returned_credit_visible=false original_owner_released=true retirement_wall_ns=[0-9]+$' "$evidence/control-6.txt"
-          printf 'executed_controls=14\nordinary_controls=12\nexplicit_root_uid_controls=2\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+          printf 'executed_controls=15\nordinary_controls=12\nexplicit_root_uid_controls=2\nexplicit_unprivileged_late_cleanup_controls=1\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
