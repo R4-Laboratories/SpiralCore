@@ -1,0 +1,23 @@
+{
+  "pr": 305,
+  "head": "009c0979daa8f3c7cdc3d69807a64ca03638a900",
+  "run_id": 43767669860,
+  "job_id": 132976325732,
+  "scope": "original linux-guest locked fixture refusal",
+  "observed_lines": [
+    "2026-11-15T22:09:22.5105334Z   MVM_REVISION: b2def5fd556e6ab9aabeb281b554c6ef6bb060d9",
+    "2026-11-15T22:09:30.9366311Z   MVM_REVISION: b2def5fd556e6ab9aabeb281b554c6ef6bb060d9",
+    "2026-11-15T22:09:34.7895986Z   MVM_REVISION: b2def5fd556e6ab9aabeb281b554c6ef6bb060d9",
+    "2026-11-15T22:09:55.4880365Z error: cannot update the lock file /home/runner/work/SpiralCore/SpiralCore/paired-guest/Cargo.lock because --locked was passed to prevent this",
+    "2026-11-15T22:09:55.4925475Z ##[error]Process completed with exit code 101."
+  ],
+  "correction_head": "bb188c9c8ef6fc690c291ce2ea0f6ce4d5475aca",
+  "changed_packages": [
+    "mvm-agentd",
+    "mvm-contract",
+    "mvm-core",
+    "mvm-macho-sign",
+    "mvm-setpriv"
+  ],
+  "correction": "local MVM package labels rc.5 to rc.6; locked guard retained; runtime execution pending"
+}

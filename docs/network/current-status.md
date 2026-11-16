@@ -1,53 +1,86 @@
 # Networking delivery status
 
-## Current delivery work and upstream alignment
+## Current delivery: returned credit and original-store retirement
 
-The next source slice is not yet released. Development candidate MVM
-`b2def5fd` incorporates canonical main `dd2af083` and retains the returned
-FlowMux upload-credit repair. The test-only predecessor `54cf0ae1` refuses
-block 17 after the original 256 KiB window; `41169543` passes exact 320 KiB
-upload/echo under the same credit caps and two-second I/O guards. All 119
-scoped FlowMux controls pass. Its completed frozen baseline passes all 86
-policy gates, 21,812 outer binary tests and 27 doctests, with 69/eight explicit
-ignores. All 284 actual executed binaries match the compiler-selected
-prehash set and final hash checks; all 4,717 source inputs remain unchanged.
-Workspace test costs are 9:09.88 wall / 260.94 s user / 111.22 s system.
-These results qualify `41169543`, not the later merged candidate, installed
-MVMs, WAN or capacity.
+[PR #305](https://github.com/R4-Laboratories/SpiralCore/pull/305) merged at
+`758c7ee0`, selecting contributor MVM `b2def5fd` on canonical `dd2af083` /
+merged MVM #5564. Returned upload credit now replenishes the same canonical
+validator that debits guest uploads, before the WindowUpdate is written.
+The original zero-credit RED and 64-block installed assertion remain. Both
+direct MVM dependencies and all five core packages stay on reviewed `8994951b`;
+canonical journal `48fa5b48` aliases remain explicit. Eight graph comparisons
+preserve all other packages, edges and features after exact pin/label checks.
+Reviewed head, tested CI merge and release share tree `5cf6545d`.
 
-Merged [MVM #5564](https://github.com/tinylabscom/mvm/pull/5564) at `3fed00e4`
-provides the private library/hostd admission stages. Ari's
-[current sequencing note](https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6901815825)
-retains CLI → `mvm-client` → `mvm-hostd`, one-shot opaque admission custody,
-admission before warm selection, and the existing audit owner/sync boundary.
-Ari is coordinating that overlapping client surface with draft MVM #5569.
-The networking contribution does not take over that migration.
+Corrected frozen source passes format, strict workspace Clippy, all-target and
+explicit BDD compilation, all 86 gates, **21,814 outer binary tests / 27
+doctests**, with 69/eight explicit ignores. All 284 actual Running binaries
+match compiler-selected prehashes and final hashes; 260 rebuilt and 24 verified
+same-root artifacts are distinguished. All 4,717 MVM and 486 SDK inputs and full
+file sets remain unchanged. SDK 175 live / 29 owner / 74 supervisor and one
+addressed-journal control pass. The addressed fixture records 257 body / 313
+frame / 3,758 envelope bytes, 5,098 sent / 1,026 received on each admit/retry.
+All 35 executed native checks pass; genuine signed export is skipped/NOT_RUN.
 
-The development candidate resolves the admission and source-accounting
-conflicts with current main. Ordinary launches retain private typed stages;
-the selected direct path retains its signed bundle, original parent, funded
-workspace, backend, kernel/root and runtime checks, then returns the same
-one-use admitted dispatch owner. Signed plans are authenticated and projected
-before runtime effects; each branch admits and records admission once.
-Independent focused source/security review clears that composition. The first
-merged attempt `a0ee61bb` stopped in strict Clippy on its oversized private
-authority enum; the corrected opaque optional carrier adds no heap allocation
-or lint suppression. The failed run is retained separately. Exact measured
-ceilings are 2,997 Rust files / 1,050,561 SLOC / 1,322,770 physical lines,
-with no headroom. Corrected-source full validation and native CI are pending;
-the SDK pin must not merge until those gates and final review pass.
+[PR #306](https://github.com/R4-Laboratories/SpiralCore/pull/306) merged at
+`f0224188`, identical reviewed/CI/release tree `31872b20`. The original signed
+software admission → Root budget → actual selected Linux child → populated
+original store → retirement witness passes on Wick and native Linux x64/ARM64.
+It retains **64 distinct publications / 1,048,576 exact application bytes each
+direction**, original directory/lock custody, seven observed concurrent workers
+and the child's **295,698,432-byte hard address-space limit**. Disposable disk
+and metadata credits return after exact cleanup; VM/resource/FD/worker debit
+remains pending actual VM exit. No VM receipt is fabricated. The existing
+explicit 2 GiB profile, default 512 MiB profile and 24-worker ceiling remain.
+All 11 executed checks pass; genuine export is skipped/NOT_RUN.
 
-The original Root-budget/selected-child witness still requires all 64 exact
-blocks; its prior block-17 failure is retained. Remaining #258 funding,
-wrong-owner/mode and retirement controls, compatible signed runtime #268,
-private MVMD/source-pin agreement, and all five #42 outcomes remain open.
-MVM rc.6 package labels alone do not establish a compatible signed release;
-its published release endpoint was unavailable at this refresh. No final
-upstream networking contribution has been submitted.
+Final Wick Root source matches all 490 committed inputs and four executable
+identities. Setup is **70.256044 ms**; Open through verified half-close
+**372.721632 ms**; sender/peer thread CPU **143.380211 / 19.671367 ms**;
+whole-child CPU collected at retirement **229.618 ms**. Shutdown/receipt is
+**27.802680 ms**, ending before parent cleanup; whole fixture wall/user/system
+is **0.47 / 0.36 / 0.07 s**. Guest load records **1,078,631 / 1,078,502 sealed
+request/response bytes**; the independent peer records **103,046 / 102,623 TLS
+received/sent bytes** at a separate boundary. Native x64/ARM verified intervals
+are 1,089.045518 / 1,206.144199 ms; full clocks and samples remain in the packet.
+These are selected host processes, not booted MVMs or WAN.
 
-## Selected endpoint worker funding
+The 28 original #305 ZIPs verify 824 members / 644 embedded checksums /
+15,359 source-hash rows. Ten original #306 ZIPs verify 194 members / 24,785
+source-hash rows; these ten have no embedded SHA256SUMS manifests. Native
+executable assurance is runner-recorded pre/post hashing, with no binary bytes
+distributed. Seven FlowMux rows each recover exact 64 MiB both ways and record
+10,790,065 TLS bytes under unchanged 2 s/240 s guards. Windows ARM retains
+**145.188718 s lifecycle / 100.765625 s process CPU**, slower than the preceding
+sample; no causal improvement is inferred.
+[Source, failures, measurements and reproducible evidence](evidence/2026-11-15-credit-and-original-root/README.md).
 
-The last released SDK checkpoint selects contributor MVM `8345cb68`, retaining
+Ari's [current sequence](https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6901815825)
+remains CLI → mvm-client → hostd, opaque one-shot admission, admission before
+warm selection and retained audit/OCI provenance and Required-tier sync overlap.
+The networking contribution does not take over the #5569 client migration.
+A bounded refresh observes canonical main `05227676`, five commits beyond the
+qualified `dd2af083`: demo release selection, build/crypto and BDD changes,
+contribution instructions, footprint-ratchet suspension and runner split.
+That delta is **not qualified by these frozen runs** and needs bounded
+reconciliation. Our existing measured source accounting and security/deadline
+guards remain. Earlier `41169543` baseline and `a0ee61bb` Clippy refusal retain
+separate identities and do not stand in for the final B2 results.
+
+The remaining #258 namespace/entry/iterator/allocator/concurrency funding and
+wrong-owner/broad-mode controls stay open. A 2 GiB host-process witness does
+not prove default-profile fit, Mac selected enforcement, guest boot, WAN or
+capacity. Official rc.5 exists but its inspected manifests omit the required
+reader declaration; compatible signed publication/authentication/boot remains
+Ari's runtime gate under #268. Private MVMD and #5057 source-pin coordination
+remain separate external gates. **All five #42 outcomes remain active**, including
+sustained recovery, separately authorized owner access, supported platform/backend
+and two-host WAN acceptance, measured capacity and the final upstream package.
+No final upstream networking contribution has been submitted.
+
+## Earlier selected endpoint worker funding checkpoint
+
+This earlier SDK checkpoint selects contributor MVM `8345cb68`, retaining
 reviewed shared core `8994951b`. The selected serial Object-TCP runtime now quotes all seven
 concurrent workers: foreground controller, session, three collector workers,
 one owned TCP relay and one codec reader. Provider preflight and the actual
@@ -59,9 +92,9 @@ The original aggregate ceiling remains 24 workers. With the existing shared
 ten-worker helper class and both VM exit-capture workers, two fully selected
 endpoints would require 26. A second endpoint must refuse rather than enlarge
 the allowance. Guest slots alone do not establish simultaneous endpoint
-capacity. The joined original-parent/selected-child store-load witness and
-explicit wrong-owner/mode execution controls remain open under #258, together
-with all five #42 outcomes and the signed-runtime/private-MVMD/WAN gates.
+capacity. At this checkpoint the joined original-parent/selected-child store-load witness
+and explicit wrong-owner/mode controls remained open. The later bounded Root
+witness above now passes; full #258 and all five #42 outcomes remain open.
 
 [PR #303](https://github.com/R4-Laboratories/SpiralCore/pull/303) is merged at
 `959cb7f5`; candidate, native CI merge and release share tree `1c5bb636`.

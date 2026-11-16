@@ -1,0 +1,34 @@
+{
+  "qualified_canonical": "dd2af0833eeaf1e2abd738e694dc1b463140ff25",
+  "qualified_contribution": "b2def5fd556e6ab9aabeb281b554c6ef6bb060d9",
+  "observed_main": "052276763f889960b0fd16cb7d58583e6cce4ec5",
+  "unqualified_delta": [
+    {
+      "sha": "61d7d97494801194e981a9d62665fe92590074ff",
+      "message": "demo: prefer the installed release over a source build on PATH (#5570)\n\nCo-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "54eb7a05a81403866d836ed46d1a10ec42a850ec",
+      "message": "perf(dev): reduce build work and isolate BDD dependencies (#5559)\n\n* perf(dev): avoid eager helper builds and unchanged CLI rebuilds\n\nBuild the contributor CLI before dispatch and leave existing helper/payload preparation to first use. Remove the missing root build-script watch without weakening source identity tracking. Cover the wrapper and watch roots with regression tests.\n\n* perf(build): isolate optimized AES-GCM and trim Foundation features\n\nKeep concrete AES-GCM instantiations in an internal opt-level-2 leaf instead of optimizing all of mvm-core. Preserve keys, framing, nonce ownership, session checks, and wire compatibility in their existing owners. Use shared Cargo codegen defaults and narrow Foundation to the APIs actually used.\n\n* perf(test): compile Cucumber only for explicit BDD runs\n\nMake the framework optional under the existing bdd feature and move its World support out of automatic integration-target discovery. Preserve all actual tests and explicit BDD coverage, update closure accounting, and record measured compilation and artifact-reuse results with their limitations.\n\n* refactor(crypto): group primitives in a shared crypto crate\n\nRename mvm-aead to mvm-crypto and place the unchanged AES-GCM operations in its aead module. Keep one optimized crypto compilation boundary rather than a crate per algorithm. Update consumers, manifests, regression checks, and documentation; retain historical benchmark labels.\n\n* feat(crypto): expose an extensible authenticated-encryption trait\n\nDefine the public Aead contract with algorithm-specific key, nonce, and error types and support static or trait-object dispatch. Implement it for stateless AES-256-GCM while retaining its concrete optimized code in mvm-crypto. Keep existing protocols explicitly on AES-256-GCM, preserve compatibility checks, and test downstream implementations with different associated types.\n\n* chore(ci): account for crypto interface and regression coverage\n\nRe-measure the complete tracked Rust tree at 991437 SLOC and 1259775 physical lines. The requested crypto trait and compile/dependency regression coverage add 259 SLOC and 313 physical lines above the prior exact limits. Keep every category counted and grant no extra headroom; the gate and all three footprint tests pass.\n\n* fix(fuzz): lock the shared crypto dependency in detached workspaces\n\nRefresh all seven standalone fuzz graphs that depend on mvm-core. Only add the internal mvm-crypto node and reroute the AES-GCM edge; preserve every third-party version and dependency edge. All nine fuzz workspaces pass cargo check --locked --all-targets on macOS.\n\n* fix(dev): prepare native helpers before dispatching the CLI\n\nThe live smoke exposed that launch commands deliberately cannot compile missing helpers. Preserve that restriction by building the CLI and native host helpers in a single Cargo graph, without embedding the Linux builder payload. Keep the contributor feature set and pair isolation; update the regression test and correct the CLI-only documentation.\n\n* ci: refresh PR checks after resolving release conflicts"
+    },
+    {
+      "sha": "0781af1092b89263229d97d55bf2ef624cb742ac",
+      "message": "docs: require issue-linked PRs and explicit completion tracking (#5571)"
+    },
+    {
+      "sha": "c5ab8ceed16a87530bf59facfbbe3e9b854de240",
+      "message": "chore(xtask): suspend the Rust footprint ratchet while the #4839 cleanup lands (#4839) (#5573)\n\n* chore(xtask): suspend the Rust footprint ratchet while the #4839 cleanup lands (#4839)\n\n* fix(xtask): remove process citations from comments"
+    },
+    {
+      "sha": "052276763f889960b0fd16cb7d58583e6cce4ec5",
+      "message": "refactor(runtime): split the workload runner by responsibility (#4839) (#5565)\n\n* refactor(runtime): split the workload runner by responsibility (#4839)\n\nMove the start, standby and warm-claim method groups, the broker types and\nthe runner tests out of workload_runner/runner.rs into responsibility\nmodules. Pure move: no logic edits, same visibility, same 1387 mvm-runtime\ntests.\n\n* refactor(runtime): trim the runner split's import and header overhead"
+    }
+  ],
+  "direction": "CLI -> mvm-client -> mvm-hostd; one opaque one-shot admission owner; admission before warm selection; audit/OCI and Required-tier sync retained",
+  "authority": "https://github.com/tinylabscom/mvm/issues/5520#issuecomment-6901815825",
+  "compatible_signed_runtime": "NOT_QUALIFIED; official rc.5 inspected previously omits mailbox_reader_v1; publisher Ari",
+  "private_mvmd": "EXTERNAL_GATE",
+  "source_pin_coordination": "https://github.com/tinylabscom/mvm/issues/5057",
+  "all_five_outcomes": "REQUIRED_ACTIVE",
+  "final_upstream_contribution_submitted": false
+}
