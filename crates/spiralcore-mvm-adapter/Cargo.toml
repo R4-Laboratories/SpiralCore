@@ -14,8 +14,8 @@ hardware-sha256 = ["spiralcore-transfer/hardware-sha256"]
 
 [dependencies]
 spiralcore-transfer = { path = "../spiralcore-transfer" }
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "b2def5fd556e6ab9aabeb281b554c6ef6bb060d9", default-features = false }
-mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "b2def5fd556e6ab9aabeb281b554c6ef6bb060d9", default-features = false, features = ["protocol"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "e95f1119dac66e45a81c4eead8f4e747a1286a86", default-features = false }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "e95f1119dac66e45a81c4eead8f4e747a1286a86", default-features = false, features = ["protocol"] }
 ed25519-dalek = "3"
 rand = "0.10"
 serde = { version = "1", features = ["derive"] }
@@ -50,6 +50,9 @@ incremental = false
 # Cargo reads optimization profiles from the invoking package. Preserve MVM's
 # dev/test settings for the crypto used by signed operations and their deadlines.
 [profile.dev.package.mvm-core]
+opt-level = 2
+# Canonical MVM now places concrete AEAD in this shared crypto leaf.
+[profile.dev.package.mvm-crypto]
 opt-level = 2
 [profile.dev.package.sha2]
 opt-level = 3

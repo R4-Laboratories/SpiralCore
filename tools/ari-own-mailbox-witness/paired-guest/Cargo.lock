@@ -732,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-agentd"
-version = "0.28.0-rc.6"
+version = "0.28.0-rc.7"
 dependencies = [
  "anyhow",
  "base64",
@@ -757,7 +757,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-contract"
-version = "0.28.0-rc.6"
+version = "0.28.0-rc.7"
 dependencies = [
  "anyhow",
  "base64",
@@ -773,9 +773,8 @@ dependencies = [
 
 [[package]]
 name = "mvm-core"
-version = "0.28.0-rc.6"
+version = "0.28.0-rc.7"
 dependencies = [
- "aes-gcm",
  "anyhow",
  "base64",
  "chrono",
@@ -785,6 +784,7 @@ dependencies = [
  "hmac",
  "libc",
  "mvm-contract",
+ "mvm-crypto",
  "mvm-macho-sign",
  "plist",
  "rand",
@@ -804,8 +804,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mvm-crypto"
+version = "0.28.0-rc.7"
+dependencies = [
+ "aes-gcm",
+]
+
+[[package]]
 name = "mvm-macho-sign"
-version = "0.28.0-rc.6"
+version = "0.28.0-rc.7"
 dependencies = [
  "plist",
  "sha1",
@@ -814,7 +821,7 @@ dependencies = [
 
 [[package]]
 name = "mvm-setpriv"
-version = "0.28.0-rc.6"
+version = "0.28.0-rc.7"
 dependencies = [
  "libc",
 ]

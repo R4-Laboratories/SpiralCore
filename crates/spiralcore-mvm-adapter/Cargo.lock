@@ -714,8 +714,8 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
 name = "mvm-contract"
-version = "0.28.0-rc.6"
-source = "git+https://github.com/Casey-allard/mvm?rev=b2def5fd556e6ab9aabeb281b554c6ef6bb060d9#b2def5fd556e6ab9aabeb281b554c6ef6bb060d9"
+version = "0.28.0-rc.7"
+source = "git+https://github.com/Casey-allard/mvm?rev=e95f1119dac66e45a81c4eead8f4e747a1286a86#e95f1119dac66e45a81c4eead8f4e747a1286a86"
 dependencies = [
  "anyhow",
  "base64",
@@ -731,10 +731,9 @@ dependencies = [
 
 [[package]]
 name = "mvm-core"
-version = "0.28.0-rc.6"
-source = "git+https://github.com/Casey-allard/mvm?rev=b2def5fd556e6ab9aabeb281b554c6ef6bb060d9#b2def5fd556e6ab9aabeb281b554c6ef6bb060d9"
+version = "0.28.0-rc.7"
+source = "git+https://github.com/Casey-allard/mvm?rev=e95f1119dac66e45a81c4eead8f4e747a1286a86#e95f1119dac66e45a81c4eead8f4e747a1286a86"
 dependencies = [
- "aes-gcm",
  "anyhow",
  "base64",
  "chrono",
@@ -744,6 +743,7 @@ dependencies = [
  "hmac",
  "libc",
  "mvm-contract",
+ "mvm-crypto",
  "mvm-macho-sign",
  "plist",
  "rand",
@@ -763,9 +763,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mvm-crypto"
+version = "0.28.0-rc.7"
+source = "git+https://github.com/Casey-allard/mvm?rev=e95f1119dac66e45a81c4eead8f4e747a1286a86#e95f1119dac66e45a81c4eead8f4e747a1286a86"
+dependencies = [
+ "aes-gcm",
+]
+
+[[package]]
 name = "mvm-macho-sign"
-version = "0.28.0-rc.6"
-source = "git+https://github.com/Casey-allard/mvm?rev=b2def5fd556e6ab9aabeb281b554c6ef6bb060d9#b2def5fd556e6ab9aabeb281b554c6ef6bb060d9"
+version = "0.28.0-rc.7"
+source = "git+https://github.com/Casey-allard/mvm?rev=e95f1119dac66e45a81c4eead8f4e747a1286a86#e95f1119dac66e45a81c4eead8f4e747a1286a86"
 dependencies = [
  "plist",
  "sha1",

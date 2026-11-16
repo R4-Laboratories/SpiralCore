@@ -54,11 +54,18 @@ a command that executes zero tests do not qualify the installed path. The
 document the exact role inputs, process limits and required result boundaries.
 
 The controller's relative Cargo patches unify its local SpiralCore types with
-the same tracked sources MVM pins at `7458294c`. They introduce no second codec.
+the same tracked sources MVM pins at `8994951b`. They introduce no second codec.
 Cargo also needs explicit access to MVM's published vendored `gix` patches,
 because it does not inherit a Git dependency's workspace patches. Inspect actual
 resolved package IDs after changing these pins; compilation and native lifecycle
 acceptance remain separate from dependency resolution.
+
+Cargo reads profiles from the invoking workspace. The active SDK/controller
+workspaces retain MVM's `opt-level = 2` setting for `mvm-core` and its new
+`mvm-crypto` concrete AEAD leaf; a dependency's workspace profile does not
+propagate to its consumers. Qualification must check the actual compiler
+artifact profile and preserve the existing signed-operation deadlines. This
+configuration alone is not a transfer-time or platform-performance result.
 
 ## Build and run
 
