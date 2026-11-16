@@ -1,10 +1,64 @@
 # Networking delivery status
 
-## Final store-removal refusal and current selected source
+## Prepared retention funding and current selected source
+
+[PR #313](https://github.com/R4-Laboratories/SpiralCore/pull/313) merged at
+`3eb6fefb`, with identical reviewed/CI/release tree `17067b9b`.
+Consumers select contributor MVM `1298ffe9`, tree `228b513d`, on canonical
+`2b1cd835`. Both direct dependencies and all five shared-core packages retain
+reviewed SpiralCore `8994951b`.
+[Source, original failures, measurements and replay](evidence/2026-11-16-prepared-store-retention/README.md).
+
+Quarantine slots now exist and are funded before pool publication/store effects.
+Installed construction retains its actual original auxiliary metadata permit;
+generic parents permanently carve bookkeeping from their original resident
+ceiling. Operational drain does not refund live metadata. Real registered-process
+controls retain a claimed store through admission closure and retain every
+bounded stored byte/identity, lock and charge on actual auxiliary poison.
+All **60 native custody controls** pass across Linux x64/ARM64 and macOS ARM64,
+preserving original controls 0–14, their privilege requirements and destruction
+before returned credit. All 35 executed CI checks pass; genuine signed export
+remains skipped/NOT_RUN.
+
+Frozen source passes **21,890 binary tests / 27 doctests**, zero failures,
+72/eight ignored and all 86 policies. All 4,758 inputs and 286 freshly compiled,
+actually executed ELF identities match original pre/post records. SDK
+175 live / 29 owner / 74 supervisor / addressed and paired 18-test scopes pass
+with explicit ignores. Actual paired opt0 remains separate from the four SDK
+roots' verified opt2/debug-assertion/overflow configuration. Eight graphs plus
+canonical Linux alias match the predecessor after exact source/root mapping.
+Original missing-Debug, missing-codegen-tool and unsupported-ZFS fixture failures
+remain recorded with their corrections. The previous 79 lost historical
+executable preimages remain lost; verified HDD archives protect new executables.
+
+The 28 original ZIPs verify 909 members, 644 embedded checksums and 25,010 source
+rows. Seven FlowMux rows recover 64 MiB each direction and match 10,790,065 actual
+TLS bytes under unchanged two-second/240-second guards. Windows ARM records
+**98.043522 s lifecycle / 96.640625 s whole-process CPU**, an observed host-process
+run, not a causal speedup or WAN result. Both Linux original-Root rows retain
+64 publications / exact 1 MiB each direction under the original 2 GiB and
+295,698,432-byte process bounds; VM debit remains retained without a VM-exit receipt.
+
+The former 107 GiB SSD scratch is privately archived and compared on HDD;
+the retired location holds an 8 KiB pointer. New builds/cache/archives use HDD,
+and the small existing ext4 startup fixture is removed after its unchanged checks.
+Torrent incomplete paths and media services/settings are untouched.
+
+Next under [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258) is the
+joined original-owner simultaneous iterator/allocator peak, complete transient
+allocation funding and remaining negative/recovery acceptance. All five #42
+outcomes stay active. Ari's current V3 owner retains original admission/native
+custody/guest launch-witness integration and the approved encrypted one-address
+inbox/pending-outbox, bidirectional Call/Cast/Reply path; ACK/Cast is partial.
+Compatible signed runtime, accepted pins/private MVMD, actual installed boot,
+separately admitted access and supported platform/WAN/capacity remain gates.
+No final upstream MVM contribution is submitted.
+
+## Earlier final store-removal refusal checkpoint
 
 [PR #311](https://github.com/R4-Laboratories/SpiralCore/pull/311) merged at
 `00ec196b`, with identical reviewed/CI/release tree `ff95d485`.
-Consumers now select contributor MVM `cc2ed208` on canonical `2b1cd835`, retaining
+At that checkpoint, consumers selected contributor MVM `cc2ed208` on canonical `2b1cd835`, retaining
 reviewed shared core `8994951b` in both direct dependencies and all five locked
 packages. [Source, measurements and retained failures](evidence/2026-11-16-final-store-removal/README.md).
 
@@ -16,7 +70,7 @@ assertion remains. All 35 executed CI checks pass; genuine signed export remains
 skipped/NOT_RUN. The SDK passes 175 live / 29 owner / 74 supervisor plus addressed
 controls; paired execution passes 18 tests with one explicit ignore.
 
-Current frozen source passes **21,884 binary tests / 27 doctests**, zero failures,
+That frozen source passes **21,884 binary tests / 27 doctests**, zero failures,
 72/eight ignored and all 86 policy gates. All 4,757 inputs/full file sets and 286
 current executed ELF hashes match. **The overall full2 campaign exits 1:** shared
 Cargo output paths overwrote 79 older executable preimages despite a separate
@@ -32,9 +86,9 @@ FlowMux rows pass unchanged guards. Windows ARM records 183.000709 s lifecycle /
 and cross-match 10,790,065 actual TLS bytes. These remain host-process results,
 not booted-MVM, WAN or capacity acceptance.
 
-Next under [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258):
-prepare and explicitly fund quarantine metadata before effects, then execute the
-joined original-owner simultaneous iterator/allocator peak witness. All five
+That checkpoint left prepared quarantine metadata and the joined original-owner
+simultaneous iterator/allocator peak open under [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258).
+Prepared retention is delivered above; the joined peak remains open. All five
 #42 outcomes, Ari's compatible signed runtime/actual boot, separately admitted
 access, supported platform/WAN/capacity, accepted source pins and private MVMD
 remain open. No final upstream contribution is submitted.

@@ -27,14 +27,15 @@ installed MVM networking contribution is still in development. The
 the delivery authority; a component merge or green platform test is an intermediate
 checkpoint, not completion of that program.
 
-The latest [reviewed source checkpoint, PR #311](https://github.com/R4-Laboratories/SpiralCore/pull/311),
-qualifies 45 native installed-store custody controls, SDK/paired consumers and
-current MVM `cc2ed208` source. Its full-source tests pass, while the overall
-campaign retains an exit-1 historical-preservation failure: 79 older executable
-preimages were overwritten in the shared Cargo target. The [current report](docs/network/evidence/2026-11-16-final-store-removal/README.md)
-preserves that loss, actual byte/CPU/time observations and the remaining
-storage/resource, signed-runtime, platform/WAN and capacity gates. These component
-results do not qualify a new booted-MVM or WAN delivery.
+The latest [reviewed source checkpoint, PR #313](https://github.com/R4-Laboratories/SpiralCore/pull/313)
+prepares and funds installed-store quarantine before effects. Contributor MVM
+`1298ffe9` passes the full source gates, SDK/paired scopes and 60 native custody
+controls. The [current report](docs/network/evidence/2026-11-16-prepared-store-retention/README.md)
+retains actual byte/CPU/lifecycle observations, original failed gates and the
+remaining allocator/concurrency, signed-runtime, platform/WAN and capacity work.
+The former 107 GiB SSD scratch is privately archived on HDD; current builds use
+HDD and torrent/media paths remain untouched. Historical executable loss remains
+explicit. These component results do not qualify a new booted-MVM or WAN delivery.
 
 **Linux/Firecracker and Apple Silicon/HVF both passed clean delivery and automatic retry on the same mailbox code.** In four single-host runs, guest A staged a 313-byte SpiralCore frame. Guest B recovered all 257 payload bytes, including the trailing zero, synced and reopened its local copy, and acknowledged its lease. Both original helpers stopped unassisted in each run. The loss trials withheld B’s first signed receipt. A’s agent retried the original envelope, B returned the identical receipt, and an authenticated read after the ACK found the queue empty.
 
