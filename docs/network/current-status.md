@@ -1,5 +1,26 @@
 # Networking delivery status
 
+## Current source qualification and runtime handoff
+
+Contributor MVM
+[`5819ec8d`](https://github.com/Casey-allard/mvm/commit/5819ec8dc2d2ed897cc4716aa242131acef9f5c5)
+on canonical `be1a62d2` now passes the reconciled admission/runner, crypto/build
+and BDD-layout foundation gates: **21,824 outer binary tests / 27 doctests**,
+zero failures, 69/eight ignored and all 86 canonical policy gates. All 4,746
+immutable Git inputs and 285 recompiled/executed ELF identities match before
+and after. Independent source and artifact reviews clear this bounded
+qualification for a reviewable source-pin/runtime-producer handoff. Explicit
+BDD targets compile; Cucumber scenarios are NOT_RUN. Source-footprint accounting
+is measured under the canonical suspended ratchet, not claimed enforced.
+[Source, retained failures, measurements and records](evidence/2026-11-15-current-mvm-foundation/README.md).
+
+This publication does not change the selected B2 SDK dependency described below.
+Later canonical `4047e48` and new real owner/mode capture/retirement controls are
+being qualified separately. Compatible signed guest runtime publication,
+authentication/boot, source-pin agreement/private MVMD and the complete
+platform/WAN/capacity program remain open. Ari's CLI → mvm-client → hostd path
+remains the integration authority. All five #42 outcomes stay active.
+
 ## Current delivery: returned credit and original-store retirement
 
 [PR #305](https://github.com/R4-Laboratories/SpiralCore/pull/305) merged at
