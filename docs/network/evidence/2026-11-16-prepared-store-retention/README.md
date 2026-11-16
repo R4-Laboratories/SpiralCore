@@ -142,6 +142,9 @@ archive; its original SSD tree was retired only after full archive comparison,
 metadata checks and fsync. The old location holds an 8 KiB pointer. The archive
 is **24,879,409,976 bytes**, SHA256
 `bcacad1ed9760e832d982f3212df3a89a739db305f09f2cb143fff6761780832`.
+These migration figures are operator observations against private receipts.
+The three public replay programs do not verify the private cold archive or its
+migration inventories.
 New Cargo caches, source exports and executable archives use a separate HDD
 workspace. Runtime/key/payload contents of that cold archive are not distributed.
 Torrent incomplete paths and media service/settings were untouched. Free-space
