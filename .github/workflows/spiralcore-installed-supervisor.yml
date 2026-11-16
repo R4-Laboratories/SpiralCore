@@ -415,12 +415,27 @@ jobs:
             grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
             index=$((index + 1))
           done
+          test "$index" -eq 20
+          expected_controls=20
+          ordinary_controls=17
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            test=supervisor::endpoint::flowmux::spiralcore_payload::resource_pool_tests::retirement_failure_tests::parent_fsync_refusal_after_rmdir_retains_original_lease_lock_and_debit
+            grep -Fx "$test: test" "$evidence/test-list.txt"
+            /usr/bin/time -p "$executable" --exact "$test" --show-output --test-threads=1 > "$evidence/control-$index.txt" 2>&1
+            grep -E '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured;' "$evidence/control-$index.txt"
+            grep -E '^PARENT_FSYNC_REFUSAL errno_probe=9 first_cleanup_is_permit_drop=true child_links=0 owner_links=0 original_lock_retained=true original_lease_retained=true quarantined=1 active=1 resident_bytes=[1-9][0-9]* disk_bytes=[1-9][0-9]* carrier_bytes=[1-9][0-9]* cleanup_drop_wall_ns=[0-9]+ network_bytes=0 scope=funded_pool_fixture_no_registered_child$' "$evidence/control-$index.txt"
+            index=$((index + 1))
+            expected_controls=21
+            ordinary_controls=18
+          else
+            printf 'NOT_RUN: Linux O_PATH parent-fsync refusal; no equivalent macOS gate claimed\n' > "$evidence/parent-fsync-platform.txt"
+          fi
           shasum -a 256 "$executable" > "$evidence/executable-after.sha256"
           cmp "$evidence/executable-before.sha256" "$evidence/executable-after.sha256"
           shasum -a 256 -c "$evidence/source.sha256" > "$evidence/source-after.txt"
-          test "$index" -eq 20
+          test "$index" -eq "$expected_controls"
           grep -E '^STORE_DROP_ORDER called=true ledger_held=true returned_credit_visible=false original_owner_released=true retirement_wall_ns=[0-9]+$' "$evidence/control-6.txt"
-          printf 'executed_controls=20\nordinary_controls=17\nexplicit_root_uid_controls=2\nexplicit_unprivileged_late_cleanup_controls=1\nscope=native host-process fixtures; no booted MVM or WAN\n' > "$evidence/counts.txt"
+          printf 'executed_controls=%s\nordinary_controls=%s\nexplicit_root_uid_controls=2\nexplicit_unprivileged_late_cleanup_controls=1\nscope=native host-process fixtures; no booted MVM or WAN\n' "$expected_controls" "$ordinary_controls" > "$evidence/counts.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
