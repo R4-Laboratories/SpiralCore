@@ -20,10 +20,13 @@ The original complete archives remain preserved privately, without rewriting the
 
 ## Choose a track
 
-The latest source checkpoint has a compact [final store-removal evidence packet](evidence/2026-11-16-final-store-removal/README.md)
-directly in Git: 28 original native ZIPs and 560 captured source/test/failure
-records. It records current source qualification and the permanent loss of 79
-older executable preimages; it is not an installer or new MVM/WAN acceptance.
+The latest source checkpoint has a compact [prepared-retention evidence packet](evidence/2026-11-16-prepared-store-retention/README.md)
+directly in Git: 28 original native ZIPs, 60 Unix custody controls, and 507
+captured source/test/failure records. Its generated records container is
+1,528,676 bytes for 88,972,212 file bytes; original native ZIPs remain unchanged.
+The [preceding packet](evidence/2026-11-16-final-store-removal/README.md) retains
+the permanent loss of 79 older executable preimages. These source/component
+packets are not installers or new MVM/WAN acceptance.
 
 | Track | Public download | Measured SpiralCore source | Report |
 |---|---|---|---|
