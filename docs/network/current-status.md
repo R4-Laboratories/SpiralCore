@@ -2,6 +2,10 @@
 
 ## Installed store metadata controls and current runtime source
 
+[PR309](https://github.com/R4-Laboratories/SpiralCore/pull/309) merged at
+`dacd7eb3`, identical reviewed/CI/release tree `9edebbbb`.
+[Permanent source, failure and measurement packet](evidence/2026-11-15-installed-store-metadata/README.md).
+
 Consumer manifests select contributor MVM
 [`e95f1119`](https://github.com/Casey-allard/mvm/commit/e95f1119dac66e45a81c4eead8f4e747a1286a86)
 on canonical `4047e48`, retaining reviewed shared core `8994951b` in both MVM
@@ -10,7 +14,7 @@ dependencies and all five locked packages. The frozen MVM source passes
 all 86 policy gates. All 4,747 immutable inputs and 285 recompiled/executed ELF
 identities match before and after. Independent source and artifact reviews
 cover this exact MVM source; SDK/native-consumer qualification remains a
-separate gate tracked in [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258).
+separate recorded scope under [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258).
 
 Real Linux directory metadata controls pass before capture and after claim:
 mode `0750` and a genuinely foreign UID refuse at the original identity check.
@@ -25,13 +29,26 @@ serialized in-memory request/reply bytes and zero network traffic.
 
 Native consumer CI requires all ten existing controls in their original order,
 two ordinary mode controls and two explicit root UID controls on Linux x64/ARM
-and macOS ARM. No missing privilege or ignored test is silently counted as a
-pass. Invoking SDK workspaces preserve `opt-level = 2` for the canonical
+and macOS ARM. All **42 native controls pass**; 35 executed CI checks succeed
+and genuine signed export is skipped/NOT_RUN. All 28 original ZIPs verify
+891 members, 644 embedded checksums and 24,955 source-hash rows. No missing
+privilege or ignored test is silently counted as a pass. Invoking SDK workspaces preserve `opt-level = 2` for the canonical
 `mvm-crypto` leaf as well as `mvm-core`; actual compiler-profile and execution
-results must qualify that build configuration. Seven consumer graph comparisons
+results qualify that selected contributor build configuration in all four
+invoking workspaces. SDK 175 live / 29 owner / 74 supervisor plus addressed and
+paired 18-test scopes pass, with explicit ignored cases and exact executable
+custody recorded separately. Seven consumer graph comparisons
 permit only reviewed prerelease labels and the new crypto leaf wrapping the
 unchanged AES-GCM dependency. The MVM graph comparison against the qualified
 5819 foundation permits only prerelease labels; all other edges/features match.
+
+Both Linux Root/store-load witnesses pass 64 distinct publications and exact
+1 MiB each direction through the selected child under the existing 2 GiB
+profile, seven observed threads and 295,698,432-byte hard address-space limit.
+VM debit remains retained without an actual VM exit. Seven native FlowMux rows
+recover 64 MiB per direction under unchanged 2 s/240 s guards; Windows ARM
+records 122.544954 s lifecycle / 94.953125 s whole-process CPU. These host-process
+results do not establish causal speedup, guest boot, WAN or sustained capacity.
 
 The [source-pin/runtime-producer handoff](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6906088779)
 is published for maintainer coordination. Compatible signed runtime publication,
