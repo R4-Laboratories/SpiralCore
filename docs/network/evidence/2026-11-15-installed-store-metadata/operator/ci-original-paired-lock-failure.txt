@@ -1,0 +1,310 @@
+﻿2026-11-16T03:54:15.9065677Z Current runner version: '2.338.2'
+2026-11-16T03:54:15.9088580Z ##[group]Runner Image Provisioner
+2026-11-16T03:54:15.9089421Z Hosted Compute Agent
+2026-11-16T03:54:15.9090056Z Version: 20261103.629
+2026-11-16T03:54:15.9090675Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-16T03:54:15.9091442Z Build Date: 2026-11-03T17:26:59Z
+2026-11-16T03:54:15.9092438Z Worker ID: {2d59e6e7-3f57-475e-aee6-a1aa03e51b35}
+2026-11-16T03:54:15.9093153Z Region: us-east-1
+2026-11-16T03:54:15.9093828Z Cloud: AWS
+2026-11-16T03:54:15.9094350Z ##[endgroup]
+2026-11-16T03:54:15.9095634Z ##[group]Operating System
+2026-11-16T03:54:15.9096094Z Ubuntu
+2026-11-16T03:54:15.9096475Z 24.04.5
+2026-11-16T03:54:15.9096852Z LTS
+2026-11-16T03:54:15.9097219Z ##[endgroup]
+2026-11-16T03:54:15.9097612Z ##[group]Runner Image
+2026-11-16T03:54:15.9098084Z Image: ubuntu-24.04
+2026-11-16T03:54:15.9098486Z Version: 20261111.127.1
+2026-11-16T03:54:15.9099435Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261111.127/images/ubuntu/Ubuntu2404-Readme.md
+2026-11-16T03:54:15.9100534Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261111.127
+2026-11-16T03:54:15.9101235Z ##[endgroup]
+2026-11-16T03:54:15.9102046Z ##[group]GITHUB_TOKEN Permissions
+2026-11-16T03:54:15.9103924Z Contents: read
+2026-11-16T03:54:15.9104368Z Metadata: read
+2026-11-16T03:54:15.9104826Z ##[endgroup]
+2026-11-16T03:54:15.9106287Z Secret source: Actions
+2026-11-16T03:54:15.9106938Z Cache mode: write
+2026-11-16T03:54:15.9107423Z Prepare workflow directory
+2026-11-16T03:54:15.9367262Z Prepare all required actions
+2026-11-16T03:54:15.9403281Z Getting action download info
+2026-11-16T03:54:16.0547081Z Download action repository 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-16T03:54:18.0241713Z Complete job name: linux-guest
+2026-11-16T03:54:18.0959398Z ##[group]Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+2026-11-16T03:54:18.0960853Z with:
+2026-11-16T03:54:18.0961615Z   path: spiralcore
+2026-11-16T03:54:18.0962660Z   persist-credentials: false
+2026-11-16T03:54:18.0963644Z   repository: R4-Laboratories/SpiralCore
+2026-11-16T03:54:18.0970460Z   token: ***
+2026-11-16T03:54:18.0971216Z   ssh-strict: true
+2026-11-16T03:54:18.0971975Z   ssh-user: git
+2026-11-16T03:54:18.0972920Z   clean: true
+2026-11-16T03:54:18.0973876Z   sparse-checkout-cone-mode: true
+2026-11-16T03:54:18.0974768Z   fetch-depth: 1
+2026-11-16T03:54:18.0975505Z   fetch-tags: false
+2026-11-16T03:54:18.0976303Z   show-progress: true
+2026-11-16T03:54:18.0977073Z   lfs: false
+2026-11-16T03:54:18.0977796Z   submodules: false
+2026-11-16T03:54:18.0978662Z   set-safe-directory: true
+2026-11-16T03:54:18.0979512Z   allow-unsafe-pr-checkout: false
+2026-11-16T03:54:18.0980623Z env:
+2026-11-16T03:54:18.0981305Z   CARGO_BUILD_JOBS: 2
+2026-11-16T03:54:18.0982329Z   CARGO_INCREMENTAL: 0
+2026-11-16T03:54:18.0983143Z   CARGO_PROFILE_TEST_DEBUG: 0
+2026-11-16T03:54:18.0984137Z   MVM_REVISION: e95f1119dac66e45a81c4eead8f4e747a1286a86
+2026-11-16T03:54:18.0985185Z ##[endgroup]
+2026-11-16T03:54:21.0462589Z Syncing repository: R4-Laboratories/SpiralCore
+2026-11-16T03:54:21.0464053Z ##[group]Getting Git version info
+2026-11-16T03:54:21.0464644Z Working directory is '/home/runner/work/SpiralCore/SpiralCore/spiralcore'
+2026-11-16T03:54:21.0465438Z [command]/usr/bin/git version
+2026-11-16T03:54:21.3190524Z git version 2.56.1
+2026-11-16T03:54:21.3205715Z ##[endgroup]
+2026-11-16T03:54:21.3215469Z Temporarily overriding HOME='/home/runner/work/_temp/cd24e23e-6b26-4ad4-9aeb-b3b6a5554531' before making global git config changes
+2026-11-16T03:54:21.3216125Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-16T03:54:21.3218827Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/SpiralCore/SpiralCore/spiralcore
+2026-11-16T03:54:21.3565660Z ##[group]Initializing the repository
+2026-11-16T03:54:21.3568781Z [command]/usr/bin/git init /home/runner/work/SpiralCore/SpiralCore/spiralcore
+2026-11-16T03:54:21.4359600Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-16T03:54:21.4360213Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-16T03:54:21.4360711Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-16T03:54:21.4361088Z hint: call:
+2026-11-16T03:54:21.4361331Z hint:
+2026-11-16T03:54:21.4361634Z hint: 	git config --global init.defaultBranch <name>
+2026-11-16T03:54:21.4361918Z hint:
+2026-11-16T03:54:21.4362325Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-16T03:54:21.4362798Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-16T03:54:21.4363155Z hint:
+2026-11-16T03:54:21.4363399Z hint: 	git branch -m <name>
+2026-11-16T03:54:21.4363632Z hint:
+2026-11-16T03:54:21.4363971Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-16T03:54:21.4372330Z Initialized empty Git repository in /home/runner/work/SpiralCore/SpiralCore/spiralcore/.git/
+2026-11-16T03:54:21.4378606Z [command]/usr/bin/git remote add origin https://github.com/R4-Laboratories/SpiralCore
+2026-11-16T03:54:21.4417652Z ##[endgroup]
+2026-11-16T03:54:21.4418293Z ##[group]Disabling automatic garbage collection
+2026-11-16T03:54:21.4420771Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-16T03:54:21.4446936Z ##[endgroup]
+2026-11-16T03:54:21.4447330Z ##[group]Setting up auth
+2026-11-16T03:54:21.4447735Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-16T03:54:21.4473930Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-16T03:54:21.8820398Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-16T03:54:21.8847379Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-16T03:54:21.8998181Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-16T03:54:21.9022982Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-16T03:54:21.9175978Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-16T03:54:21.9195466Z ##[endgroup]
+2026-11-16T03:54:21.9196065Z ##[group]Fetching the repository
+2026-11-16T03:54:21.9206902Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +88475f78b26b3f647cf86d10667d5cbbe9aae21c:refs/remotes/pull/309/merge
+2026-11-16T03:54:25.9323916Z From https://github.com/R4-Laboratories/SpiralCore
+2026-11-16T03:54:25.9324699Z  * [new ref]           88475f78b26b3f647cf86d10667d5cbbe9aae21c -> pull/309/merge
+2026-11-16T03:54:25.9327711Z ##[endgroup]
+2026-11-16T03:54:25.9328350Z ##[group]Determining the checkout info
+2026-11-16T03:54:25.9329931Z ##[endgroup]
+2026-11-16T03:54:25.9342516Z [command]/usr/bin/git sparse-checkout disable
+2026-11-16T03:54:25.9413541Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-16T03:54:25.9426090Z ##[group]Checking out the ref
+2026-11-16T03:54:25.9428648Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/309/merge
+2026-11-16T03:54:27.0314127Z Updating files:  99% (26691/26829)
+2026-11-16T03:54:27.0315152Z Updating files: 100% (26829/26829)
+2026-11-16T03:54:27.0316715Z Updating files: 100% (26829/26829), done.
+2026-11-16T03:54:27.0516131Z Note: switching to 'refs/remotes/pull/309/merge'.
+2026-11-16T03:54:27.0516368Z 
+2026-11-16T03:54:27.0516695Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-16T03:54:27.0517131Z changes and commit them, and you can discard any commits you make in this
+2026-11-16T03:54:27.0517679Z state without impacting any branches by switching back to a branch.
+2026-11-16T03:54:27.0517909Z 
+2026-11-16T03:54:27.0518066Z If you want to create a new branch to retain commits you create, you may
+2026-11-16T03:54:27.0518654Z do so (now or later) by using -c with the switch command. Example:
+2026-11-16T03:54:27.0518906Z 
+2026-11-16T03:54:27.0519314Z   git switch -c <new-branch-name>
+2026-11-16T03:54:27.0519473Z 
+2026-11-16T03:54:27.0519618Z Or undo this operation with:
+2026-11-16T03:54:27.0519773Z 
+2026-11-16T03:54:27.0519882Z   git switch -
+2026-11-16T03:54:27.0520066Z 
+2026-11-16T03:54:27.0520247Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-16T03:54:27.0520572Z 
+2026-11-16T03:54:27.0589376Z HEAD is now at 88475f78 Merge 180075a4f304d7f31449b55170940ae00fbb5a67 into 3f801ffc2afad585c11a1986fe08c35489beb9b1
+2026-11-16T03:54:27.0591073Z ##[endgroup]
+2026-11-16T03:54:27.0629618Z [command]/usr/bin/git log -1 --format=%H
+2026-11-16T03:54:27.0658124Z 88475f78b26b3f647cf86d10667d5cbbe9aae21c
+2026-11-16T03:54:27.0670463Z ##[group]Removing auth
+2026-11-16T03:54:27.0674597Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-16T03:54:27.0701100Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-16T03:54:27.0891587Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-16T03:54:27.0914163Z http.https://github.com/.extraheader
+2026-11-16T03:54:27.0917785Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-16T03:54:27.0939339Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-16T03:54:27.1116117Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-16T03:54:27.1145464Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-16T03:54:27.1317405Z ##[endgroup]
+2026-11-16T03:54:27.1519296Z ##[group]Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+2026-11-16T03:54:27.1519634Z with:
+2026-11-16T03:54:27.1519875Z   repository: Casey-allard/mvm
+2026-11-16T03:54:27.1520135Z   ref: e95f1119dac66e45a81c4eead8f4e747a1286a86
+2026-11-16T03:54:27.1520403Z   path: source
+2026-11-16T03:54:27.1520625Z   persist-credentials: false
+2026-11-16T03:54:27.1522610Z   token: ***
+2026-11-16T03:54:27.1522842Z   ssh-strict: true
+2026-11-16T03:54:27.1523056Z   ssh-user: git
+2026-11-16T03:54:27.1523269Z   clean: true
+2026-11-16T03:54:27.1523491Z   sparse-checkout-cone-mode: true
+2026-11-16T03:54:27.1523744Z   fetch-depth: 1
+2026-11-16T03:54:27.1523994Z   fetch-tags: false
+2026-11-16T03:54:27.1524220Z   show-progress: true
+2026-11-16T03:54:27.1524440Z   lfs: false
+2026-11-16T03:54:27.1524640Z   submodules: false
+2026-11-16T03:54:27.1524910Z   set-safe-directory: true
+2026-11-16T03:54:27.1525164Z   allow-unsafe-pr-checkout: false
+2026-11-16T03:54:27.1525378Z env:
+2026-11-16T03:54:27.1525712Z   CARGO_BUILD_JOBS: 2
+2026-11-16T03:54:27.1525917Z   CARGO_INCREMENTAL: 0
+2026-11-16T03:54:27.1526172Z   CARGO_PROFILE_TEST_DEBUG: 0
+2026-11-16T03:54:27.1526444Z   MVM_REVISION: e95f1119dac66e45a81c4eead8f4e747a1286a86
+2026-11-16T03:54:27.1526717Z ##[endgroup]
+2026-11-16T03:54:27.2158440Z Syncing repository: Casey-allard/mvm
+2026-11-16T03:54:27.2159280Z ##[group]Getting Git version info
+2026-11-16T03:54:27.2159936Z Working directory is '/home/runner/work/SpiralCore/SpiralCore/source'
+2026-11-16T03:54:27.2181286Z [command]/usr/bin/git version
+2026-11-16T03:54:27.2206908Z git version 2.56.1
+2026-11-16T03:54:27.2218906Z ##[endgroup]
+2026-11-16T03:54:27.2227614Z Temporarily overriding HOME='/home/runner/work/_temp/6d7203d2-d0b1-4e0a-af19-26409da780f0' before making global git config changes
+2026-11-16T03:54:27.2228803Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-16T03:54:27.2230162Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/SpiralCore/SpiralCore/source
+2026-11-16T03:54:27.2253571Z ##[group]Initializing the repository
+2026-11-16T03:54:27.2255675Z [command]/usr/bin/git init /home/runner/work/SpiralCore/SpiralCore/source
+2026-11-16T03:54:27.2277702Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-16T03:54:27.2278537Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-16T03:54:27.2279414Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-16T03:54:27.2280004Z hint: call:
+2026-11-16T03:54:27.2280422Z hint:
+2026-11-16T03:54:27.2280878Z hint: 	git config --global init.defaultBranch <name>
+2026-11-16T03:54:27.2281986Z hint:
+2026-11-16T03:54:27.2282720Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-16T03:54:27.2283409Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-16T03:54:27.2283999Z hint:
+2026-11-16T03:54:27.2284886Z hint: 	git branch -m <name>
+2026-11-16T03:54:27.2285350Z hint:
+2026-11-16T03:54:27.2285867Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-16T03:54:27.2286694Z Initialized empty Git repository in /home/runner/work/SpiralCore/SpiralCore/source/.git/
+2026-11-16T03:54:27.2288163Z [command]/usr/bin/git remote add origin https://github.com/Casey-allard/mvm
+2026-11-16T03:54:27.2305554Z ##[endgroup]
+2026-11-16T03:54:27.2306183Z ##[group]Disabling automatic garbage collection
+2026-11-16T03:54:27.2312853Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-16T03:54:27.2335384Z ##[endgroup]
+2026-11-16T03:54:27.2344260Z ##[group]Setting up auth
+2026-11-16T03:54:27.2344965Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-16T03:54:27.2380570Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-16T03:54:27.2528999Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-16T03:54:27.2558345Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-16T03:54:27.2713867Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-16T03:54:27.2770222Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-16T03:54:27.2918156Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-16T03:54:27.2942712Z ##[endgroup]
+2026-11-16T03:54:27.2943312Z ##[group]Fetching the repository
+2026-11-16T03:54:27.2948663Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin e95f1119dac66e45a81c4eead8f4e747a1286a86
+2026-11-16T03:54:30.3442030Z From https://github.com/Casey-allard/mvm
+2026-11-16T03:54:30.3442811Z  * branch            e95f1119dac66e45a81c4eead8f4e747a1286a86 -> FETCH_HEAD
+2026-11-16T03:54:30.3445691Z ##[endgroup]
+2026-11-16T03:54:30.3446081Z ##[group]Determining the checkout info
+2026-11-16T03:54:30.3447718Z ##[endgroup]
+2026-11-16T03:54:30.3459306Z [command]/usr/bin/git sparse-checkout disable
+2026-11-16T03:54:30.3490675Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-16T03:54:30.3512694Z ##[group]Checking out the ref
+2026-11-16T03:54:30.3516074Z [command]/usr/bin/git checkout --progress --force e95f1119dac66e45a81c4eead8f4e747a1286a86
+2026-11-16T03:54:30.6280475Z Note: switching to 'e95f1119dac66e45a81c4eead8f4e747a1286a86'.
+2026-11-16T03:54:30.6281057Z 
+2026-11-16T03:54:30.6281423Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-16T03:54:30.6281887Z changes and commit them, and you can discard any commits you make in this
+2026-11-16T03:54:30.6282606Z state without impacting any branches by switching back to a branch.
+2026-11-16T03:54:30.6282954Z 
+2026-11-16T03:54:30.6283163Z If you want to create a new branch to retain commits you create, you may
+2026-11-16T03:54:30.6283592Z do so (now or later) by using -c with the switch command. Example:
+2026-11-16T03:54:30.6283776Z 
+2026-11-16T03:54:30.6283924Z   git switch -c <new-branch-name>
+2026-11-16T03:54:30.6284062Z 
+2026-11-16T03:54:30.6284184Z Or undo this operation with:
+2026-11-16T03:54:30.6284384Z 
+2026-11-16T03:54:30.6284455Z   git switch -
+2026-11-16T03:54:30.6284642Z 
+2026-11-16T03:54:30.6284869Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-16T03:54:30.6285213Z 
+2026-11-16T03:54:30.6285480Z HEAD is now at e95f111 test(flowmux): preserve accepted object bytes on refused store retirement
+2026-11-16T03:54:30.6316967Z ##[endgroup]
+2026-11-16T03:54:30.6319578Z [command]/usr/bin/git log -1 --format=%H
+2026-11-16T03:54:30.6339269Z e95f1119dac66e45a81c4eead8f4e747a1286a86
+2026-11-16T03:54:30.6345497Z ##[group]Removing auth
+2026-11-16T03:54:30.6348584Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-16T03:54:30.6369884Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-16T03:54:30.6528582Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-16T03:54:30.6545771Z http.https://github.com/.extraheader
+2026-11-16T03:54:30.6550694Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-16T03:54:30.6571787Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-16T03:54:30.6719765Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-16T03:54:30.6741297Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-16T03:54:30.6885935Z ##[endgroup]
+2026-11-16T03:54:30.6981647Z ##[group]Run set -euo pipefail
+2026-11-16T03:54:30.6981962Z [36;1mset -euo pipefail[0m
+2026-11-16T03:54:30.6982659Z [36;1mtest "$(git -C source rev-parse HEAD)" = "$MVM_REVISION"[0m
+2026-11-16T03:54:30.6983019Z [36;1mrustup toolchain install 1.97.1 --profile minimal[0m
+2026-11-16T03:54:30.6983487Z [36;1mcp -R spiralcore/tools/ari-own-mailbox-witness/paired-guest paired-guest[0m
+2026-11-16T03:54:30.6983920Z [36;1mln -s spiralcore/tools/ari-own-mailbox-witness/fixtures fixtures[0m
+2026-11-16T03:54:30.6984307Z [36;1mexport CARGO_TARGET_DIR="$RUNNER_TEMP/object-reader-target"[0m
+2026-11-16T03:54:30.6984741Z [36;1mcargo +1.97.1 test --locked --manifest-path paired-guest/Cargo.toml \[0m
+2026-11-16T03:54:30.6985198Z [36;1m  --features object-reader-v1,large-object-fixture,sender-ordinal-v1 --all-targets[0m
+2026-11-16T03:54:30.6985676Z [36;1mcargo +1.97.1 test --locked --manifest-path source/Cargo.toml \[0m
+2026-11-16T03:54:30.6986178Z [36;1m  -p mvm-agentd --bin mvm-guest-agent mailbox_reader::object_guest_tests[0m
+2026-11-16T03:54:31.0198484Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-16T03:54:31.0198799Z env:
+2026-11-16T03:54:31.0199001Z   CARGO_BUILD_JOBS: 2
+2026-11-16T03:54:31.0199251Z   CARGO_INCREMENTAL: 0
+2026-11-16T03:54:31.0199514Z   CARGO_PROFILE_TEST_DEBUG: 0
+2026-11-16T03:54:31.0199801Z   MVM_REVISION: e95f1119dac66e45a81c4eead8f4e747a1286a86
+2026-11-16T03:54:31.0200088Z ##[endgroup]
+2026-11-16T03:54:31.9175350Z info: syncing channel updates for 1.97.1-x86_64-unknown-linux-gnu
+2026-11-16T03:54:32.0809952Z info: latest update on 2026-07-16 for version 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-16T03:54:32.0811830Z info: downloading 3 components
+2026-11-16T03:54:38.7525746Z 
+2026-11-16T03:54:38.7582669Z   1.97.1-x86_64-unknown-linux-gnu installed - rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-16T03:54:38.7582984Z 
+2026-11-16T03:54:38.8025188Z     Updating crates.io index
+2026-11-16T03:54:38.8035759Z     Updating git repository `https://github.com/tinylabscom/mvm`
+2026-11-16T03:54:51.2940638Z warning: patch `am-fs-ext4 v0.4.0 (/home/runner/work/SpiralCore/SpiralCore/source/third_party/am-fs-ext4)` was not used in the crate graph
+2026-11-16T03:54:51.2941416Z warning: patch `arrayref v0.3.9 (/home/runner/work/SpiralCore/SpiralCore/source/third_party/arrayref)` was not used in the crate graph
+2026-11-16T03:54:51.2942458Z warning: patch `gix v0.87.1 (/home/runner/work/SpiralCore/SpiralCore/source/third_party/gix-0.87.1)` was not used in the crate graph
+2026-11-16T03:54:51.2943184Z warning: patch `gix-object v0.64.1 (/home/runner/work/SpiralCore/SpiralCore/source/third_party/gix-object-0.64.1)` was not used in the crate graph
+2026-11-16T03:54:51.2943901Z warning: patch `io-extras v0.19.0 (/home/runner/work/SpiralCore/SpiralCore/source/third_party/io-extras-0.19.0)` was not used in the crate graph
+2026-11-16T03:54:51.2944616Z warning: patch `notify v8.2.0 (/home/runner/work/SpiralCore/SpiralCore/source/third_party/notify-8.2.0)` was not used in the crate graph
+2026-11-16T03:54:51.2945178Z help: Check that the patched package version and available features are compatible
+2026-11-16T03:54:51.2945629Z       with the dependency requirements. If the patch has a different version from
+2026-11-16T03:54:51.2946041Z       what is locked in the Cargo.lock file, run `cargo update` to use the new
+2026-11-16T03:54:51.2946451Z       version. This may also occur with an optional dependency that is not enabled.
+2026-11-16T03:54:51.3275592Z error: cannot update the lock file /home/runner/work/SpiralCore/SpiralCore/paired-guest/Cargo.lock because --locked was passed to prevent this
+2026-11-16T03:54:51.3276553Z help: to generate the lock file without accessing the network, remove the --locked flag and use --offline instead.
+2026-11-16T03:54:51.3320535Z ##[error]Process completed with exit code 101.
+2026-11-16T03:54:51.3427131Z Post job cleanup.
+2026-11-16T03:54:51.4045132Z [command]/usr/bin/git version
+2026-11-16T03:54:51.4071676Z git version 2.56.1
+2026-11-16T03:54:51.4096297Z Temporarily overriding HOME='/home/runner/work/_temp/95f980d1-2281-4340-a420-a84c5978c40b' before making global git config changes
+2026-11-16T03:54:51.4097418Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-16T03:54:51.4098765Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/SpiralCore/SpiralCore/source
+2026-11-16T03:54:51.4125386Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-16T03:54:51.4147582Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-16T03:54:51.4309521Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-16T03:54:51.4331986Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-16T03:54:51.4487067Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-16T03:54:51.4507979Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-16T03:54:51.4824450Z Post job cleanup.
+2026-11-16T03:54:51.5465721Z [command]/usr/bin/git version
+2026-11-16T03:54:51.5496996Z git version 2.56.1
+2026-11-16T03:54:51.5527164Z Temporarily overriding HOME='/home/runner/work/_temp/f0c58a12-0e95-47aa-8b42-e423a2e94cd4' before making global git config changes
+2026-11-16T03:54:51.5528106Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-16T03:54:51.5531728Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/SpiralCore/SpiralCore/spiralcore
+2026-11-16T03:54:51.5558295Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-16T03:54:51.5580768Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-16T03:54:51.5769450Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-16T03:54:51.5791985Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-16T03:54:51.5978643Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-16T03:54:51.6002904Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-16T03:54:51.6284300Z Cleaning up orphan processes
+2026-11-16T03:54:51.6522826Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+
