@@ -13,9 +13,10 @@ cover this exact MVM source; SDK/native-consumer qualification remains a
 separate gate tracked in [#258](https://github.com/R4-Laboratories/SpiralCore/issues/258).
 
 Real Linux directory metadata controls pass before capture and after claim:
-mode `0750` and a genuinely foreign UID refuse at the original identity check,
-retain original parent/name/FD, accepted bytes, lease/lock and all resource
-charges in quarantine. Twelve ordinary resource-pool tests pass; the two UID
+mode `0750` and a genuinely foreign UID refuse at the original identity check.
+Both phases retain original parent/name/FD and all resource charges in
+quarantine; the post-claim controls additionally retain accepted bytes and the
+original lease and owner lock. Twelve ordinary resource-pool tests pass; the two UID
 tests remain ignored by ordinary suites and each passes in an explicit root
 execution through the same selected test ELF. The successful original
 destruction-before-credit assertion remains unchanged. The fixture publishes
