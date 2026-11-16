@@ -207,5 +207,3 @@ print(json.dumps(dict(records=len(records), binary_passed=21891, doctest_passed=
                      verified_reuse=26, SDK='175/29/74/1', paired_passed=18,
                      paired_reused_ELFs=4, ignored_paired=1, graphs_equal=9,
                      scope='retained source/component records; no archived code or binary executed')))
-
-
