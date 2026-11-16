@@ -164,7 +164,8 @@ jobs:
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --features canonical-host --lib installed_parent::config_tests::object_tcp_ \
             -- --test-threads=1 2>&1 | tee endpoint-evidence/worker-tests.txt
-          grep -E '^test result: ok\. 2 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/worker-tests.txt
+          grep -F 'test installed_parent::config_tests::object_tcp_pair_with_eight_helper_workers_funds_both_original_partitions ... ok' endpoint-evidence/worker-tests.txt
+          grep -E '^test result: ok\. 3 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/worker-tests.txt
           shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after-workers.txt
       - name: Original Root funds the selected child through populated-store retirement
         if: runner.os == 'Linux'

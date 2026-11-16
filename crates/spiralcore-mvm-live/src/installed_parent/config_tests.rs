@@ -601,6 +601,26 @@ fn object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
 
 #[cfg(target_os = "linux")]
 fn probe_object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
+    probe_object_tcp_pair_worker_ceiling(10);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn object_tcp_pair_with_eight_helper_workers_funds_both_original_partitions() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_object_tcp_pair_with_eight_helper_workers_funds_both_original_partitions,
+    );
+}
+
+#[cfg(target_os = "linux")]
+fn probe_object_tcp_pair_with_eight_helper_workers_funds_both_original_partitions() {
+    // Conditional ledger control for the separately qualified helper candidate.
+    // No helpers, endpoints or VMs run here; the selected runtime pin is unchanged.
+    probe_object_tcp_pair_worker_ceiling(8);
+}
+
+#[cfg(target_os = "linux")]
+fn probe_object_tcp_pair_worker_ceiling(helper_workers: u64) {
     let profile = crate::installed_supervisor::InstalledConfig::two_endpoint_witness_profile();
     assert_eq!(profile.managed_limits().0.workers, 24);
     let (home, mut supervisor, mut provider) = endpoint_tests::fixture_with_config(profile);
@@ -608,13 +628,13 @@ fn probe_object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
         .configure_object_tcp(&supervisor, operator_partition())
         .unwrap();
     let pool = supervisor.managed_resources().clone();
-    // Book the existing tenant helper class without starting test processes.
+    // Book the specified helper class without starting test processes.
     // These are ledger/admission controls, not a live tenant or VM witness.
     let tenant_workers = pool
         .reserve(
             tenant_tag("local"),
             ManagedClaim {
-                workers: 10,
+                workers: helper_workers,
                 ..Default::default()
             },
         )
@@ -648,7 +668,7 @@ fn probe_object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
     let (first, first_config, original_first) = admit("worker-funded-a");
     let (second, second_config, original_second) = admit("worker-funded-b");
     let before = pool.snapshot().unwrap();
-    assert_eq!(before.usage.workers, 12);
+    assert_eq!(before.usage.workers, helper_workers + 2);
     let held = first
         .prepare_endpoint_handoff(&first_config, native_backend())
         .unwrap();
@@ -656,6 +676,51 @@ fn probe_object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling() {
         .check_owned_payload_store_resources()
         .unwrap();
     let booked = pool.snapshot().unwrap();
+    if helper_workers == 8 {
+        assert_eq!(before.usage.workers, 10);
+        assert_eq!(booked.usage.workers, 17);
+        let second_held = second
+            .prepare_endpoint_handoff(&second_config, native_backend())
+            .unwrap();
+        second_held
+            .partition()
+            .check_owned_payload_store_resources()
+            .unwrap();
+        let full = pool.snapshot().unwrap();
+        assert_eq!(full.usage.workers, 24);
+        assert_eq!(
+            pool.reserve(
+                tenant_tag("local"),
+                ManagedClaim {
+                    workers: 1,
+                    ..Default::default()
+                }
+            )
+            .err(),
+            Some(crate::installed_resources::ManagedResourceError::Full)
+        );
+        assert_eq!(pool.snapshot().unwrap().usage, full.usage);
+        provider.close_admission();
+        for partition in [held.partition(), second_held.partition()] {
+            assert!(partition.check_owned_payload_store_resources().is_err());
+        }
+        drop((
+            held,
+            second_held,
+            first,
+            first_config,
+            second,
+            second_config,
+        ));
+        // No retirement receipt: neither original endpoint claim is refunded.
+        assert_eq!(pool.snapshot().unwrap().usage, full.usage);
+        drop((original_first, original_second, tenant_workers, provider));
+        supervisor.close_admission();
+        assert!(supervisor.try_finish().is_err());
+        return;
+    }
+    assert_eq!(helper_workers, 10);
+    assert_eq!(before.usage.workers, 12);
     assert_eq!(booked.usage.workers, 19);
     let Err(error) = second.prepare_endpoint_handoff(&second_config, native_backend()) else {
         panic!("the second endpoint would require 26 aggregate workers");

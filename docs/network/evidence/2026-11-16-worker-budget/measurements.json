@@ -1,0 +1,1558 @@
+{
+  "schema_version": 2,
+  "scope": "Corrected owned-helper scheduling and conditional original-ledger admission. No two installed Ready endpoints or booted VMs.",
+  "source": {
+    "mvm_commit": "3a4f6870e44e11aa66bcccc7e6f2f2e69db947a0",
+    "mvm_tree": "1d2b26b5a9f2ceb50a289f67440c41dc098e3155",
+    "parent": "c20c09006f4b306b42f6c8803df32e54272827a5",
+    "canonical_basis": "c5de1cc7",
+    "tracked_files": 4822,
+    "tracked_sha256_manifest": "cf6080bc3e9c5248ec6b2892970ba42bef7123d163611fbf97cb68163dd9a260",
+    "method": "Clean operator tracked-file hashes match explicitly non-Git HDD build snapshot. Corrected source restored exactly after controlled no-handoff RED; GREEN2 source set and ELF match gates2.",
+    "rust_toolchain": "1.97.1",
+    "host": "native Linux x86_64",
+    "upstream_observed": "9a0a2f62942f9a6327ee2bd6fd45b027c4246240; outside frozen qualification."
+  },
+  "selected_delivery": {
+    "mvm": "f2ddbcbf1039405698e1ac0dcb16e29a5bf3b676",
+    "spiralcore": "8994951b7c13fe5acf6f5ea3060ad4e51dc473c2",
+    "changed": false
+  },
+  "worker_costs": {
+    "ceiling": 24,
+    "observers": 2,
+    "endpoint_each": 7,
+    "endpoint_breakdown": {
+      "foreground_controller": 1,
+      "session": 1,
+      "collector": 3,
+      "tcp_relay": 1,
+      "codec_reader": 1
+    },
+    "old_helpers": {
+      "processes": 2,
+      "foreground_each": 1,
+      "async_each": 2,
+      "blocking_each": 2,
+      "total": 10,
+      "two_endpoint_total": 26
+    },
+    "candidate_helpers": {
+      "processes": 2,
+      "foreground_each": 1,
+      "async_each": 1,
+      "blocking_each": 2,
+      "total": 8,
+      "two_endpoint_total": 24
+    }
+  },
+  "corrected_qualification": {
+    "registered": {
+      "label": "registered",
+      "summary": [
+        "test result: FAILED. 10 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.80s"
+      ],
+      "native": [
+        {
+          "after": [
+            {
+              "pid": 1135910,
+              "start_ticks": 26124658,
+              "system_ticks": 0,
+              "threads": 4,
+              "user_ticks": 2
+            },
+            {
+              "pid": 1135912,
+              "start_ticks": 26124658,
+              "system_ticks": 0,
+              "threads": 4,
+              "user_ticks": 1
+            }
+          ],
+          "before": [
+            {
+              "pid": 1135910,
+              "start_ticks": 26124658,
+              "system_ticks": 0,
+              "threads": 2,
+              "user_ticks": 0
+            },
+            {
+              "pid": 1135912,
+              "start_ticks": 26124658,
+              "system_ticks": 0,
+              "threads": 3,
+              "user_ticks": 0
+            }
+          ],
+          "broker_framed_bytes_vm1": [
+            5654,
+            5024
+          ],
+          "broker_framed_bytes_vm2": [
+            5654,
+            5024
+          ],
+          "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+          "executable_sha256": [
+            "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b",
+            "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481"
+          ],
+          "original_archives": [
+            {
+              "bytes": 19224,
+              "entries": 32,
+              "sha256": "e23ef8bf850587e119f86b7aac07af9c707ee04f63bfdf82e9972ecb06b04eb2",
+              "workload": "vm-1"
+            },
+            {
+              "bytes": 19224,
+              "entries": 32,
+              "sha256": "25bb232b3ae475ec5e83a4467580015082b1c5eb6d1122f2e881edf08e943bde",
+              "workload": "vm-2"
+            }
+          ],
+          "partial_signer_received_bytes": 0,
+          "partial_signer_sent_bytes": 5,
+          "sample_interval_ms": 1,
+          "sampled_peak_threads": [
+            4,
+            4
+          ],
+          "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+          "setup_to_verified_retirement_ns": 2481043607,
+          "signing_with_partial_frame_ns": 2383707812
+        }
+      ],
+      "pressure": [
+        {
+          "peak": 3,
+          "elapsed_ns": 11924610
+        }
+      ]
+    },
+    "repeats": [
+      {
+        "label": "repeat-1",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.49s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1135948,
+                "start_ticks": 26124911,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 2
+              },
+              {
+                "pid": 1135950,
+                "start_ticks": 26124911,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 1
+              }
+            ],
+            "before": [
+              {
+                "pid": 1135948,
+                "start_ticks": 26124911,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1135950,
+                "start_ticks": 26124911,
+                "system_ticks": 0,
+                "threads": 3,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b",
+              "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "6b4003d1d0119d69cb7f58f06ba718484a940a2ba5ef4b3e5927b21cc2d8ecf1",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "eb71d1ff606a4efc442efa77259c43826df422cce143545f1c4abc91fb6e7943",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              4
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2480301144,
+            "signing_with_partial_frame_ns": 2384508410
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11979956
+          }
+        ]
+      },
+      {
+        "label": "repeat-2",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.49s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1135996,
+                "start_ticks": 26125160,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 2
+              },
+              {
+                "pid": 1135998,
+                "start_ticks": 26125161,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 2
+              }
+            ],
+            "before": [
+              {
+                "pid": 1135996,
+                "start_ticks": 26125160,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1135998,
+                "start_ticks": 26125161,
+                "system_ticks": 0,
+                "threads": 3,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b",
+              "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "b248fd7a98af18ffc1b2b4545512a0aa4dda01a84fda33bb9cd297dfdb0f89c9",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "69c305e15d9e578f4e7930e0b0914d80d5805a52dd26f0cb79462f5a84227ef1",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              4
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2479814704,
+            "signing_with_partial_frame_ns": 2382385227
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11792960
+          }
+        ]
+      },
+      {
+        "label": "repeat-3",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.50s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1136032,
+                "start_ticks": 26125410,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 3
+              },
+              {
+                "pid": 1136034,
+                "start_ticks": 26125410,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 2
+              }
+            ],
+            "before": [
+              {
+                "pid": 1136032,
+                "start_ticks": 26125410,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1136034,
+                "start_ticks": 26125410,
+                "system_ticks": 0,
+                "threads": 3,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b",
+              "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "1655677a7ca340b25f185bd23ae938d2f03141442816bbc198becffe24d9000c",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "04154ba176b388ad86d68229975ab1691dd76f2b739ebb6014c3b3a1be558e05",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              4
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2484661524,
+            "signing_with_partial_frame_ns": 2386420161
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11838407
+          }
+        ]
+      },
+      {
+        "label": "repeat-4",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.50s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1136078,
+                "start_ticks": 26125660,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 3
+              },
+              {
+                "pid": 1136080,
+                "start_ticks": 26125660,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 2
+              }
+            ],
+            "before": [
+              {
+                "pid": 1136078,
+                "start_ticks": 26125660,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1136080,
+                "start_ticks": 26125660,
+                "system_ticks": 0,
+                "threads": 3,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b",
+              "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "cfb0ea0a8faf921d8c16ef39f47da1e2ce694dccbd2caf32a77e302a579f2760",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "935945e99ff1d61eb1327ccbfed3e6e2b5790b26c4155998d97fff3e89bb88a3",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              4
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2484342530,
+            "signing_with_partial_frame_ns": 2387595657
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11894314
+          }
+        ]
+      },
+      {
+        "label": "repeat-5",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.49s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1136100,
+                "start_ticks": 26125910,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 2
+              },
+              {
+                "pid": 1136102,
+                "start_ticks": 26125910,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 1
+              }
+            ],
+            "before": [
+              {
+                "pid": 1136100,
+                "start_ticks": 26125910,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1136102,
+                "start_ticks": 26125910,
+                "system_ticks": 0,
+                "threads": 3,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b",
+              "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "ca5e22a7d59377217788d166d1569f4b7c3df4b6f1f601e43629919433a4dac8",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "c0125948174c5945924aeb5a68d125b961be6abf3f80300ff3557b46075f97a8",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              4
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2477753947,
+            "signing_with_partial_frame_ns": 2380247718
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11966902
+          }
+        ]
+      }
+    ],
+    "libraries": {
+      "owned-dispatch-gates2-audit_signer-helper--tests.txt": [
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 2595 filtered out; finished in 1.01s"
+      ],
+      "owned-dispatch-gates2-audit_signer-owned_helper--tests.txt": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2607 filtered out; finished in 0.00s"
+      ],
+      "owned-dispatch-gates2-broker-audit_client-tests--tests.txt": [
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 2600 filtered out; finished in 0.26s"
+      ],
+      "owned-dispatch-gates2-broker-daemon-owned--tests.txt": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2604 filtered out; finished in 0.00s"
+      ],
+      "owned-dispatch-gates2-host-host_agent_spawn-owned--tests.txt": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 1115 filtered out; finished in 0.00s"
+      ],
+      "owned-dispatch-gates2-owned_resources--tests.txt": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2602 filtered out; finished in 0.00s"
+      ]
+    },
+    "first_repeat_time": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-f3ea7966f5e9b1fb worker_budget_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.11\n\tSystem time (seconds): 0.04\n\tPercent of CPU this job got: 6%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:02.49\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 43672\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 17087\n\tVoluntary context switches: 3386\n\tInvoluntary context switches: 24\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 2\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+    "outcome": {
+      "exit": 0,
+      "source_hash_exit": 0,
+      "source_file_set_exit": 0
+    },
+    "archive": {
+      "archive": "/mnt/plexpool/spiralcore-work/owned-dispatch-gates2-executables.tar.zst",
+      "bytes": 61828072,
+      "sha256": "95942a615dfd8800df8020dab6b1133a77f0ab2eec239a5bee6dfa25f9f21051",
+      "members": {
+        "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_vmm-b539bc2ed7d0768e": "d6fd3ded223b035e355d19db8ddde21f04cae6ba10418d3cefa09d0ae64b8302",
+        "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb": "979854f9758191d99b1ee60381227df60f14e35745b50b4db9ddce23dac81aba",
+        "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-f3ea7966f5e9b1fb": "27b1acd3ab555c762e3d224a43eb66ce3d83a51e4beaecde581e589b373b13a1",
+        "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-signer-helper": "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481",
+        "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-host-agent": "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b",
+        "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-vmm/src/host/host_agent_spawn.rs": "58892f3472bdeedba3528e954ce752b9ad0c24f91580723b6fab96de9135757e",
+        "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/tests/registered_direct_tcp.rs": "8e3db4f17822a0dd0a463091a9fb2651027baa5e3e18d8911cf5a5070590d4e6",
+        "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/tests/registered_prepare/worker_budget_tests.rs": "94a5afa50b9a963e31ed23bcf073057f630c0ccc101ffc1d79422768ca15abc7",
+        "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper.rs": "7a7e3953b8c0bce3d6a4c7734b7f5d3877c9c43c163f25ae4fbf4ec5517372a2",
+        "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper/owned_dispatch_tests.rs": "04ed238ace86db704dc433398495b3692088b158bf9c09b37f91456f880726eb"
+      },
+      "replay_verified": true
+    },
+    "library_executables": [
+      {
+        "target": "mvm_vmm",
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_vmm-b539bc2ed7d0768e",
+        "fresh": true,
+        "sha256": "d6fd3ded223b035e355d19db8ddde21f04cae6ba10418d3cefa09d0ae64b8302"
+      },
+      {
+        "target": "mvm_hostd",
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb",
+        "fresh": false,
+        "sha256": "979854f9758191d99b1ee60381227df60f14e35745b50b4db9ddce23dac81aba"
+      }
+    ],
+    "integration_executables": [
+      {
+        "target": "registered_direct_tcp",
+        "test": true,
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-f3ea7966f5e9b1fb",
+        "fresh": false,
+        "sha256": "27b1acd3ab555c762e3d224a43eb66ce3d83a51e4beaecde581e589b373b13a1"
+      },
+      {
+        "target": "mvm-signer-helper",
+        "test": false,
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-signer-helper",
+        "fresh": false,
+        "sha256": "1deada41acc3c23119bc91b4124b7a9138984e6369a44e03f003e33ce5202481"
+      },
+      {
+        "target": "mvm-host-agent",
+        "test": false,
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-host-agent",
+        "fresh": false,
+        "sha256": "80b7165b9b7f09ee1b84a8689beb5a2223b979a4b5189ed90111fab5998ba63b"
+      }
+    ],
+    "dispatch_regressions": {
+      "owned-dispatch-red1": {
+        "log": "\nrunning 1 test\ntest audit_signer::helper::owned_dispatch_tests::blocked_owned_dispatch_preserves_original_partial_frame_deadline ... Error: entered=Ok(()); timely_partial=Err(Timeout); held=true; partial=Ok(Err(owned signer parse deadline\n\nCaused by:\n    deadline has elapsed)); dispatch=Ok(Ok(())); response=Ok(Pong { request_id: \"held-dispatch\" })\nFAILED\n\nfailures:\n\nfailures:\n    audit_signer::helper::owned_dispatch_tests::blocked_owned_dispatch_preserves_original_partial_frame_deadline\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2606 filtered out; finished in 1.50s\n\n",
+        "time": "Command exited with non-zero status 101\n\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb audit_signer::helper::owned_dispatch_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.00\n\tSystem time (seconds): 0.00\n\tPercent of CPU this job got: 0%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:01.50\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 37224\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 1664\n\tVoluntary context switches: 1450\n\tInvoluntary context switches: 1\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 0\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 101\n",
+        "outcome": {
+          "exit": 101,
+          "source_hash_exit": 0,
+          "source_file_set_exit": 0
+        },
+        "executables": [
+          {
+            "target": "mvm_hostd",
+            "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb",
+            "fresh": false,
+            "sha256": "193073b23a6ee8beb6cc10054a6e2cd46cd4f18ebd1057b1718b0a6dfb2b2a0c"
+          }
+        ],
+        "archive": {
+          "archive": "/mnt/plexpool/spiralcore-work/owned-dispatch-red1-executables.tar.zst",
+          "bytes": 33706418,
+          "sha256": "3b151a6d595ca0b37ffca947ccb86ccf5f7c456043353a27ed8a73742164d166",
+          "members": {
+            "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb": "193073b23a6ee8beb6cc10054a6e2cd46cd4f18ebd1057b1718b0a6dfb2b2a0c",
+            "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper.rs": "2bc5930e006b75a9c1a3b1cc68338151d7181541e8ee94ed3956ee4d8bc3ab48",
+            "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper/owned_dispatch_tests.rs": "1ad5658ff1b5dfc566f5d0e683f08a78c4b23a2ec3fd59c39c8fa65095c70ff9"
+          },
+          "replay_verified": true
+        }
+      },
+      "owned-dispatch-green1": {
+        "log": "\nrunning 2 tests\ntest audit_signer::helper::owned_dispatch_tests::blocked_owned_dispatch_preserves_original_partial_frame_deadline ... ok\ntest audit_signer::helper::owned_dispatch_tests::owned_signer_refuses_current_thread_runtime_before_requests ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2606 filtered out; finished in 1.00s\n\n",
+        "time": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb audit_signer::helper::owned_dispatch_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.00\n\tSystem time (seconds): 0.00\n\tPercent of CPU this job got: 0%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:01.00\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 37904\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 1693\n\tVoluntary context switches: 979\n\tInvoluntary context switches: 4\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 0\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+        "outcome": {
+          "exit": 0,
+          "source_hash_exit": 0,
+          "source_file_set_exit": 0
+        },
+        "executables": [
+          {
+            "target": "mvm_hostd",
+            "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb",
+            "fresh": false,
+            "sha256": "6bce1f002e747d4bd83fdc5e0b8f93112873a6560f6d372fae87fdd512429c2b"
+          }
+        ],
+        "archive": {
+          "archive": "/mnt/plexpool/spiralcore-work/owned-dispatch-green1-executables.tar.zst",
+          "bytes": 33775396,
+          "sha256": "f20fe3b06108033405f2aaaed456ae00899e6f6e564261ed609dcb2e9ccef804",
+          "members": {
+            "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb": "6bce1f002e747d4bd83fdc5e0b8f93112873a6560f6d372fae87fdd512429c2b",
+            "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper.rs": "7a7e3953b8c0bce3d6a4c7734b7f5d3877c9c43c163f25ae4fbf4ec5517372a2",
+            "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper/owned_dispatch_tests.rs": "4e77856e10813f7cff0b2301361909e787400e338aa2fba371f0b0a4e4a06ab1"
+          },
+          "replay_verified": true
+        }
+      },
+      "owned-dispatch-red2": {
+        "log": "\nrunning 2 tests\ntest audit_signer::helper::owned_dispatch_tests::blocked_owned_dispatch_preserves_original_partial_frame_deadline ... Error: entered=Ok(()); timely_partial=Err(Timeout); held=true; partial=Ok(Err(owned signer parse deadline\n\nCaused by:\n    deadline has elapsed)); dispatch=Ok(Ok(())); response=Ok(Pong { request_id: \"held-dispatch\" })\nFAILED\ntest audit_signer::helper::owned_dispatch_tests::owned_signer_refuses_current_thread_runtime_before_requests ... ok\n\nfailures:\n\nfailures:\n    audit_signer::helper::owned_dispatch_tests::blocked_owned_dispatch_preserves_original_partial_frame_deadline\n\ntest result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 2606 filtered out; finished in 1.50s\n\n",
+        "time": "Command exited with non-zero status 101\n\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb audit_signer::helper::owned_dispatch_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.00\n\tSystem time (seconds): 0.00\n\tPercent of CPU this job got: 0%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:01.50\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 38544\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 1686\n\tVoluntary context switches: 1450\n\tInvoluntary context switches: 2\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 0\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 101\n",
+        "outcome": {
+          "exit": 101,
+          "source_hash_exit": 0,
+          "source_file_set_exit": 0
+        },
+        "executables": [
+          {
+            "target": "mvm_hostd",
+            "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb",
+            "fresh": false,
+            "sha256": "429951237dbf5190a89a82649f0da3711e83f981d756f259929be68bf03ba765"
+          }
+        ],
+        "archive": {
+          "archive": "/mnt/plexpool/spiralcore-work/owned-dispatch-red2-executables.tar.zst",
+          "bytes": 33733704,
+          "sha256": "6a9fae04ba70814e7f5d1fab0626db032e553daf0c265104ea822d61076d85be",
+          "members": {
+            "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb": "429951237dbf5190a89a82649f0da3711e83f981d756f259929be68bf03ba765",
+            "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper.rs": "63fc3a68dd762b8678c484e1bae36e96f4200f7162a3bdb0784b46100cf2fa18",
+            "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/src/audit_signer/helper/owned_dispatch_tests.rs": "04ed238ace86db704dc433398495b3692088b158bf9c09b37f91456f880726eb"
+          },
+          "replay_verified": true
+        }
+      },
+      "owned-dispatch-green2": {
+        "log": "\nrunning 2 tests\ntest audit_signer::helper::owned_dispatch_tests::blocked_owned_dispatch_preserves_original_partial_frame_deadline ... ok\ntest audit_signer::helper::owned_dispatch_tests::owned_signer_refuses_current_thread_runtime_before_requests ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2606 filtered out; finished in 1.00s\n\n",
+        "time": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb audit_signer::helper::owned_dispatch_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.00\n\tSystem time (seconds): 0.00\n\tPercent of CPU this job got: 0%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:01.00\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 38816\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 1700\n\tVoluntary context switches: 979\n\tInvoluntary context switches: 2\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 0\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+        "outcome": {
+          "exit": 0,
+          "source_hash_exit": 0,
+          "source_file_set_exit": 0
+        },
+        "executables": [
+          {
+            "target": "mvm_hostd",
+            "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb",
+            "fresh": false,
+            "sha256": "979854f9758191d99b1ee60381227df60f14e35745b50b4db9ddce23dac81aba"
+          }
+        ]
+      }
+    },
+    "checks": {
+      "format": "MVM workspace pass",
+      "clippy": "hostd/VMM all targets -D warnings pass",
+      "library_unique_passes": 38,
+      "full_registered_target": "10pass/1originalMissingAuditSink",
+      "worker_only_repetitions": "five runs,2pass each,nativepeaks4/4,pressure3",
+      "strong_regression": "Identical final tests, controlled no-handoff source RED2 1pass/1fail; restored corrected source GREEN2 2pass; same hostd ELF hash as gates2 archive.",
+      "limits": "Handoff preserves other tasks' timer/I/O progress; fsync remains noncancellable and original ownership/join obligations remain."
+    }
+  },
+  "sdk": {
+    "summary": [
+      "test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 0.07s"
+    ],
+    "source_sha256": "9bf83c7443669136741d861b8b768ef0a9624b88bc68c02e8802805401fc2e39",
+    "source_file_set_sha256": "be4409017c0853dc92f6ae99f521b1e54f29e7bdcd697334dc7f51b3b1ea99c5",
+    "test_log_sha256": "9812e2475740560d1a8289980a28ac9f95953fba978b385543c38a319a28b17c",
+    "executable": {
+      "target": "spiralcore_mvm_live",
+      "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/spiralcore_mvm_live-8bbf4618326a7e21",
+      "fresh": false,
+      "sha256": "4ad8658210eda9cd231f8ee4f5764b0f76d4db4f74cc21e4e6b1ef21b9886097"
+    },
+    "archive": {
+      "archive": "/mnt/plexpool/spiralcore-work/owned-worker-sdk3-executables.tar.zst",
+      "bytes": 25386160,
+      "sha256": "17127a88d528909115382702e6379d82779a6b7ba1c799788e37e16ac2517225",
+      "members": {
+        "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/spiralcore_mvm_live-8bbf4618326a7e21": "4ad8658210eda9cd231f8ee4f5764b0f76d4db4f74cc21e4e6b1ef21b9886097",
+        "/mnt/plexpool/spiralcore-work/owned-worker-sdk-source/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs": "9bf83c7443669136741d861b8b768ef0a9624b88bc68c02e8802805401fc2e39",
+        "/mnt/plexpool/spiralcore-work/owned-worker-sdk-source/crates/spiralcore-mvm-live/Cargo.toml": "d3e14b0f78dfa2205c9d7a14429cb404ab8a04819669ef8c6c0d5307b348d6c6",
+        "/mnt/plexpool/spiralcore-work/owned-worker-sdk-source/crates/spiralcore-mvm-live/Cargo.lock": "8d4320d20dfbfe2e024aabfcccbc7c784c8a83f7a06cc1340d782216bf9d8bae"
+      },
+      "replay_verified": true
+    },
+    "mvm_sources": [
+      "git+https://github.com/Casey-allard/mvm?rev=f2ddbcbf1039405698e1ac0dcb16e29a5bf3b676#f2ddbcbf1039405698e1ac0dcb16e29a5bf3b676"
+    ],
+    "checks": {
+      "format_changed_file": "PASS Rust1.97.1",
+      "clippy_library_and_tests": "PASS -D warnings",
+      "source_outcome": {
+        "exit": 0,
+        "source_hash_exit": 0,
+        "source_file_set_exit": 0
+      }
+    },
+    "command_time": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/spiralcore_mvm_live-8bbf4618326a7e21 installed_parent::config_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.03\n\tSystem time (seconds): 0.04\n\tPercent of CPU this job got: 105%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:00.07\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 35588\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 23675\n\tVoluntary context switches: 312\n\tInvoluntary context switches: 12\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 4\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+  },
+  "initial_budget_candidate": {
+    "source": {
+      "mvm_commit": "c20c09006f4b306b42f6c8803df32e54272827a5",
+      "mvm_tree": "1c080f46b3f3b5aee3cb525a6624c00ac4527ca6",
+      "mvm_parent": "b8f9883f6dd6823118bc5cc62fd306a4d4d717ff",
+      "canonical_basis": "c5de1cc7",
+      "tracked_files": 4821,
+      "tracked_sha256_manifest": "1732c0dd789ffde26ab0e6fd7f13d1384687a778f6d740f63c59486bb4c60ce4",
+      "method": "Clean operator worktree tracked-file hashes compared against explicitly non-Git HDD build snapshot; all 4821 matched. Frozen full snapshot file/hash sets unchanged through build/execution.",
+      "rust_toolchain": "1.97.1",
+      "host": "native Linux x86_64",
+      "cargo_target": "one shared HDD target",
+      "upstream_observed": "9a0a2f6 (outside this frozen source)"
+    },
+    "red": {
+      "prefix": "owned-worker-red3",
+      "summary": [
+        "test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.52s"
+      ],
+      "native": [
+        {
+          "after": [
+            {
+              "pid": 1064227,
+              "start_ticks": 25875070,
+              "system_ticks": 1,
+              "threads": 5,
+              "user_ticks": 3
+            },
+            {
+              "pid": 1064230,
+              "start_ticks": 25875070,
+              "system_ticks": 0,
+              "threads": 3,
+              "user_ticks": 1
+            }
+          ],
+          "before": [
+            {
+              "pid": 1064227,
+              "start_ticks": 25875070,
+              "system_ticks": 0,
+              "threads": 3,
+              "user_ticks": 0
+            },
+            {
+              "pid": 1064230,
+              "start_ticks": 25875070,
+              "system_ticks": 0,
+              "threads": 3,
+              "user_ticks": 0
+            }
+          ],
+          "broker_framed_bytes_vm1": [
+            5654,
+            5024
+          ],
+          "broker_framed_bytes_vm2": [
+            5654,
+            5024
+          ],
+          "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+          "executable_sha256": [
+            "9245edcd47fcf7e7aefdc2d8dabb2b05e5541d2bf56104cff87652f54efd1978",
+            "a392af2ab1cbe108dcdd8006dffa203016228bd105632fb10fcd84418475af7a"
+          ],
+          "original_archives": [
+            {
+              "bytes": 19224,
+              "entries": 32,
+              "sha256": "92f219d3706ce8f44788341c850d9f106beb1658dae702cde717b5d2b8587e42",
+              "workload": "vm-1"
+            },
+            {
+              "bytes": 19224,
+              "entries": 32,
+              "sha256": "200d95c5781f251e30a33c05259f01302a9889969df386a23a158542c774478b",
+              "workload": "vm-2"
+            }
+          ],
+          "partial_signer_received_bytes": 0,
+          "partial_signer_sent_bytes": 5,
+          "sample_interval_ms": 1,
+          "sampled_peak_threads": [
+            5,
+            3
+          ],
+          "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+          "setup_to_verified_retirement_ns": 2505024462,
+          "signing_with_partial_frame_ns": 2389111094
+        }
+      ],
+      "pressure": [
+        {
+          "peak": 4,
+          "elapsed_ns": 11806010
+        }
+      ],
+      "log_sha256": "c64298213f4ce7c3ce596010c6174775cb09deee69fc60a49c3c5138f3eebbd9",
+      "command_time": {
+        "user_seconds": "0.11",
+        "system_seconds": "0.06",
+        "elapsed": "0:02.51",
+        "max_rss_kib": "43464",
+        "exit": "101"
+      }
+    },
+    "green": {
+      "prefix": "owned-worker-green1",
+      "summary": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.50s"
+      ],
+      "native": [
+        {
+          "after": [
+            {
+              "pid": 1065735,
+              "start_ticks": 25884091,
+              "system_ticks": 0,
+              "threads": 4,
+              "user_ticks": 2
+            },
+            {
+              "pid": 1065737,
+              "start_ticks": 25884092,
+              "system_ticks": 0,
+              "threads": 2,
+              "user_ticks": 1
+            }
+          ],
+          "before": [
+            {
+              "pid": 1065735,
+              "start_ticks": 25884091,
+              "system_ticks": 0,
+              "threads": 2,
+              "user_ticks": 0
+            },
+            {
+              "pid": 1065737,
+              "start_ticks": 25884092,
+              "system_ticks": 0,
+              "threads": 2,
+              "user_ticks": 0
+            }
+          ],
+          "broker_framed_bytes_vm1": [
+            5654,
+            5024
+          ],
+          "broker_framed_bytes_vm2": [
+            5654,
+            5024
+          ],
+          "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+          "executable_sha256": [
+            "bedbf42471fb21efb1e688eef5752778ebc4bb5b9a885395e7bff4f2939b4ea9",
+            "0b94b12a44a4a3e20c96194bfd76dc6b3e61fe4ee2a7d4c037fa11a27c5ead1e"
+          ],
+          "original_archives": [
+            {
+              "bytes": 19224,
+              "entries": 32,
+              "sha256": "3e19535b3744d338671266b70099623869e9f153b6c2a4494cc3eb0437abe176",
+              "workload": "vm-1"
+            },
+            {
+              "bytes": 19224,
+              "entries": 32,
+              "sha256": "de11a22c73776a6a727386aca807be2e012785bc2266b5371303f89cecd71b74",
+              "workload": "vm-2"
+            }
+          ],
+          "partial_signer_received_bytes": 0,
+          "partial_signer_sent_bytes": 5,
+          "sample_interval_ms": 1,
+          "sampled_peak_threads": [
+            4,
+            2
+          ],
+          "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+          "setup_to_verified_retirement_ns": 2482476376,
+          "signing_with_partial_frame_ns": 2382459044
+        }
+      ],
+      "pressure": [
+        {
+          "peak": 3,
+          "elapsed_ns": 11953711
+        }
+      ],
+      "log_sha256": "78f74775a0fe30f320dc357f219d97d24436d293d28ca991bcf00a23f29b7898",
+      "command_time": {
+        "user_seconds": "0.10",
+        "system_seconds": "0.03",
+        "elapsed": "0:02.49",
+        "max_rss_kib": "43464",
+        "exit": "0"
+      }
+    },
+    "additional_repetitions": [
+      {
+        "prefix": "owned-worker-gates1",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.51s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1069519,
+                "start_ticks": 25915143,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 3
+              },
+              {
+                "pid": 1069521,
+                "start_ticks": 25915143,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 1
+              }
+            ],
+            "before": [
+              {
+                "pid": 1069519,
+                "start_ticks": 25915143,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1069521,
+                "start_ticks": 25915143,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "bedbf42471fb21efb1e688eef5752778ebc4bb5b9a885395e7bff4f2939b4ea9",
+              "0b94b12a44a4a3e20c96194bfd76dc6b3e61fe4ee2a7d4c037fa11a27c5ead1e"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "49751f267c4fec5d864bdcfb4f197505fd325de21e61475ef3e0f00117acccff",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "9916ac8bb9ffaa9f3b8fa112027a55fbe10e8b3e910a512213db708fed28dd10",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              2
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2500378951,
+            "signing_with_partial_frame_ns": 2386576169
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11891122
+          }
+        ],
+        "log_sha256": "7440d784117ec255bafad6a3be09afb31eb240bc308a133c3b1c05316d880e22"
+      },
+      {
+        "prefix": "owned-worker-gates1",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.53s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1069554,
+                "start_ticks": 25915394,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 3
+              },
+              {
+                "pid": 1069556,
+                "start_ticks": 25915394,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 1
+              }
+            ],
+            "before": [
+              {
+                "pid": 1069554,
+                "start_ticks": 25915394,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1069556,
+                "start_ticks": 25915394,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "bedbf42471fb21efb1e688eef5752778ebc4bb5b9a885395e7bff4f2939b4ea9",
+              "0b94b12a44a4a3e20c96194bfd76dc6b3e61fe4ee2a7d4c037fa11a27c5ead1e"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "9c4abd33a52fc0e26812f5e7f6b9c327094eb444b38232debb4b8bbdec665526",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "6602b9f13ce78b5951f0877e2c9510f53e0ea4240d6a44e488c36089ddda0d76",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              2
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2514071583,
+            "signing_with_partial_frame_ns": 2388744788
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11902334
+          }
+        ],
+        "log_sha256": "59bdb1ea55d92503d78f927616357c6625d2c0d769d47929c48d301c3084f105"
+      },
+      {
+        "prefix": "owned-worker-gates1",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.52s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1069593,
+                "start_ticks": 25915647,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 3
+              },
+              {
+                "pid": 1069595,
+                "start_ticks": 25915648,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 1
+              }
+            ],
+            "before": [
+              {
+                "pid": 1069593,
+                "start_ticks": 25915647,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1069595,
+                "start_ticks": 25915648,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "bedbf42471fb21efb1e688eef5752778ebc4bb5b9a885395e7bff4f2939b4ea9",
+              "0b94b12a44a4a3e20c96194bfd76dc6b3e61fe4ee2a7d4c037fa11a27c5ead1e"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "0931c7d9feafdb53c48239792636b2369cd77f4d3bf255c51e39feed65622650",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "d665c745e0a22d4e3c7b44565365258d613296361741f40a7b750bf8b4633400",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              2
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2502665484,
+            "signing_with_partial_frame_ns": 2378707527
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11906270
+          }
+        ],
+        "log_sha256": "d5dd66d4648c74d899c3b9ffedadbd17bd30607241ed6ad38678e2aee61303bc"
+      },
+      {
+        "prefix": "owned-worker-gates1",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.52s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1069636,
+                "start_ticks": 25915899,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 3
+              },
+              {
+                "pid": 1069638,
+                "start_ticks": 25915900,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 2
+              }
+            ],
+            "before": [
+              {
+                "pid": 1069636,
+                "start_ticks": 25915899,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1069638,
+                "start_ticks": 25915900,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "bedbf42471fb21efb1e688eef5752778ebc4bb5b9a885395e7bff4f2939b4ea9",
+              "0b94b12a44a4a3e20c96194bfd76dc6b3e61fe4ee2a7d4c037fa11a27c5ead1e"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "8502f4bf83a90d9a567e17a6abbcbeb0003e9f97d3e6e550e794160eb0f1f2e6",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "5745f518fe0835b8e6bc9fa23fcec0ffe74ddbe4c3e7d44839242a3e2d7aed89",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              2
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2508163658,
+            "signing_with_partial_frame_ns": 2383494254
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11809896
+          }
+        ],
+        "log_sha256": "0114b9644eb38b28f7dc491ae286ca228dfab4531e7607ca3a50704d27d1d508"
+      },
+      {
+        "prefix": "owned-worker-gates1",
+        "summary": [
+          "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.53s"
+        ],
+        "native": [
+          {
+            "after": [
+              {
+                "pid": 1069671,
+                "start_ticks": 25916152,
+                "system_ticks": 0,
+                "threads": 4,
+                "user_ticks": 3
+              },
+              {
+                "pid": 1069673,
+                "start_ticks": 25916152,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 1
+              }
+            ],
+            "before": [
+              {
+                "pid": 1069671,
+                "start_ticks": 25916152,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              },
+              {
+                "pid": 1069673,
+                "start_ticks": 25916152,
+                "system_ticks": 0,
+                "threads": 2,
+                "user_ticks": 0
+              }
+            ],
+            "broker_framed_bytes_vm1": [
+              5654,
+              5024
+            ],
+            "broker_framed_bytes_vm2": [
+              5654,
+              5024
+            ],
+            "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+            "executable_sha256": [
+              "bedbf42471fb21efb1e688eef5752778ebc4bb5b9a885395e7bff4f2939b4ea9",
+              "0b94b12a44a4a3e20c96194bfd76dc6b3e61fe4ee2a7d4c037fa11a27c5ead1e"
+            ],
+            "original_archives": [
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "85abbfb782d3780372a7a7d649b14b4398c356ec30602dcd3d87a9a373d432de",
+                "workload": "vm-1"
+              },
+              {
+                "bytes": 19224,
+                "entries": 32,
+                "sha256": "9679c897af5d9577983be42c38652d0cf0f0403d102916d51e76dd21624a12ff",
+                "workload": "vm-2"
+              }
+            ],
+            "partial_signer_received_bytes": 0,
+            "partial_signer_sent_bytes": 5,
+            "sample_interval_ms": 1,
+            "sampled_peak_threads": [
+              4,
+              2
+            ],
+            "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+            "setup_to_verified_retirement_ns": 2514540548,
+            "signing_with_partial_frame_ns": 2387838479
+          }
+        ],
+        "pressure": [
+          {
+            "peak": 3,
+            "elapsed_ns": 11848348
+          }
+        ],
+        "log_sha256": "21c87160399ce52d2637b55c919f4d50c1c578b2aaec4edb0eeddadd58a6b8e8"
+      }
+    ],
+    "library_summaries": {
+      "owned-worker-gates1-audit_signer-helper-tests-tests.txt": [
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 2595 filtered out; finished in 0.00s"
+      ],
+      "owned-worker-gates1-broker-daemon-owned-tests-tests.txt": [
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2606 filtered out; finished in 0.00s"
+      ],
+      "owned-worker-gates1-host-host_agent_spawn-owned-tests-tests.txt": [
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1121 filtered out; finished in 0.00s"
+      ],
+      "owned-worker-gates1-owned_resources--tests.txt": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2600 filtered out; finished in 0.00s"
+      ],
+      "owned-worker-gates2-audit_signer-owned_helper--tests.txt": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2605 filtered out; finished in 0.00s"
+      ],
+      "owned-worker-gates2-broker-audit_client-tests--tests.txt": [
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 2598 filtered out; finished in 0.27s"
+      ],
+      "owned-worker-gates2-broker-daemon-owned--tests.txt": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2602 filtered out; finished in 0.00s"
+      ],
+      "owned-worker-gates2-host-host_agent_spawn-owned--tests.txt": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 1115 filtered out; finished in 0.00s"
+      ]
+    },
+    "archives": [
+      {
+        "file": "owned-worker-red3-executables.tar.zst",
+        "bytes": 18594308,
+        "sha256": "f904d98bbbcc466e09739ff8487851d76b12839fcc52798d9449fd670baf22d9",
+        "replay_verified": true,
+        "members": {
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-signer-helper": "a392af2ab1cbe108dcdd8006dffa203016228bd105632fb10fcd84418475af7a",
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-host-agent": "9245edcd47fcf7e7aefdc2d8dabb2b05e5541d2bf56104cff87652f54efd1978",
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-f3ea7966f5e9b1fb": "0de637bb502904331f4242293ae89abca0ffc03927730f2492cb724b0899cc7c",
+          "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/tests/registered_direct_tcp.rs": "8e3db4f17822a0dd0a463091a9fb2651027baa5e3e18d8911cf5a5070590d4e6",
+          "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/tests/registered_prepare/worker_budget_tests.rs": "94a5afa50b9a963e31ed23bcf073057f630c0ccc101ffc1d79422768ca15abc7",
+          "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-vmm/src/host/host_agent_spawn.rs": "e4f17092b0f53aba55b58ddb08eee748a5d92bc077e31e3959d5061f9173d319"
+        }
+      },
+      {
+        "file": "owned-worker-green1-executables.tar.zst",
+        "bytes": 18591121,
+        "sha256": "15b20d5bb7d8d6d6dfa33408ecc8777f9528825a35bd9270c95dc54a29500d6c",
+        "replay_verified": true,
+        "members": {
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-f3ea7966f5e9b1fb": "657b51dbabae30b8281892fd13781622096536f6e1aab87989fe23336ac0dfaf",
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-signer-helper": "0b94b12a44a4a3e20c96194bfd76dc6b3e61fe4ee2a7d4c037fa11a27c5ead1e",
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/mvm-host-agent": "bedbf42471fb21efb1e688eef5752778ebc4bb5b9a885395e7bff4f2939b4ea9",
+          "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/tests/registered_direct_tcp.rs": "8e3db4f17822a0dd0a463091a9fb2651027baa5e3e18d8911cf5a5070590d4e6",
+          "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-hostd/tests/registered_prepare/worker_budget_tests.rs": "94a5afa50b9a963e31ed23bcf073057f630c0ccc101ffc1d79422768ca15abc7",
+          "/mnt/plexpool/spiralcore-work/owned-worker-dev-source/crates/mvm-vmm/src/host/host_agent_spawn.rs": "58892f3472bdeedba3528e954ce752b9ad0c24f91580723b6fab96de9135757e"
+        }
+      },
+      {
+        "file": "owned-worker-gates1-executables.tar.zst",
+        "bytes": 43067027,
+        "sha256": "6bdd8d0f9ea998a80c3bb7225765afa584dbffd6b409a3f47d4d310e813760d5",
+        "replay_verified": true,
+        "members": {
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_vmm-b539bc2ed7d0768e": "d6fd3ded223b035e355d19db8ddde21f04cae6ba10418d3cefa09d0ae64b8302",
+          "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_hostd-865c90dbc2cb8adb": "373d5dbe4f92e46da9e9d62fb1d41dc143528362925b2648f77b6bba42725db5"
+        }
+      }
+    ],
+    "checks": {
+      "format": "MVM workspace pass",
+      "clippy": "MVM hostd/vmm all targets -D warnings pass",
+      "original_registered_assertion": "unchanged; original bound-audit-sink refusal remains",
+      "zero_match_correction": "Two initial library filters selected zero cases; retained as observations, then replaced by four verified nonzero selections. Zero matches count as no test evidence.",
+      "compiler_freshness": {
+        "red3": "Test ELF rebuilt; both helpers cached from the freshly cleaned initial old-configuration build and bound by compiler receipts/native hashes/archive replay.",
+        "green1": "Test ELF and both used helper ELFs rebuilt (Cargo fresh=false)."
+      }
+    },
+    "limitation": "Initial c20 fast native/budget evidence did not establish progress during synchronous signer dispatch stalls. Final review found the missing handoff; this is historical development evidence."
+  },
+  "ci_initial_failure": {
+    "head": "b4c3c86954b1004e26f4f9470903aa67855573cc",
+    "run_id": 43957872886,
+    "job_ids": [
+      133617122823,
+      133617123111
+    ],
+    "cause": "All three worker tests pass; stale exact-count guard requires two and exits1. Preserve negative result, require named new case and exactly3 after correction.",
+    "excerpt": [
+      "2026-11-16T21:17:36.2447244Z grep -E '^test result: ok\\. 2 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/worker-tests.txt",
+      "2026-11-16T21:17:36.5052674Z running 3 tests",
+      "2026-11-16T21:17:36.5307901Z test installed_parent::config_tests::object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling ... ok",
+      "2026-11-16T21:17:36.5582274Z test installed_parent::config_tests::object_tcp_pair_with_eight_helper_workers_funds_both_original_partitions ... ok",
+      "2026-11-16T21:17:36.5681833Z test installed_parent::config_tests::object_tcp_profile_refuses_unfunded_selected_workers_before_installation_effects ... ok",
+      "2026-11-16T21:17:36.5682464Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 174 filtered out; finished in 0.06s",
+      "2026-11-16T21:17:36.5797818Z ##[error]Process completed with exit code 1."
+    ],
+    "corrected_guard": "Require the named eight-helper case plus exactly3 passes,0failures,0ignored. Original assertions and timeout/security settings unchanged. Same three-case selector independently rerun on the archived SDK executable:3pass."
+  },
+  "cpu": {
+    "clk_tck": 100,
+    "domain": "Helper /proc ticks post-registration through post-signing, excludes retirement. GNU time fixture command includes setup/pacing/verification/retirement and is reported separately; do not add the domains.",
+    "energy_claim": false
+  },
+  "bytes": {
+    "domain": "Successfully written/read local broker frames including 4-byte prefix, and separately offered partial signer frame. Helper-internal/control traffic is not instrumented; these are not total MVM or WAN bytes."
+  },
+  "failures_retained": [
+    "Initial compile failures in test scaffolding, corrected before semantic RED.",
+    "Initial unpaced 32-event burst per workload reached existing audit rate; original rate unchanged, valid fixture paced 75ms.",
+    "Semantic old-configuration RED: signing/retirement succeed but two endpoints require 26 workers.",
+    "Original installed TCP positive still refuses because FlowMux requires a bound audit sink.",
+    "Full development-workspace campaign and later source reconciliation remain incomplete; no green full-workspace synthesis.",
+    "c20 direct synchronous owned dispatch stalls its only scheduler: RED1 and final nonvacuous controlled RED2 fail original parse-progress observation.",
+    "First corrected gate wrapper rejects cached artifacts before execution; successor permits only unchanged VMM bytes matching earlier source-bound replay archive and rebuilds changed hostd."
+  ],
+  "ari_alignment": {
+    "integration_request": "https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6928066239",
+    "reply_observed": false,
+    "role_approval": "https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6929441703",
+    "approved_scope": "mvm-mailbox-scheduler executable in existing mvm-hostd package; unprivileged one per explicitly identified OS-user/canonical MVM runtime instance shared across its tenants, entirely keyless; no physical-host or cross-user singleton.",
+    "next_design_gate": "ADR clarification and isolated implementation contract reviewed before authority-bearing code or positive runtime factory. Costs unmeasured; legacy tenant agents/signers unchanged.",
+    "private_launch_proof": "https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6929642211",
+    "private_launch_proof_scope": "Reviewed five-file proof-only private unwired operation, not durable witness integration or live V3/VM evidence.",
+    "scope": "Existing owned pair only. Additional approved scheduler needs separate budget and qualification."
+  },
+  "open_gates": [
+    "Canonical confined installed audit sink/health/deadline accounting.",
+    "Current-main launch-path reconciliation and exact-source requalification before consumer adoption.",
+    "Joined original-Root two-child iterator/verification allocation peaks and recovery.",
+    "Compatible signed runtime publication/boot, persistent Call/Cast/Reply, admitted access, supported native backend/platform roles and real WAN.",
+    "Capacity/fairness/backpressure/recovery/tail latency/saturation; private MVMD consumer integration."
+  ]
+}
