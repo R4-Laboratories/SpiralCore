@@ -1,5 +1,56 @@
 # Networking delivery status
 
+## Current integration gate: installed audit provider
+
+The current development port is published at MVM
+[`b8f9883`](https://github.com/Casey-allard/mvm/commit/b8f9883f6dd6823118bc5cc62fd306a4d4d717ff),
+tree `9ea45b43`, on canonical `c5de1cc7`. It incorporates the landed bound-flow
+audit changes and signed-runtime handoff repair. This is development evidence;
+the selected SpiralCore delivery baseline remains `f2ddbcbf` / core `8994951b`
+in the frozen packet below. No new consumer pin or installed enablement is selected.
+
+Strict workspace/all-target checks and all 87 native policy gates pass on that
+development source; BDD scenarios and genuine signed-runtime positive execution
+remain NOT_RUN. The full workspace campaign is failed and incomplete: 292 targets
+started, 291 binary harnesses completed, and one VMM test target was terminated
+after a fixture's long temporary path left a listener join blocked. Completed binary harnesses
+report 20,892 passes / 44 failures / 68 ignores; all 30 Rustdoc harness groups
+report 28 passes / one failure / eight ignores. Source/Git file sets and selected
+executable hashes remain unchanged. A target start is not a completed harness.
+
+With the same source, executables, assertions and deadlines, a short private
+tmpfs root gives 43 passes / one failure for the 44 original failed cases.
+The separately completed VMM target passes 1,117 tests with four ignored; one
+selected allocation doctest passes with 15 others filtered. The initramfs
+concurrency case passes in isolation, while its original failure remains
+unresolved for whole-suite interaction. These scopes do not form a green full
+workspace result. [Current source, original failures, costs and custody](https://github.com/R4-Laboratories/SpiralCore/issues/258#issuecomment-6919027760).
+
+The unchanged registered direct-TCP assertion still fails before readiness:
+**FlowMux requires a bound audit sink.** The selected installed child has no
+canonical confined interface for durable audit-health persistence and
+missed-decision/original-deadline accounting. The
+[MVM owner question remains open](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6918673781).
+No fixture sink, disposable health-state relocation, broader audit-directory
+grant or alternate readiness path is substituted.
+
+Focused review found no new owned-store defect that warrants an independent
+core patch. Existing component negatives and the one-child original-Root load
+witness do not prove joined two-child iterator/verification allocation peaks or
+installed recovery after original-owner loss. Extend that existing witness only
+after the real selected endpoint can pass audit readiness; this host-process
+witness does not itself require a new guest runtime or MVMD. Both unchecked
+[#258 criteria](https://github.com/R4-Laboratories/SpiralCore/issues/258) remain open.
+
+A subsequent read-only refresh observes canonical `1d29e637`: the audit-client
+relocation preserves its broker facade, and launch-scoped runtime verification
+sharing has landed. Neither supplies the missing installed audit interface;
+both are outside the frozen `b8f9883` qualification. Ari's
+[original-admission/launch-witness sequence](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6910030849)
+and [protocol cutover gates](https://github.com/tinylabscom/mvm/pull/5628) remain
+authoritative. All five #42 outcomes, accepted pins, compatible signed guest
+runtime/boot, private MVMD, platform/WAN and measured capacity stay open.
+
 ## Original custody after final parent-sync refusal
 
 [PR #315](https://github.com/R4-Laboratories/SpiralCore/pull/315) merged at
@@ -41,11 +92,13 @@ before later builds. The compact packet retains 478 operator records in 1,352,01
 compressed bytes for 74,612,613 raw file bytes; public replay executes no archived
 code/binary. Documentation-only publication selects no runtime CI (NOT_RUN).
 
-A post-qualification read-only refresh observed canonical MVM `d5fb0873`, merged
+At that packet's publication, a read-only refresh observed canonical MVM
+`d5fb0873`, merged
 [bound-flow audit PR #5590](https://github.com/tinylabscom/mvm/pull/5590). Its
 plan/epoch-bound decisions and surrounding network audit contract are not covered
-by this frozen packet. The next current-owner port must retain that path and
-bounded writes before the joined witness. The final PR leaves VM lifecycle
+by this frozen packet. The development port and remaining readiness dependency
+are recorded above; its later qualification does not extend this packet. The
+final PR leaves VM lifecycle
 unchanged. Exact-workload stop after three consecutive production audit-write
 failures remains unimplemented under #5538/#5522; notifications/health metadata
 do not prove original-owner rollback.
