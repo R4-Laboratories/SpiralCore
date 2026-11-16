@@ -41,7 +41,14 @@ before later builds. The compact packet retains 478 operator records in 1,352,01
 compressed bytes for 74,612,613 raw file bytes; public replay executes no archived
 code/binary. Documentation-only publication selects no runtime CI (NOT_RUN).
 
-Next remains the joined original-owner simultaneous iterator/allocator phases,
+A post-qualification read-only refresh observed canonical MVM `d5fb0873`, merged
+[bound-flow audit PR #5590](https://github.com/tinylabscom/mvm/pull/5590). Its
+plan/epoch-bound decisions and surrounding network audit contract are not covered
+by this frozen packet. The next current-owner port must retain that path and
+bounded writes before the joined witness. Post-boot custody remains a production
+gate; keeper notification does not prove original-owner rollback.
+
+Remaining work includes the joined original-owner simultaneous iterator/allocator phases,
 complete transient/native allocation funding and other #258 recovery/negative
 criteria, including default-profile/platform and registered-child boundaries.
 All five #42 outcomes remain active. Ari's canonical/V3 ownership, accepted pins,

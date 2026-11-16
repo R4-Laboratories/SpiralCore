@@ -10,7 +10,7 @@ The selected contributor MVM source is
 tree `165f5cc95fda4cba7da885e6546d22be8d3e94a5`, based on canonical `2b1cd835`.
 Both direct MVM dependencies and all five shared-core packages retain reviewed
 SpiralCore `8994951b7c13fe5acf6f5ea3060ad4e51dc473c2`. The canonical journal
-aliases at `48fa5b48` remain separate. Later unrelated upstream changes are not
+aliases at `48fa5b48` remain separate. Later upstream changes are not
 qualified by this frozen source packet.
 
 This is a test-only MVM consumer slice. It adds no production authority, codec,
@@ -193,6 +193,15 @@ No runtime workflows are selected for this documentation-only publication
 (**NOT_RUN**, not runtime CI success).
 
 ## Remaining delivery gates
+
+A read-only refresh after this qualification observed canonical MVM
+`d5fb0873b72bd589a600882a643969af43c70a94`, the merged
+[bound-flow audit slice #5590](https://github.com/tinylabscom/mvm/pull/5590).
+Its new decision-audit path binds the admitted plan/epoch before network effects;
+this frozen packet does not qualify that delta. The next current-owner port must
+retain that audit path, bounded writes and original cleanup/resource custody
+before the joined witness. Keeper notification alone does not establish original
+owner rollback; post-boot custody remains a separate production gate.
 
 Both unchecked #258 criteria stay open: joined original-Root/selected-process
 simultaneous iterator/allocation phases, complete transient/native allocation
