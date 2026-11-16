@@ -145,6 +145,14 @@ product rate and deadlines stay fixed. Package-wide SpiralCore formatting also
 exposes pre-existing formatting differences outside this changed test; those
 files are retained unchanged and the changed file is checked with Rust 1.97.1.
 
+The first PR CI attempt at `b4c3c869` passes all three Linux worker controls,
+then its stale workflow guard requires exactly two passes and fails on both
+Linux architectures. The failed jobs and their original three passing cases
+remain recorded in `measurements.json`. The corrected guard requires the named
+eight-helper case and exactly three passes, zero failures and zero ignores.
+The same selector passes all three cases again on the archived SDK executable.
+Timeouts, security settings and original test assertions remain unchanged.
+
 ## Integration and remaining delivery gates
 
 The selected delivered consumer remains MVM `f2ddbcbf` / shared core `8994951b`.

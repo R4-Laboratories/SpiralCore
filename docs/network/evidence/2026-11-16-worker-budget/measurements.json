@@ -811,5 +811,24 @@
     "latest_brief": "https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6928741837",
     "recommendation": "Separate host-wide keyless sealed-data scheduling role S for review and maintainer decision, implementation and costs unqualified.",
     "scope": "Existing scoped two-process owned helper pair only; proposed host-wide scheduler requires separate approved budget and qualification."
+  },
+  "ci_initial_failure": {
+    "head": "b4c3c86954b1004e26f4f9470903aa67855573cc",
+    "run_id": 43957872886,
+    "job_ids": [
+      133617122823,
+      133617123111
+    ],
+    "cause": "All three worker tests pass; stale exact-count guard requires two and exits1. Preserve negative result, require named new case and exactly3 after correction.",
+    "excerpt": [
+      "2026-11-16T21:17:36.2447244Z grep -E '^test result: ok\\. 2 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/worker-tests.txt",
+      "2026-11-16T21:17:36.5052674Z running 3 tests",
+      "2026-11-16T21:17:36.5307901Z test installed_parent::config_tests::object_tcp_pair_cannot_exceed_the_original_shared_worker_ceiling ... ok",
+      "2026-11-16T21:17:36.5582274Z test installed_parent::config_tests::object_tcp_pair_with_eight_helper_workers_funds_both_original_partitions ... ok",
+      "2026-11-16T21:17:36.5681833Z test installed_parent::config_tests::object_tcp_profile_refuses_unfunded_selected_workers_before_installation_effects ... ok",
+      "2026-11-16T21:17:36.5682464Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 174 filtered out; finished in 0.06s",
+      "2026-11-16T21:17:36.5797818Z ##[error]Process completed with exit code 1."
+    ],
+    "corrected_guard": "Require the named eight-helper case plus exactly3 passes,0failures,0ignored. Original assertions and timeout/security settings unchanged. Same three-case selector independently rerun on the archived SDK executable:3pass."
   }
 }
