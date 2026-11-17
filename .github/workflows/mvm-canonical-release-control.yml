@@ -112,7 +112,7 @@ jobs:
             set --
             if test "$exact" = yes; then set -- --exact; fi
             executable=$(jq -r --arg target "$target" '.[] | select(.target.name == $target) | .executable' qualification-evidence/selected.json)
-            label="$target-$selector"
+            label="$target-${selector//:/-}"
             "$executable" "$selector" "$@" --list > "qualification-evidence/$label-list.txt"
             test "$(grep -Ec ': test$' "qualification-evidence/$label-list.txt")" = "$expected"
             set +e
