@@ -14,8 +14,8 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 25
     env:
-      MVM_SOURCE_REVISION: b60d9fd901e75d030572cb9c497bb8eac37921eb
-      MVM_SOURCE_TREE: a5379cada5db75c213cdf4772e9c38d20f12890d
+      MVM_SOURCE_REVISION: 638269dc39aa851c728b651f459a2d13feb3fe2d
+      MVM_SOURCE_TREE: 1562528b6215250864ffaba44cd1d809a7deed5c
       MVM_SOURCE_FILES: 4832
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
@@ -58,10 +58,10 @@ jobs:
             done < "$RUNNER_TEMP/mvm-release-source-files0"
           ) > qualification-evidence/source-before.sha256
           printf '%s\n' \
-            'Native macOS ARM64 component controls: retained RPC, dispatch refusals, CLI finalization and eight HVF startup shapes.' \
+            'Native macOS ARM64 component controls: retained RPC, ordinary/CLI/persistent dispatch refusals and finalization, audit sealing and eight HVF startup shapes.' \
             'No VM boot, installed audit readiness, signed-runtime, native Windows, WAN or capacity qualification.' \
             > qualification-evidence/scope.txt
-      - name: Compile and retain the three actual test executables
+      - name: Compile and retain the four actual test executables
         run: |
           set -euo pipefail
           source_root=$(cd mvm && pwd -P)
@@ -70,13 +70,13 @@ jobs:
             -p mvm-hostd --bin mvm-hvf-supervisor --no-run --message-format=json \
             > qualification-evidence/build-supervisor.jsonl 2> qualification-evidence/build-supervisor-stderr.txt
           cargo +1.97.1 test --locked --manifest-path "$source_root/Cargo.toml" \
-            -p mvm-hostd -p mvm-agentd --lib --no-run --message-format=json \
+            -p mvm-hostd -p mvm-agentd -p mvm-client --lib --no-run --message-format=json \
             > qualification-evidence/build-libraries.jsonl 2> qualification-evidence/build-libraries-stderr.txt
-          jq -sc '[.[] | select(.reason == "compiler-artifact" and .profile.test == true and .executable != null and (.target.name == "mvm-hvf-supervisor" or .target.name == "mvm_hostd" or .target.name == "mvm_agentd"))]' \
+          jq -sc '[.[] | select(.reason == "compiler-artifact" and .profile.test == true and .executable != null and (.target.name == "mvm-hvf-supervisor" or .target.name == "mvm_hostd" or .target.name == "mvm_agentd" or .target.name == "mvm_client"))]' \
             qualification-evidence/build-supervisor.jsonl qualification-evidence/build-libraries.jsonl \
             > qualification-evidence/selected.json
-          test "$(jq length qualification-evidence/selected.json)" = 3
-          test "$(jq '[.[].target.name] | unique | length' qualification-evidence/selected.json)" = 3
+          test "$(jq length qualification-evidence/selected.json)" = 4
+          test "$(jq '[.[].target.name] | unique | length' qualification-evidence/selected.json)" = 4
           : > qualification-evidence/executables-before.sha256
           : > qualification-evidence/archived-executables-before.sha256
           while IFS= read -r row; do
@@ -86,6 +86,7 @@ jobs:
               mvm-hvf-supervisor) source_file=crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs ;;
               mvm_hostd) source_file=crates/mvm-hostd/src/lib.rs ;;
               mvm_agentd) source_file=crates/mvm-agentd/src/lib.rs ;;
+              mvm_client) source_file=crates/mvm-client/src/lib.rs ;;
               *) exit 1 ;;
             esac
             test "$(jq -r .target.src_path <<< "$row")" = "$source_root/$source_file"
@@ -100,7 +101,7 @@ jobs:
             test "$original_hash" = "$copied_hash"
             printf '%s  %s.bin\n' "$original_hash" "$target" >> qualification-evidence/archived-executables-before.sha256
           done < <(jq -c '.[]' qualification-evidence/selected.json)
-          test "$(wc -l < qualification-evidence/executables-before.sha256 | tr -d ' ')" = 3
+          test "$(wc -l < qualification-evidence/executables-before.sha256 | tr -d ' ')" = 4
       - name: Run bounded native component scopes and strict all-target Clippy
         run: |
           set -euo pipefail
@@ -129,11 +130,13 @@ jobs:
           run_scope mvm-hvf-supervisor tests::only_a_complete_checked_set_or_a_kernel_alone_may_start 1 yes
           run_scope mvm_agentd vsock::rpc::tests::retained_entrypoint_preserves_real_keys_counters_and_original_verbs 1 yes
           run_scope mvm_agentd vsock::rpc::tests::retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame 1 yes
-          run_scope mvm_hostd plan_admission::start_tests::ordinary_and_cli_dispatch_refuse_a_selected_pair_before_backend_effects 1 yes
+          run_scope mvm_hostd plan_admission::start_tests::ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects 1 yes
           run_scope mvm_hostd plan_admission::start_tests::cli_transient_ 4 no
+          run_scope mvm_hostd plan_admission::start_tests::persistent_dispatch_ 2 no
+          run_scope mvm_client boot::tests::persistent_dispatch_refusal_seals_the_recorded_audit_failure 1 yes
           source_root=$(cat qualification-evidence/source-root.txt)
           cargo +1.97.1 clippy --locked --manifest-path "$source_root/Cargo.toml" \
-            -p mvm-hostd -p mvm-agentd --all-targets -- -D warnings \
+            -p mvm-hostd -p mvm-agentd -p mvm-client --all-targets -- -D warnings \
             > qualification-evidence/clippy.txt 2>&1
       - name: Verify source and all original and archived executables after every outcome
         if: always()
@@ -154,7 +157,7 @@ jobs:
             printf '%s\n' 'NOT_RUN: source baseline missing' > qualification-evidence/source-after.txt
           fi
           if test -f qualification-evidence/executables-before.sha256; then
-            test "$(wc -l < qualification-evidence/executables-before.sha256 | tr -d ' ')" = 3 || result=1
+            test "$(wc -l < qualification-evidence/executables-before.sha256 | tr -d ' ')" = 4 || result=1
             shasum -a 256 -c qualification-evidence/executables-before.sha256 \
               > qualification-evidence/executables-finally.txt || result=1
           else
@@ -162,7 +165,7 @@ jobs:
             printf '%s\n' 'NOT_RUN: original executable baseline missing' > qualification-evidence/executables-finally.txt
           fi
           if test -f qualification-evidence/archived-executables-before.sha256; then
-            test "$(wc -l < qualification-evidence/archived-executables-before.sha256 | tr -d ' ')" = 3 || result=1
+            test "$(wc -l < qualification-evidence/archived-executables-before.sha256 | tr -d ' ')" = 4 || result=1
             (
               cd qualification-evidence
               shasum -a 256 -c archived-executables-before.sha256
