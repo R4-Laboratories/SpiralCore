@@ -1,5 +1,32 @@
 # Networking delivery status
 
+## Installed audit interface and canonical release sequence
+
+A read-only refresh observes canonical MVM
+[`bee650f`](https://github.com/tinylabscom/mvm/commit/bee650f33618ee99edfc06ebafdf3c0191204086).
+[PR #5652](https://github.com/tinylabscom/mvm/pull/5652) reverts the protocol-3
+cutover from #5628: it landed before the required fresh security review,
+live boot/latency evidence and rc.9/demo sequence. Its design remains approved
+for later qualification. The frozen c52b0d26 development source below predates
+this revert and retains that cutover; it is not the current canonical release
+path. Selected consumers remain **MVM f2ddbcbf / core 8994951b**.
+
+The canonical audit sink, bound recorder, endpoint binding and signer-helper
+protocol are unchanged from 106d28d. Focused independent source review confirms
+that neither merged cold dispatch #5618 nor pending persistent dispatch #5651
+supplies the installed child's durable epoch-health capability or
+original-deadline missed-decision accounting. The existing signer append path
+is not that complete interface. There is still no Ari answer in the
+[updated canonical-owner handoff](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6935221842).
+The original readiness assertion and both #258 criteria remain open.
+
+Ari's [new function/continuation reference](https://github.com/tinylabscom/mvm/issues/5544#issuecomment-6935330368)
+keeps its ADRs Proposed and adds no runtime, wire, service-startup or mailbox
+authority. Future source adoption must follow the approved release sequence
+and a compatible signed runtime; this read-only refresh performs no new build,
+readiness or WAN qualification. All five #42 outcomes and private MVMD remain
+open. No new build target, payload store or VM disk is created.
+
 ## Four upstream changes qualified through 106d28d
 
 Development [MVM c52b0d26](https://github.com/Casey-allard/mvm/commit/c52b0d26fd51d59b5b25fe937e5fdbc4b5ccc387),
