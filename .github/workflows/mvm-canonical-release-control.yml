@@ -14,8 +14,8 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 25
     env:
-      MVM_SOURCE_REVISION: 638269dc39aa851c728b651f459a2d13feb3fe2d
-      MVM_SOURCE_TREE: 1562528b6215250864ffaba44cd1d809a7deed5c
+      MVM_SOURCE_REVISION: eb22dd2f724583bb0a12e2526046605e0ce05d37
+      MVM_SOURCE_TREE: 28728a915bf963acdec87be7524ccdd67a3bb612
       MVM_SOURCE_FILES: 4832
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
@@ -134,6 +134,7 @@ jobs:
           run_scope mvm_hostd plan_admission::start_tests::cli_transient_ 4 no
           run_scope mvm_hostd plan_admission::start_tests::persistent_dispatch_ 2 no
           run_scope mvm_client boot::tests::persistent_dispatch_refusal_seals_the_recorded_audit_failure 1 yes
+          run_scope mvm_client launch::persistent::persistent_oci_boot_tests::journal_preflight_refusal_seals_exactly_one_failed_session_before_dispatch 1 yes
           source_root=$(cat qualification-evidence/source-root.txt)
           cargo +1.97.1 clippy --locked --manifest-path "$source_root/Cargo.toml" \
             -p mvm-hostd -p mvm-agentd -p mvm-client --all-targets -- -D warnings \
