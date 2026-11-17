@@ -1,0 +1,1148 @@
+{
+  "schema_version": 1,
+  "scope": "Development reconciliation of four upstream changes through106d28d; component qualification only; original installed audit refusal retained.",
+  "source": {
+    "commit": "c52b0d26fd51d59b5b25fe937e5fdbc4b5ccc387",
+    "tree": "3e3889b77f8393344c42db23cb6e9c2bb3b0046e",
+    "parents": [
+      "8ec3f12739737f12cff3a4ecec1b1f659c6acde9",
+      "106d28d98228de475d248e856812172b34eef5d5"
+    ]
+  },
+  "tracked_files": 4828,
+  "source_and_git_metadata_original_files": 4992,
+  "prepared_source_and_git_metadata_files": 4993,
+  "selected_delivery": {
+    "mvm": "f2ddbcbf1039405698e1ac0dcb16e29a5bf3b676",
+    "shared_core": "8994951b7c13fe5acf6f5ea3060ad4e51dc473c2",
+    "unchanged": true
+  },
+  "canonical_deltas": [
+    {
+      "commit": "842e24eb783c34026a1ffcd762738d8206368990",
+      "pr": 5639,
+      "behavior": "Preserve per-target musl shared-object rustflags using lower-precedence CARGO_BUILD_RUSTFLAGS"
+    },
+    {
+      "commit": "08a2d86d4c1297c94d6e7f4479e8eb8a9fdb3708",
+      "pr": 5641,
+      "behavior": "Canonical denial-stage labels/readers, no new bound-sink or health/missed-decision interface"
+    },
+    {
+      "commit": "6cd403675d2f6ef0ce377e2c085d3d400ee927e8",
+      "pr": 5643,
+      "behavior": "Original HVF eight-startup-shape test and ADR001 limitations"
+    },
+    {
+      "commit": "106d28d98228de475d248e856812172b34eef5d5",
+      "pr": 5644,
+      "behavior": "Musl cdylib target-flag regression for both architectures"
+    }
+  ],
+  "environment": {
+    "host": "native Linux x86_64",
+    "rust": "1.97.1",
+    "cargo_jobs": 2,
+    "incremental": false,
+    "debug_info": false,
+    "ram_max_bytes": 6442450944,
+    "swap_max_bytes": 0,
+    "cpu_quota_percent": 200,
+    "tasks_max": 512,
+    "nofile": 4096,
+    "stack_bytes": 8388608,
+    "temporary_root": "private short tmpfs paths",
+    "build_cache_and_archives": "HDD shared Cargo target/home; no local build tree"
+  },
+  "build": {
+    "outcome": {
+      "command_exit": 0,
+      "source_and_metadata_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "enumeration_exit": 0,
+      "final_exit": 0
+    },
+    "policies": 87,
+    "policy_exit": 0,
+    "format": "pass",
+    "workspace_all_targets": "pass",
+    "explicit_bdd_compilation": "pass; scenarios NOT_RUN",
+    "strict_workspace_all_targets_clippy": "pass",
+    "executables": {
+      "test_executables": 293,
+      "other_executables": 65,
+      "recompiled": 358,
+      "verified_same_root_reuse": 0
+    },
+    "policy-build_cost": {
+      "raw": "\tCommand being timed: \"cargo build --locked --offline -p xtask --bin xtask --message-format=json\"\n\tUser time (seconds): 26.64\n\tSystem time (seconds): 2.12\n\tPercent of CPU this job got: 131%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:21.83\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1540048\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 123212\n\tMinor (reclaiming a frame) page faults: 1461351\n\tVoluntary context switches: 7493\n\tInvoluntary context switches: 724\n\tSwaps: 0\n\tFile system inputs: 5472\n\tFile system outputs: 956092\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "0:21.83",
+      "user_seconds": 26.64,
+      "system_seconds": 2.12,
+      "max_rss_kib": 1540048
+    },
+    "policy_cost": {
+      "raw": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/xtask check-all\"\n\tUser time (seconds): 219.76\n\tSystem time (seconds): 17.78\n\tPercent of CPU this job got: 126%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 3:07.46\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1628348\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 685472\n\tMinor (reclaiming a frame) page faults: 9982824\n\tVoluntary context switches: 82588\n\tInvoluntary context switches: 6207\n\tSwaps: 0\n\tFile system inputs: 5868\n\tFile system outputs: 6027768\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "3:07.46",
+      "user_seconds": 219.76,
+      "system_seconds": 17.78,
+      "max_rss_kib": 1628348
+    },
+    "fmt_cost": {
+      "raw": "\tCommand being timed: \"cargo fmt --all -- --check\"\n\tUser time (seconds): 4.40\n\tSystem time (seconds): 0.08\n\tPercent of CPU this job got: 99%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:04.52\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 198992\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 106\n\tMinor (reclaiming a frame) page faults: 46401\n\tVoluntary context switches: 138\n\tInvoluntary context switches: 22\n\tSwaps: 0\n\tFile system inputs: 14936\n\tFile system outputs: 0\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "0:04.52",
+      "user_seconds": 4.4,
+      "system_seconds": 0.08,
+      "max_rss_kib": 198992
+    },
+    "workspace_cost": {
+      "raw": "\tCommand being timed: \"cargo check --locked --offline --workspace --all-targets\"\n\tUser time (seconds): 113.32\n\tSystem time (seconds): 14.49\n\tPercent of CPU this job got: 197%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 1:04.57\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1748704\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 40756\n\tMinor (reclaiming a frame) page faults: 9207362\n\tVoluntary context switches: 9560\n\tInvoluntary context switches: 2823\n\tSwaps: 0\n\tFile system inputs: 2376\n\tFile system outputs: 196040\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "1:04.57",
+      "user_seconds": 113.32,
+      "system_seconds": 14.49,
+      "max_rss_kib": 1748704
+    },
+    "bdd_cost": {
+      "raw": "\tCommand being timed: \"cargo check --locked --offline -p mvm-conformance --all-targets --features bdd\"\n\tUser time (seconds): 37.18\n\tSystem time (seconds): 3.11\n\tPercent of CPU this job got: 115%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:34.94\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1261380\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 24161\n\tMinor (reclaiming a frame) page faults: 2411282\n\tVoluntary context switches: 4248\n\tInvoluntary context switches: 691\n\tSwaps: 0\n\tFile system inputs: 184\n\tFile system outputs: 187223\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "0:34.94",
+      "user_seconds": 37.18,
+      "system_seconds": 3.11,
+      "max_rss_kib": 1261380
+    },
+    "clippy_cost": {
+      "raw": "\tCommand being timed: \"cargo clippy --locked --offline --workspace --all-targets -- -D warnings\"\n\tUser time (seconds): 162.97\n\tSystem time (seconds): 14.99\n\tPercent of CPU this job got: 196%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 1:30.65\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1794976\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 17330\n\tMinor (reclaiming a frame) page faults: 9680284\n\tVoluntary context switches: 9298\n\tInvoluntary context switches: 3569\n\tSwaps: 0\n\tFile system inputs: 4488\n\tFile system outputs: 201222\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "1:30.65",
+      "user_seconds": 162.97,
+      "system_seconds": 14.99,
+      "max_rss_kib": 1794976
+    },
+    "build_cost": {
+      "raw": "\tCommand being timed: \"cargo test --locked --offline --workspace --no-run --message-format=json\"\n\tUser time (seconds): 473.61\n\tSystem time (seconds): 79.03\n\tPercent of CPU this job got: 194%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 4:44.06\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 2668944\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 1946482\n\tMinor (reclaiming a frame) page faults: 37037559\n\tVoluntary context switches: 1537230\n\tInvoluntary context switches: 29176\n\tSwaps: 0\n\tFile system inputs: 4543\n\tFile system outputs: 15397680\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "4:44.06",
+      "user_seconds": 473.61,
+      "system_seconds": 79.03,
+      "max_rss_kib": 2668944
+    }
+  },
+  "focused": {
+    "scopes": [
+      {
+        "target": "mvm_build",
+        "selector": "guest_bins::tests::the_producer_records_the_producing_tree_and_every_member",
+        "exact": true,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1452,
+        "command_exit": 0
+      },
+      {
+        "target": "library_only_surface",
+        "selector": "preparing_the_guest_runtime_cold_never_runs_the_toolchain",
+        "exact": true,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 6,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_build",
+        "selector": "guest_agent_build::tests::a_musl_cdylib_keeps_its_target_flags_under_the_zigbuild_env",
+        "exact": false,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1452,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_build",
+        "selector": "guest_agent_build::tests::apply_zigbuild_env_exports_explicit_cache_dir",
+        "exact": false,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1452,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "supervisor::audit::denial_stage::tests::",
+        "exact": false,
+        "listed": 4,
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2613,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "supervisor::audit::dns_audit::tests::",
+        "exact": false,
+        "listed": 4,
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2613,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "supervisor::endpoint::flowmux::decision_audit::",
+        "exact": false,
+        "listed": 7,
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2610,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "egress_denials::denial::tests::",
+        "exact": false,
+        "listed": 12,
+        "passed": 12,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1689,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "egress_denials::tally::tests::",
+        "exact": false,
+        "listed": 7,
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1694,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "explain::tests::",
+        "exact": false,
+        "listed": 14,
+        "passed": 14,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1687,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_runtime",
+        "selector": "kernel_custody::tests::",
+        "exact": false,
+        "listed": 10,
+        "passed": 10,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1483,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_backends",
+        "selector": "driver::fc::entrypoint::tests::",
+        "exact": false,
+        "listed": 15,
+        "passed": 14,
+        "failed": 0,
+        "ignored": 1,
+        "measured": 0,
+        "filtered": 478,
+        "command_exit": 0
+      },
+      {
+        "target": "registered_direct_tcp",
+        "selector": "worker_budget_tests::",
+        "exact": false,
+        "listed": 2,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 9,
+        "command_exit": 0
+      }
+    ],
+    "totals": {
+      "listed": 79,
+      "passed": 78,
+      "failed": 0,
+      "ignored": 1
+    },
+    "outcome": {
+      "command_exit": 0,
+      "original_source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "executable_hash_exit": 0,
+      "final_exit": 0
+    },
+    "preparation": {
+      "original_inputs": 4992,
+      "all_original_source_and_metadata_unchanged": true,
+      "generated_files": {
+        "target/tool-cache/zigbuild-lock.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "scope": "Only canonical empty guest-build lock may be added by executed producer fixtures; it remains in the full-run baseline."
+    }
+  },
+  "full": {
+    "command": "cargo test --locked --offline --workspace --no-fail-fast -- --test-threads=1",
+    "outcome": {
+      "command_exit": 101,
+      "original_source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "executable_hash_exit": 0,
+      "final_exit": 101
+    },
+    "selection": {
+      "expected": 293,
+      "running_lines": 293,
+      "unique_executed": 293,
+      "exact_match": true
+    },
+    "binary_totals": {
+      "passed": 22125,
+      "failed": 1,
+      "ignored": 72,
+      "filtered": 0
+    },
+    "binary_summaries": 293,
+    "doc_sections": 28,
+    "doc_totals": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 8,
+      "filtered": 0
+    },
+    "failed_binary_rows": [
+      {
+        "label": "tests/registered_direct_tcp.rs",
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-fa6aa246786b56d0",
+        "summary_count_including_nested": 1,
+        "status": "FAILED",
+        "passed": 10,
+        "failed": 1,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0,
+        "seconds": 2.82,
+        "raw_failed_case_lines": [
+          "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer"
+        ]
+      }
+    ],
+    "failed_or_incomplete_docs": [],
+    "cost": {
+      "raw": "Command exited with non-zero status 101\n\tCommand being timed: \"cargo test --locked --offline --workspace --no-fail-fast -- --test-threads=1\"\n\tUser time (seconds): 178.41\n\tSystem time (seconds): 85.17\n\tPercent of CPU this job got: 53%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 8:13.18\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 4301044\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 369504\n\tMinor (reclaiming a frame) page faults: 60553544\n\tVoluntary context switches: 1028180\n\tInvoluntary context switches: 61952\n\tSwaps: 0\n\tFile system inputs: 107921\n\tFile system outputs: 12578\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 101\n",
+      "wall": "8:13.18",
+      "user_seconds": 178.41,
+      "system_seconds": 85.17,
+      "max_rss_kib": 4301044
+    },
+    "source_guard": {
+      "mode": "exact",
+      "original_inputs": 4993,
+      "actual_inputs": 4993,
+      "changed": [],
+      "extra": {},
+      "valid": true
+    }
+  },
+  "executable_archive": {
+    "archive": "/mnt/plexpool/spiralcore-work/sc106-build1-executables.tar.zst",
+    "bytes": 1112100185,
+    "sha256": "85a54cffe56006a29d6a6618823b018281ea335587c4031511bfcf169303ec68",
+    "test_members": 293,
+    "replay_verified": true,
+    "original_posthash_verified": true,
+    "target_lock_held": true
+  },
+  "native_mac": {
+    "run_id": 43993274020,
+    "job_id": 133738971709,
+    "artifact_id": 14289625377,
+    "zip_bytes": 1338414,
+    "zip_sha256": "e1acc000c6b3be50c79c0d47e2ad59d3788fcb4b6f87a044ecdc60a218a1d37f",
+    "member_crc_verified": true,
+    "members": {
+      "archived-executable-finally.sha256": {
+        "bytes": 109,
+        "sha256": "8473351ae8e55a0b0b4e155bc97ad2aea8ec6e95cd17bf63f4e77a1718ad4e63"
+      },
+      "build-stderr.txt": {
+        "bytes": 27554,
+        "sha256": "dc8a9287112514dfcf424bcf57b07d805a10850ecb6b88abcd3930ba36013a40"
+      },
+      "build.jsonl": {
+        "bytes": 307912,
+        "sha256": "d6365aa6e1a4e06b9fb378122384d7ecd076ead8291a830c3801a231c459c0f7"
+      },
+      "clippy.txt": {
+        "bytes": 10327,
+        "sha256": "4fb74205138ae4637d381907b83d92fca9148fabc9985a1be1509a01f7107c07"
+      },
+      "commit.txt": {
+        "bytes": 41,
+        "sha256": "4bd5411b442580f067128d295c6253d2c03f347411b2e874286e0229c395cae1"
+      },
+      "custody-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "executable-after.txt": {
+        "bytes": 91,
+        "sha256": "64b3f042fdb56936e7fd2b0efa3597fc1c2197db4371e8bdf93e5d3d281c4b11"
+      },
+      "executable-before.sha256": {
+        "bytes": 153,
+        "sha256": "3d411a652ce5752a6760507067f2015b015d5610a61fb24b33c0f382ba860fdc"
+      },
+      "executable-finally.txt": {
+        "bytes": 91,
+        "sha256": "64b3f042fdb56936e7fd2b0efa3597fc1c2197db4371e8bdf93e5d3d281c4b11"
+      },
+      "executable-type.txt": {
+        "bytes": 119,
+        "sha256": "dc33c05343f78211156f8191a8dc762fd3bd078dca2d60400e62592dddac8eb2"
+      },
+      "git-status-after.txt": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "executable-path.txt": {
+        "bytes": 87,
+        "sha256": "fb76122658acbe3c7841d22e60e78434822a720e062eded9c4fd9c18c0964d96"
+      },
+      "git-tree.txt": {
+        "bytes": 476435,
+        "sha256": "5c17782b09b044a6c7e1693b4b517371dc87c63eed59ad336bc9541f425ee962"
+      },
+      "list.txt": {
+        "bytes": 91,
+        "sha256": "3f24cd8f36c3bbbac6808512cd6de5451327362928630a6e2680c8f6f8e868d2"
+      },
+      "platform.txt": {
+        "bytes": 267,
+        "sha256": "01ef499d1027be0f223e87ddeef658ed4494fa728c28ffb23729cca7b61c8fb1"
+      },
+      "rustc.txt": {
+        "bytes": 192,
+        "sha256": "e794146d99fad54562fdcbd4a7c8b22b0240d2b0312ff6d879d67939b3131850"
+      },
+      "scope.txt": {
+        "bytes": 168,
+        "sha256": "f869b8592ef8218b5c18aaa20ac00322d3c2c0b738247a011dec4bdbc397c36c"
+      },
+      "selected.json": {
+        "bytes": 805,
+        "sha256": "94459fe48939008440f3d3bbf9bbdd0a73d4ff3bf9adebbd1720d8abe201f74b"
+      },
+      "source-after.txt": {
+        "bytes": 239863,
+        "sha256": "b09541943d511b0731dc95ecfec2869c480ce1fcb141371ef384756dd50cdb6b"
+      },
+      "source-before.sha256": {
+        "bytes": 539199,
+        "sha256": "87c9a23089a97b732de25f4b4cbb871f0f50683a83c1f2577dcc05ffc199480d"
+      },
+      "source-root.txt": {
+        "bytes": 45,
+        "sha256": "c2d76fca1575a78a25e13069620acd4cebc47cd5808da888ad22b0b5f128f14e"
+      },
+      "supervisor-test.bin": {
+        "bytes": 2859968,
+        "sha256": "f3418e4da411e5a823a330bb6fb2b206715d3ba2b882c594516118d776baf68e"
+      },
+      "test-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "test.txt": {
+        "bytes": 187,
+        "sha256": "c716df43f52741b38211cef989d6f37b6ea3939dc6ffe359197492a47ccaee7e"
+      },
+      "time.txt": {
+        "bytes": 697,
+        "sha256": "5ed19361f8e4d873c9e120004081ba40fbfaff08b259ca8b104ea9b7cf07e4a2"
+      },
+      "tree.txt": {
+        "bytes": 41,
+        "sha256": "9171383d42776bd39fec71898b61898779ee4687143feb143c2674da600cd329"
+      }
+    },
+    "commit": "c52b0d26fd51d59b5b25fe937e5fdbc4b5ccc387",
+    "tree": "3e3889b77f8393344c42db23cb6e9c2bb3b0046e",
+    "tracked_source_files": 4828,
+    "tracked_source_matches_operator_git": true,
+    "source_pre_post_unchanged": true,
+    "original_and_archived_executable_sha256": "f3418e4da411e5a823a330bb6fb2b206715d3ba2b882c594516118d776baf68e",
+    "executable_bytes": 2859968,
+    "macho_arm64_header_verified": true,
+    "compiler_selected_fresh_executable": true,
+    "test": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 3,
+      "boolean_shapes": 8
+    },
+    "raw_bsd_time": "        0.00 real         0.00 user         0.00 sys\n             6569984  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 591  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   4  involuntary context switches\n             1557376  peak memory footprint\n",
+    "scope": "Native macOS ARM64 pure eight-startup-shape component control only; no VM boot, caller consumption, descriptor handoff, audit/seccomp readback, signed-runtime or WAN qualification."
+  },
+  "native_helpers_only": {
+    "after": [
+      {
+        "pid": 1944919,
+        "start_ticks": 27482016,
+        "system_ticks": 1,
+        "threads": 4,
+        "user_ticks": 2
+      },
+      {
+        "pid": 1944921,
+        "start_ticks": 27482017,
+        "system_ticks": 0,
+        "threads": 4,
+        "user_ticks": 2
+      }
+    ],
+    "before": [
+      {
+        "pid": 1944919,
+        "start_ticks": 27482016,
+        "system_ticks": 0,
+        "threads": 2,
+        "user_ticks": 0
+      },
+      {
+        "pid": 1944921,
+        "start_ticks": 27482017,
+        "system_ticks": 0,
+        "threads": 3,
+        "user_ticks": 0
+      }
+    ],
+    "broker_framed_bytes_vm1": [
+      5654,
+      5024
+    ],
+    "broker_framed_bytes_vm2": [
+      5654,
+      5024
+    ],
+    "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+    "executable_sha256": [
+      "3f47f489e842a1c218267d4bf2b7bb70fcf7be6a0ace28dc3cc46ecfd5f4e3ed",
+      "30cdb0904c9e266c6d160bcfedd4663b3b8ccc53be0289e29d6442f4f17856e6"
+    ],
+    "original_archives": [
+      {
+        "bytes": 19224,
+        "entries": 32,
+        "sha256": "ab62418554520d4207805d5ae8c9ad6308d990f1ae4dd575b6789c9cb3f2a68e",
+        "workload": "vm-1"
+      },
+      {
+        "bytes": 19224,
+        "entries": 32,
+        "sha256": "c94ba89f9c31c22c36c3ba22bb34de86fe45ba564f3edc3d69e4e77dff76d310",
+        "workload": "vm-2"
+      }
+    ],
+    "partial_signer_received_bytes": 0,
+    "partial_signer_sent_bytes": 5,
+    "sample_interval_ms": 1,
+    "sampled_peak_threads": [
+      4,
+      4
+    ],
+    "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+    "setup_to_verified_retirement_ns": 2508039403,
+    "signing_with_partial_frame_ns": 2384690955,
+    "command_cost": {
+      "raw": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-fa6aa246786b56d0 worker_budget_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.10\n\tSystem time (seconds): 0.07\n\tPercent of CPU this job got: 7%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:02.52\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 40212\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 3801\n\tMinor (reclaiming a frame) page faults: 16804\n\tVoluntary context switches: 3426\n\tInvoluntary context switches: 26\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 2\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+      "wall": "0:02.52",
+      "user_seconds": 0.1,
+      "system_seconds": 0.07,
+      "max_rss_kib": 40212
+    }
+  },
+  "qualification_guard": {
+    "final_sha256": "58c0d730425e670ee218a5a85b6e7271dfb1a6dfd327ea9d33bbb135b4f274b1",
+    "controls": {
+      "guard_sha256": "58c0d730425e670ee218a5a85b6e7271dfb1a6dfd327ea9d33bbb135b4f274b1",
+      "cases": [
+        {
+          "mode": "prepare",
+          "shape": "absent",
+          "expected_accept": true,
+          "actual_exit": 0
+        },
+        {
+          "mode": "prepare",
+          "shape": "empty",
+          "expected_accept": true,
+          "actual_exit": 0
+        },
+        {
+          "mode": "prepare",
+          "shape": "nonempty",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "prepare",
+          "shape": "directory",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "prepare",
+          "shape": "fifo",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "prepare",
+          "shape": "symlink_empty",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "prepare",
+          "shape": "symlink_dangling",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "prepare",
+          "shape": "symlink_directory",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "prepare",
+          "shape": "hardlink",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "absent",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "empty",
+          "expected_accept": true,
+          "actual_exit": 0
+        },
+        {
+          "mode": "exact",
+          "shape": "nonempty",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "directory",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "fifo",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "symlink_empty",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "symlink_dangling",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "symlink_directory",
+          "expected_accept": false,
+          "actual_exit": 1
+        },
+        {
+          "mode": "exact",
+          "shape": "hardlink",
+          "expected_accept": false,
+          "actual_exit": 1
+        }
+      ],
+      "all_expected_results": true,
+      "scope": "Only canonical generated lock-name guard; temporary synthetic files, no product source/cache mutation"
+    },
+    "versions": "Preparation usedv1; review found omitted prepared-lock shape and nonregular-name checks. Full command began before correction and its postguard uses final direct-name/inode checkedv3. v1/v2 and a standalone syntax-failedv3 invocation remain retained; the syntax failure was repaired before full postguard. No product input/executable mutation.",
+    "original_build_hashes_retained": true
+  },
+  "upstream_ci": [
+    {
+      "run_id": 43987459245,
+      "jobs": [
+        {
+          "id": 133721161489,
+          "name": "Nix flake check (Linux eval)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721161813,
+          "name": "Confinement under the release libc (aarch64-unknown-linux-musl)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721161837,
+          "name": "Test eBPF telemetry load/attach",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 133721161839,
+          "name": "Test workspace (aarch64)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721161891,
+          "name": "Lint feature coverage (embed-host-bins)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721161905,
+          "name": "Lint feature coverage (portable)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721161969,
+          "name": "BDD conformance / BDD conformance",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721161978,
+          "name": "Test release profile (overflow + no debug assertions)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721161995,
+          "name": "Lint feature coverage (signatures)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721162015,
+          "name": "Test workspace (doctests + feature suites)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721162086,
+          "name": "BDD conformance / BDD live PS-11 frozen volume (Linux, Firecracker)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721162089,
+          "name": "Lint feature coverage (test-support)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721162130,
+          "name": "Confinement under the release libc (x86_64-unknown-linux-musl)",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721162353,
+          "name": "Boot latency ceiling",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721162356,
+          "name": "Test Linux and conformance",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "id": 133721163571,
+          "name": "Guest image boots (pinned base set, tree guest runtime)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133725143327,
+          "name": "Test (main)",
+          "status": "completed",
+          "conclusion": "failure"
+        }
+      ]
+    },
+    {
+      "run_id": 43985422037,
+      "jobs": [
+        {
+          "id": 133712208930,
+          "name": "Pick runners",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 133712209443,
+          "name": "CI scope",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 133713167128,
+          "name": "Lint core (fmt + clippy)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 133713167236,
+          "name": "Build workspace tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 133713169091,
+          "name": "Windows repository identity runtime",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133713169632,
+          "name": "Docs coverage ledger",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133713169761,
+          "name": "Windows compile check (portable crates)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133713169938,
+          "name": "Invariant",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133713170199,
+          "name": "supply-chain",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133713170349,
+          "name": "Docs static",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133713170517,
+          "name": "Lint feature combinations (clippy)",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "id": 133718580423,
+          "name": "Test",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 133718582135,
+          "name": "Test workspace",
+          "status": "completed",
+          "conclusion": "skipped"
+        }
+      ]
+    }
+  ],
+  "ari": {
+    "audit_request": "https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6932825147",
+    "audit_reply": "No Ari reply at final refresh; missing canonical confined sink/durable epoch-health/original-deadline missed-decision interface remains.",
+    "latest_structural_update": "https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6934838447",
+    "structural_scope": "Private test-only declaration model review closed; separate pure lifecycle model started, with no second-model results, production import/service/authority/activation. Not imported."
+  },
+  "remaining": [
+    "canonical confined bound sink/durable epoch-health and original-deadline missed-decision interface",
+    "both unchecked#258 storage/resource/recovery criteria",
+    "all five#42 outcomes",
+    "compatible signed guest-runtime publication/source pairing by Ari",
+    "private MVMD integration",
+    "supported native roles/backends/architectures and executed two-host WAN",
+    "capacity/fairness/backpressure/tail latency/recovery/saturation",
+    "complete qualified final upstream MVM contribution"
+  ],
+  "retained_receipts": {
+    "sc106-git-tree-proof.json": {
+      "bytes": 1264471,
+      "sha256": "2b99d5cf62210bdd170d611f03838313562303175e9d68fe5ba809304f6c4ab3"
+    },
+    "sc106-source-inventory.json": {
+      "bytes": 604412,
+      "sha256": "ba69a89870bfcefc651f26e8ed6ce6fec8374c4ee19ab9e7057acd945bc4d27d"
+    },
+    "sc106-baseline-preservation.json": {
+      "bytes": 202,
+      "sha256": "ba1121a12d35e26827fe2b1367c8f6fb2cfaf4582386c536d7b87d1f005e417a"
+    },
+    "sc106-build1.sh": {
+      "bytes": 4862,
+      "sha256": "16a761831f912049cccafddc9de66918d41d298296dec66c40df131253058e18"
+    },
+    "sc106-build1-outcome.json": {
+      "bytes": 114,
+      "sha256": "1ddadf9ba869b6d790815e1d7fa175059abd6e3c50ee9473b659a30d8b119706"
+    },
+    "sc106-build1-inputs-before.sha256": {
+      "bytes": 569106,
+      "sha256": "ba623bac6a4661e9be049acda3463f093c453cd76d2cb71218c328d043d55d78"
+    },
+    "sc106-build1-inputs-after.sha256": {
+      "bytes": 569106,
+      "sha256": "ba623bac6a4661e9be049acda3463f093c453cd76d2cb71218c328d043d55d78"
+    },
+    "sc106-build1-metadata.json": {
+      "bytes": 2891351,
+      "sha256": "a2042c331ff5eeeab241fb660c52a539d09c9312373b2c938631fcd6795f737e"
+    },
+    "sc106-build1-policies.txt": {
+      "bytes": 22703,
+      "sha256": "02a2d4e5721f1844460a72474049b422112e13799ae359023b6b5547faafe1ff"
+    },
+    "sc106-build1-policy-exit.txt": {
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "sc106-build1-policy-executable.json": {
+      "bytes": 273,
+      "sha256": "dd053492717f9f83d40e6d8ea2aa72dff390a247a69c77a39c26ad3c65922b53"
+    },
+    "sc106-build1-build.jsonl": {
+      "bytes": 810329,
+      "sha256": "e605c3eb56d048fbbdda0676bdf5565f915771e513dd4b14fa2f84fd58702a09"
+    },
+    "sc106-build1-executables-before.json": {
+      "bytes": 155286,
+      "sha256": "7d99d7b9da8c74f5801aa1519a500874aeaa21f569085e06cf9f8e30c877ca09"
+    },
+    "sc106-build1-executables-before.sha256": {
+      "bytes": 54349,
+      "sha256": "fcd4ebf3d1f062c320ad61e2d590fb29b58362469a3efc780890a59b7862fd71"
+    },
+    "sc106-build1-executable-validation.json": {
+      "bytes": 101,
+      "sha256": "39005fc831ec79188cd7d7554a0d105fd82a347b8882fd913e9ce222b905382d"
+    },
+    "sc106-build1-executable-archive.json": {
+      "bytes": 57891,
+      "sha256": "5e13538239b9b0163fd0050f6b92a76668abd1b4ef777173c86de7456c0b970d"
+    },
+    "sc106-focused.py": {
+      "bytes": 4028,
+      "sha256": "96c0bb98e301b4993ee01ee9defcb3a3eb9a2bff694902f7e29551b773c850c5"
+    },
+    "sc106-focused1.sh": {
+      "bytes": 2104,
+      "sha256": "e33ddf62b4e990b4944cdf2a5ecfdfccf26d3d13151af6c9e0245d7eb7ea353e"
+    },
+    "sc106-focused1-results.json": {
+      "bytes": 3301,
+      "sha256": "2a66afb627ba890f9ce09af74cfffa30b58df640b9777ed1d6ab637d6320985b"
+    },
+    "sc106-focused1-outcome.json": {
+      "bytes": 114,
+      "sha256": "2778a08b1b75380a5c33cf1229325f07899556a1f31bcfeef3975cd853f1bb6b"
+    },
+    "sc106-focused1-preparation.json": {
+      "bytes": 356,
+      "sha256": "37b1c019cf7b159958e85ad8bd41abefdd956bf6a555402f0d69d1ecd5cbc22a"
+    },
+    "sc106-focused1-prepared-inputs-before.sha256": {
+      "bytes": 569211,
+      "sha256": "5334d32296a64a2d1311ebf791de4cdb56a4b0dd1fbca5cf949c8a8cd1ae762d"
+    },
+    "sc106-focused1-registered_direct_tcp-worker_budget_tests--tests.txt": {
+      "bytes": 1690,
+      "sha256": "2c86887aa91bb0966eca282f6ee1c8d0571453433c96981850491e64f5dff0b9"
+    },
+    "sc106-full1.sh": {
+      "bytes": 2309,
+      "sha256": "0a2de0b54f86554a38382dfd57d3c4325539f557cfb7576effd2eb00fd7a28de"
+    },
+    "sc106-full1-tests.txt": {
+      "bytes": 2020605,
+      "sha256": "6962470c199ac84df97a95807987158437df48af57c10a3f6626daf18789d4a3"
+    },
+    "sc106-full1-summary.json": {
+      "bytes": 113986,
+      "sha256": "efdc5e48b5e74f4d8bbc76b5f8f2e5e4c4d6911e643dfb6daf88d0ac0fe7a118"
+    },
+    "sc106-full1-runtime-executable-set.json": {
+      "bytes": 95,
+      "sha256": "4c92d647d3e6b58b4c81b259a96253dd9eeccb75085265ac1e4f975a9631df78"
+    },
+    "sc106-full1-outcome.json": {
+      "bytes": 118,
+      "sha256": "af2eeb18629c54ccd38c56a270d05d479ae8f5b417b34f1091c94924b2d8cc2f"
+    },
+    "sc106-full1-source-guard.json": {
+      "bytes": 109,
+      "sha256": "e276e0a929d060541460927edab4a9bee265824819f17cdec7e345130710eaae"
+    },
+    "sc106-full1-inputs-before.sha256": {
+      "bytes": 569211,
+      "sha256": "5334d32296a64a2d1311ebf791de4cdb56a4b0dd1fbca5cf949c8a8cd1ae762d"
+    },
+    "sc106-full1-postverified-inputs.sha256": {
+      "bytes": 569211,
+      "sha256": "5334d32296a64a2d1311ebf791de4cdb56a4b0dd1fbca5cf949c8a8cd1ae762d"
+    },
+    "sc106-full1-original-inputs-after.txt": {
+      "bytes": 259608,
+      "sha256": "d9eb8adba092f270564ac9cf52c0962182dd7a6952b7c3767002b848331220c9"
+    },
+    "sc106-full1-executables-before.txt": {
+      "bytes": 32153,
+      "sha256": "000e3413a659864c8470cd7ce8a9c84b0d01f252346bfea36268232822a2452f"
+    },
+    "sc106-full1-executables-after.txt": {
+      "bytes": 32153,
+      "sha256": "000e3413a659864c8470cd7ce8a9c84b0d01f252346bfea36268232822a2452f"
+    },
+    "sc106-full1-limits.txt": {
+      "bytes": 154,
+      "sha256": "1e83ce565695132f68e655228aef4ef33f53a411ad03a598dfa5e4949fe8099a"
+    },
+    "sc106-input-guard-v1.py": {
+      "bytes": 1089,
+      "sha256": "76e9bb2d7357eefd271f635496312bbb6c0b096442c129f86ab959be6e17a32f"
+    },
+    "sc106-input-guard-v2.py": {
+      "bytes": 1130,
+      "sha256": "93d76758fd69579d6570b6831517a1d8cdb2efe563cf2f2ec93a202982dc007e"
+    },
+    "sc106-input-guard-v3-syntax-failed.py": {
+      "bytes": 1249,
+      "sha256": "3c4cb3a759a59b86462db87ed5c696433174d6ca69f7df8acc93aa2f96d81b70"
+    },
+    "sc106-input-guard.py": {
+      "bytes": 1500,
+      "sha256": "58c0d730425e670ee218a5a85b6e7271dfb1a6dfd327ea9d33bbb135b4f274b1"
+    },
+    "sc106-guard-controls.py": {
+      "bytes": 2082,
+      "sha256": "ebef49b703226ed5d1759bdc24f2a83571b290651c77bf51f03c4919d6ee40a3"
+    },
+    "sc106-input-guard-controls.json": {
+      "bytes": 2421,
+      "sha256": "894c3ae3a96d812b2f2d0460e330ecfa8490882642e1c013a2c087175325986f"
+    },
+    "sc106-macos-artifact-verification.json": {
+      "bytes": 5257,
+      "sha256": "53192f91ff0d178a26a0caf37612ea9d92d6da5437c2e03fca41b5d6ea1d2eab"
+    },
+    "sc106-macos-verify.py": {
+      "bytes": 3231,
+      "sha256": "0e37a3d81e01de91e7e004b5f1d493f12f42f87e4147fabaf1381a89db3d056c"
+    },
+    "sc106-upstream-ci.json": {
+      "bytes": 4880,
+      "sha256": "8b363eae7c312368376375691d6acfa93b3b4c742245e9a4027f9e3b8e4c6502"
+    },
+    "sc106-focused1-library_only_surface-preparing_the_guest_runtime_cold_never_runs_the_toolchain-time.txt": {
+      "bytes": 908,
+      "sha256": "66f137caa0d22f2fcc37329064a2e3a908fd1bac741c4e16cbbe17b81821986e"
+    },
+    "sc106-focused1-mvm_hostd-supervisor-audit-dns_audit-tests--time.txt": {
+      "bytes": 864,
+      "sha256": "27585d331553192557b0f08258f5077fe65944a388c599b779df5fef3b85c05b"
+    },
+    "sc106-focused1-mvm_build-guest_agent_build-tests-a_musl_cdylib_keeps_its_target_flags_under_the_zigbuild_env-time.txt": {
+      "bytes": 908,
+      "sha256": "e27f88b2ef889edd2cd525ea0df4b9e4f320da63232bfebb7ad6a7e61a4c2da3"
+    },
+    "sc106-focused1-mvm_build-guest_agent_build-tests-apply_zigbuild_env_exports_explicit_cache_dir-time.txt": {
+      "bytes": 895,
+      "sha256": "7ca37a7c1a2b95f44015c39e95a3765796d4dd3e0257831b4ba4b64bb5982100"
+    },
+    "sc106-focused1-mvm_client-egress_denials-denial-tests--time.txt": {
+      "bytes": 861,
+      "sha256": "466e1abbad568dc14d9c0e3eba850928e681450c615cea4623e240e8b9bff84b"
+    },
+    "sc106-focused1-mvm_client-explain-tests--time.txt": {
+      "bytes": 847,
+      "sha256": "ca50e0e6f73f9c74071e367e129b92930d94fe9d411c4e917ac47b8bc011aa09"
+    },
+    "sc106-focused1-mvm_runtime-kernel_custody-tests--time.txt": {
+      "bytes": 854,
+      "sha256": "cdb1d03ccf1dc50afe5f388c1f7ffd0600561209f3f7b8bc4f0a770f3bc01533"
+    },
+    "sc106-focused1-mvm_hostd-supervisor-endpoint-flowmux-decision_audit--time.txt": {
+      "bytes": 876,
+      "sha256": "2f2e132baad3221dc6f75aea0e1168dbd98c03bff7a0096d16521a048c9c9d44"
+    },
+    "sc106-focused1-mvm_backends-driver-fc-entrypoint-tests--time.txt": {
+      "bytes": 865,
+      "sha256": "25605fe7d59eb8c5a46af02c82945e3dfc9e29ad24616d4c477eb5d0c04f9edf"
+    },
+    "sc106-focused1-mvm_client-egress_denials-tally-tests--time.txt": {
+      "bytes": 859,
+      "sha256": "2a9c18ae4612e968f9206404206ec7a763027978a0212037051bd4db14d316e2"
+    },
+    "sc106-focused1-registered_direct_tcp-worker_budget_tests--time.txt": {
+      "bytes": 865,
+      "sha256": "8a682c0ad555dd2eff03bae4fec03929dca925c1df03fcc20aaed1ad9388125c"
+    },
+    "sc106-focused1-mvm_build-guest_bins-tests-the_producer_records_the_producing_tree_and_every_member-time.txt": {
+      "bytes": 916,
+      "sha256": "a9567807014802f21b787bedc26356175a8ce65a6a0712640a4eabe2b1ea7c75"
+    },
+    "sc106-focused1-mvm_hostd-supervisor-audit-denial_stage-tests--time.txt": {
+      "bytes": 868,
+      "sha256": "223c213fc8a0f3f4f1772a6f03af34c151241963977585d10dae8204b98bd1ed"
+    }
+  }
+}
