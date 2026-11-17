@@ -1,6 +1,41 @@
 # Networking delivery status
 
-## Networking reconciliation and current audit handoff
+## Four upstream changes qualified through 106d28d
+
+Development [MVM c52b0d26](https://github.com/Casey-allard/mvm/commit/c52b0d26fd51d59b5b25fe937e5fdbc4b5ccc387),
+tree `3e3889b7`, reconciles #5639/#5641/#5643/#5644 with the original
+networking ownership and absolute deadlines. Canonical musl flags, denial-stage
+labels/readers and HVF startup controls are retained; a combined regression
+preserves the original audit deadline. Selected delivery remains **MVM f2ddbcbf /
+core 8994951b**. [Source, exact costs, custody and limits](evidence/2026-11-16-upstream-106d28d/README.md).
+
+All 87 policies, formatting, Linux workspace/all-target/BDD compilation and
+strict Clippy pass. Focused scopes report 78 passes / one ignored. All 293
+workspace harnesses complete: **22,125 passes / one unchanged bound-audit-sink
+failure / 72 ignored**; Rustdoc reports 29 passes / zero failures / eight ignored.
+Full command and aggregate exit 101; all source, exact prepared file-set and
+358 freshly compiled executable custody checks pass. The original readiness
+assertion is unchanged. Review repairs to qualification guards and original
+failed invocations are retained in the packet.
+
+[PR #320](https://github.com/R4-Laboratories/SpiralCore/pull/320) merged the
+native macOS ARM64 one-test/eight-shape HVF control at `6dfbbdb2`, preserving
+the exact reviewed/tested tree. The actual ARM64 Mach-O and original artifact
+are hash-verified and retained on HDD. This pure startup-shape check is not
+caller/descriptor custody, signed-runtime boot, audit/seccomp or WAN evidence.
+
+No new Ari reply has arrived on the [audit-interface request](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6932825147).
+His [latest structural update](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6934838447)
+closes a private synthetic declaration-model review and starts a separate pure
+lifecycle model. Neither is a production authority or imported here. The
+canonical confined sink/durable epoch-health/original-deadline accounting gate,
+both #258 criteria and all five #42 outcomes remain open, alongside Ari's
+compatible signed runtime and private MVMD. Canonical 93ec789/#5645 is observed
+outside this frozen slice; 106's cancelled boot/live CI supplies no successful
+runtime qualification. No final upstream contribution is submitted. All large
+artifacts remain on HDD; torrent/media paths are untouched.
+
+## Prior networking reconciliation and audit handoff
 
 Development MVM
 [`8ec3f12`](https://github.com/Casey-allard/mvm/commit/8ec3f12739737f12cff3a4ecec1b1f659c6acde9),
