@@ -1,6 +1,39 @@
 # Networking delivery status
 
-## rc.9 persistent admitted dispatch reconciled
+## Canonical Call/Reply core reconciled
+
+Development [MVM 8689930](https://github.com/Casey-allard/mvm/commit/86899304562ed3a2f4ef856762dd6eeede20caff),
+tree `19fa1bdd`, merges Ari's pure conversation core `aba2f61`/#5647 into reviewed
+eb22 networking source. Its module/ADR match canonical bytes, with every other
+inherited source path and original deadline/readiness/ownership assertion unchanged.
+The core remains unwired: caller expiry/authentication/admission, funded memory,
+durable receipts and authoritative quota/currentness remain separate obligations.
+[Source, costs, original artifacts and limits](evidence/2026-11-17-call-reply-core/README.md).
+[PR #327](https://github.com/R4-Laboratories/SpiralCore/pull/327) preserves exact
+reviewed/native-CI/release tree `20a5c4e5986a12943f3c7254469f856757c1fee7`.
+
+All 88 policies, formatting, Linux workspace/all-target/BDD compilation and strict
+Clippy pass. The 21 focused scopes report 107 passes / six ignored, including all
+11 canonical conversation tests. All 293 repeated full harnesses complete: **22,147 passes /
+one unchanged audit-sink failure / 72 ignored**; Rustdoc 29 passes / zero failures /
+eight ignored. Full command/wrapper 101 and all source/prepared-set/358-executable
+guards zero stay explicit. Initial tmpfs full1 remains 22,146/2/72 after a kernel
+EDQUOT refusal. A reviewed Rust runner puts only that unchanged 96 MiB/8 MiB-bound
+bundle fixture on HDD for the repeated campaign; other targets retain original
+tmpfs, assertions, deadlines and caps. Native macOS ARM64 passes 23 controls/Clippy with five
+actual retained binaries. Literal gated wrapper remains NOT_RUN; its documented
+blind spots are compiled separately.
+
+Selected consumers stay **MVM f2ddbcbf / core 8994951b**. Original readiness still
+refuses before Ready, the audit-interface reply is absent and both #258 criteria
+remain open. Ari's #5668 production slice remains open/unmerged and unimported.
+His rc.9 tag run passed signed-candidate checks but failed Linux E2E; publication/
+promotion were skipped and no compatible published rc.9/rc.10 runtime is available.
+Later main 3d474dd is outside this frozen qualification. All five #42 outcomes,
+private MVMD, supported native/WAN and measured capacity stay required. Builds and
+original evidence stay on HDD; no final upstream contribution is submitted.
+
+## Prior rc.9 persistent admitted dispatch reconciliation
 
 Development [MVM eb22dd2f](https://github.com/Casey-allard/mvm/commit/eb22dd2f724583bb0a12e2526046605e0ce05d37),
 tree `28728a91`, follows canonical rc.9 and persistent hostd migration e01504e/#5651,
