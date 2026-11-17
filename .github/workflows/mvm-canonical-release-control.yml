@@ -1,0 +1,181 @@
+name: MVM canonical release native controls
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/mvm-canonical-release-control.yml
+
+permissions:
+  contents: read
+
+jobs:
+  native-release-controls:
+    runs-on: macos-26
+    timeout-minutes: 25
+    env:
+      MVM_SOURCE_REVISION: b60d9fd901e75d030572cb9c497bb8eac37921eb
+      MVM_SOURCE_TREE: a5379cada5db75c213cdf4772e9c38d20f12890d
+      MVM_SOURCE_FILES: 4832
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+      TMPDIR: /tmp
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Casey-allard/mvm
+          ref: ${{ env.MVM_SOURCE_REVISION }}
+          path: mvm
+          persist-credentials: false
+      - name: Pin native platform and development source
+        run: |
+          set -euo pipefail
+          test "$RUNNER_OS" = macOS
+          test "$RUNNER_ARCH" = ARM64
+          test "$(uname -m)" = arm64
+          test "$(git -C mvm rev-parse HEAD)" = "$MVM_SOURCE_REVISION"
+          test "$(git -C mvm rev-parse 'HEAD^{tree}')" = "$MVM_SOURCE_TREE"
+          mkdir qualification-evidence
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/mvm-release-target" >> "$GITHUB_ENV"
+          rustup toolchain install 1.97.1 --profile minimal --component clippy
+          rustc +1.97.1 -vV > qualification-evidence/rustc.txt
+          grep -Fx 'host: aarch64-apple-darwin' qualification-evidence/rustc.txt
+          sw_vers > qualification-evidence/platform.txt
+          uname -a >> qualification-evidence/platform.txt
+          git -C mvm rev-parse HEAD > qualification-evidence/commit.txt
+          git -C mvm rev-parse 'HEAD^{tree}' > qualification-evidence/tree.txt
+          git -C mvm ls-tree -r HEAD > qualification-evidence/git-tree.txt
+          git -C mvm ls-files -z > "$RUNNER_TEMP/mvm-release-source-files0"
+          (
+            cd mvm
+            while IFS= read -r -d '' source_file; do
+              shasum -a 256 "$source_file"
+            done < "$RUNNER_TEMP/mvm-release-source-files0"
+          ) > qualification-evidence/source-before.sha256
+          printf '%s\n' \
+            'Native macOS ARM64 component controls: retained RPC, dispatch refusals, CLI finalization and eight HVF startup shapes.' \
+            'No VM boot, installed audit readiness, signed-runtime, native Windows, WAN or capacity qualification.' \
+            > qualification-evidence/scope.txt
+      - name: Compile and retain the three actual test executables
+        run: |
+          set -euo pipefail
+          source_root=$(cd mvm && pwd -P)
+          printf '%s\n' "$source_root" > qualification-evidence/source-root.txt
+          cargo +1.97.1 test --locked --manifest-path "$source_root/Cargo.toml" \
+            -p mvm-hostd --bin mvm-hvf-supervisor --no-run --message-format=json \
+            > qualification-evidence/build-supervisor.jsonl 2> qualification-evidence/build-supervisor-stderr.txt
+          cargo +1.97.1 test --locked --manifest-path "$source_root/Cargo.toml" \
+            -p mvm-hostd -p mvm-agentd --lib --no-run --message-format=json \
+            > qualification-evidence/build-libraries.jsonl 2> qualification-evidence/build-libraries-stderr.txt
+          jq -sc '[.[] | select(.reason == "compiler-artifact" and .profile.test == true and .executable != null and (.target.name == "mvm-hvf-supervisor" or .target.name == "mvm_hostd" or .target.name == "mvm_agentd"))]' \
+            qualification-evidence/build-supervisor.jsonl qualification-evidence/build-libraries.jsonl \
+            > qualification-evidence/selected.json
+          test "$(jq length qualification-evidence/selected.json)" = 3
+          test "$(jq '[.[].target.name] | unique | length' qualification-evidence/selected.json)" = 3
+          : > qualification-evidence/executables-before.sha256
+          : > qualification-evidence/archived-executables-before.sha256
+          while IFS= read -r row; do
+            test "$(jq -r .fresh <<< "$row")" = false
+            target=$(jq -r .target.name <<< "$row")
+            case "$target" in
+              mvm-hvf-supervisor) source_file=crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs ;;
+              mvm_hostd) source_file=crates/mvm-hostd/src/lib.rs ;;
+              mvm_agentd) source_file=crates/mvm-agentd/src/lib.rs ;;
+              *) exit 1 ;;
+            esac
+            test "$(jq -r .target.src_path <<< "$row")" = "$source_root/$source_file"
+            executable=$(jq -r .executable <<< "$row")
+            test -f "$executable"
+            file "$executable" > "qualification-evidence/$target-type.txt"
+            grep -F 'Mach-O 64-bit executable arm64' "qualification-evidence/$target-type.txt"
+            original_hash=$(shasum -a 256 "$executable" | cut -d ' ' -f 1)
+            printf '%s  %s\n' "$original_hash" "$executable" >> qualification-evidence/executables-before.sha256
+            cp "$executable" "qualification-evidence/$target.bin"
+            copied_hash=$(shasum -a 256 "qualification-evidence/$target.bin" | cut -d ' ' -f 1)
+            test "$original_hash" = "$copied_hash"
+            printf '%s  %s.bin\n' "$original_hash" "$target" >> qualification-evidence/archived-executables-before.sha256
+          done < <(jq -c '.[]' qualification-evidence/selected.json)
+          test "$(wc -l < qualification-evidence/executables-before.sha256 | tr -d ' ')" = 3
+      - name: Run bounded native component scopes and strict all-target Clippy
+        run: |
+          set -euo pipefail
+          run_scope() {
+            target=$1
+            selector=$2
+            expected=$3
+            exact=$4
+            set --
+            if test "$exact" = yes; then set -- --exact; fi
+            executable=$(jq -r --arg target "$target" '.[] | select(.target.name == $target) | .executable' qualification-evidence/selected.json)
+            label="$target-$selector"
+            "$executable" "$selector" "$@" --list > "qualification-evidence/$label-list.txt"
+            test "$(grep -Ec ': test$' "qualification-evidence/$label-list.txt")" = "$expected"
+            set +e
+            /usr/bin/time -l "$executable" "$selector" "$@" --nocapture --test-threads=1 \
+              > "qualification-evidence/$label-test.txt" 2> "qualification-evidence/$label-time.txt"
+            result=$?
+            set -e
+            printf '%s\n' "$result" > "qualification-evidence/$label-exit.txt"
+            test "$result" = 0
+            awk '/^test result: / { last = $0 } END { print last }' "qualification-evidence/$label-test.txt" > "qualification-evidence/$label-outer.txt"
+            grep -E "^test result: ok\\. $expected passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [0-9.]+s$" \
+              "qualification-evidence/$label-outer.txt"
+          }
+          run_scope mvm-hvf-supervisor tests::only_a_complete_checked_set_or_a_kernel_alone_may_start 1 yes
+          run_scope mvm_agentd vsock::rpc::tests::retained_entrypoint_preserves_real_keys_counters_and_original_verbs 1 yes
+          run_scope mvm_agentd vsock::rpc::tests::retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame 1 yes
+          run_scope mvm_hostd plan_admission::start_tests::ordinary_and_cli_dispatch_refuse_a_selected_pair_before_backend_effects 1 yes
+          run_scope mvm_hostd plan_admission::start_tests::cli_transient_ 4 no
+          source_root=$(cat qualification-evidence/source-root.txt)
+          cargo +1.97.1 clippy --locked --manifest-path "$source_root/Cargo.toml" \
+            -p mvm-hostd -p mvm-agentd --all-targets -- -D warnings \
+            > qualification-evidence/clippy.txt 2>&1
+      - name: Verify source and all original and archived executables after every outcome
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p qualification-evidence
+          result=0
+          if test -f qualification-evidence/source-before.sha256; then
+            test "$(wc -l < qualification-evidence/source-before.sha256 | tr -d ' ')" = "$MVM_SOURCE_FILES" || result=1
+            (
+              cd mvm
+              shasum -a 256 -c ../qualification-evidence/source-before.sha256
+            ) > qualification-evidence/source-after.txt || result=1
+            git -C mvm status --porcelain --untracked-files=all > qualification-evidence/git-status-after.txt || result=1
+            test ! -s qualification-evidence/git-status-after.txt || result=1
+          else
+            result=1
+            printf '%s\n' 'NOT_RUN: source baseline missing' > qualification-evidence/source-after.txt
+          fi
+          if test -f qualification-evidence/executables-before.sha256; then
+            test "$(wc -l < qualification-evidence/executables-before.sha256 | tr -d ' ')" = 3 || result=1
+            shasum -a 256 -c qualification-evidence/executables-before.sha256 \
+              > qualification-evidence/executables-finally.txt || result=1
+          else
+            result=1
+            printf '%s\n' 'NOT_RUN: original executable baseline missing' > qualification-evidence/executables-finally.txt
+          fi
+          if test -f qualification-evidence/archived-executables-before.sha256; then
+            test "$(wc -l < qualification-evidence/archived-executables-before.sha256 | tr -d ' ')" = 3 || result=1
+            (
+              cd qualification-evidence
+              shasum -a 256 -c archived-executables-before.sha256
+            ) > qualification-evidence/archived-executables-finally.txt || result=1
+          else
+            result=1
+            printf '%s\n' 'NOT_RUN: archived executable baseline missing' > qualification-evidence/archived-executables-finally.txt
+          fi
+          printf '%s\n' "$result" > qualification-evidence/custody-exit.txt
+          exit "$result"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: mvm-release-macos-arm64-${{ github.run_attempt }}
+          path: qualification-evidence/
+          retention-days: 14
