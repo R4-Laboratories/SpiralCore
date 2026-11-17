@@ -1,6 +1,38 @@
 # Networking delivery status
 
-## Canonical Call/Reply core reconciled
+## Canonical release and output/history slice qualified
+
+Development [MVM
+853bfea](https://github.com/Casey-allard/mvm/commit/853bfeacc01025df7bb96e1095d588a8e31f101d), tree
+`d955e6a5`, reconciles canonical #5662/#5663/#5649 through `7a7b501`: release facade, approved/unimplemented
+HVF owner contracts and read-only output/history verification. Exactly 27 paths change, 25 canonical blobs
+plus two retained original-owner/test compositions. Eight later commits beginning #5658 remain outside this
+frozen qualification. [Source, actual costs, retained failures and
+limits](evidence/2026-11-17-release-output-verification/README.md). [PR
+#329](https://github.com/R4-Laboratories/SpiralCore/pull/329) preserves reviewed/native-CI/release tree
+`cf208cae`.
+
+All 88 policies, format, Linux all-target/explicit BDD compilation and strict Clippy pass. Focused: **213/0/6
+in 27 scopes**. All 294 repeated full harnesses complete: **22,168 passed / one original audit failure / 72
+ignored**; Rustdoc **29/0/8**. Command/final 101 and all original 5,014/prepared 5,015/359-executable/runner
+guards stay explicit. First full1 remains 22,163/6/72 with five checkpoint EDQUOTs plus original Ready
+refusal. Exact same five tests and the full repeat pass their checkpoint gates after verified
+archive/retirement of completed owned read-only scratch. Tmpfs quotas, profile, deadlines, security and
+assertions remain.
+
+Native macOS ARM64 passes **117 controls in 13 scopes**, strict Clippy and all source/seven-original/copied
+executable guards. One Cargo invocation and batched hashing complete in **14m56s under the unchanged 25-minute
+limit**. First native timeout remains failed with zero executed tests and six unretained compiled preimages;
+later success does not recover them. All 98 new ZIP members and source/Git/actual Mach-O bytes are
+independently verified.
+
+Selected consumers remain **MVM f2ddbcbf / core 8994951b**. Original readiness still refuses before Ready because its bound audit sink is missing;
+Ari's confined epoch-health/original-deadline interface reply and compatible published signed runtime remain
+absent. #5668 stays open/unmerged and unimported. Both #258 criteria, all five #42 outcomes, private MVMD,
+supported platform/WAN and measured capacity remain open. All large artifacts and exact scratch archives stay
+on HDD; no final upstream contribution is submitted.
+
+## Prior canonical Call/Reply core reconciliation
 
 Development [MVM 8689930](https://github.com/Casey-allard/mvm/commit/86899304562ed3a2f4ef856762dd6eeede20caff),
 tree `19fa1bdd`, merges Ari's pure conversation core `aba2f61`/#5647 into reviewed
