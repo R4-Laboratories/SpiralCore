@@ -53,9 +53,7 @@ jobs:
           git -C mvm ls-files -z > "$RUNNER_TEMP/mvm-release-source-files0"
           (
             cd mvm
-            while IFS= read -r -d '' source_file; do
-              shasum -a 256 "$source_file"
-            done < "$RUNNER_TEMP/mvm-release-source-files0"
+            xargs -0 shasum -a 256 -- < "$RUNNER_TEMP/mvm-release-source-files0"
           ) > qualification-evidence/source-before.sha256
           printf '%s\n' \
             'Native macOS ARM64 component controls: retained RPC, ordinary/CLI/persistent dispatch refusals and finalization, audit sealing, eight HVF startup shapes, the canonical pure Call/Reply core, release facade, output bindings and signed history.' \
@@ -67,16 +65,11 @@ jobs:
           source_root=$(cd mvm && pwd -P)
           printf '%s\n' "$source_root" > qualification-evidence/source-root.txt
           cargo +1.97.1 test --locked --manifest-path "$source_root/Cargo.toml" \
-            -p mvm-hostd --bin mvm-hvf-supervisor --no-run --message-format=json \
-            > qualification-evidence/build-supervisor.jsonl 2> qualification-evidence/build-supervisor-stderr.txt
-          cargo +1.97.1 test --locked --manifest-path "$source_root/Cargo.toml" \
-            -p mvm-hostd -p mvm-agentd -p mvm-client -p mvm-core -p mvm-contract --lib --no-run --message-format=json \
-            > qualification-evidence/build-libraries.jsonl 2> qualification-evidence/build-libraries-stderr.txt
-          cargo +1.97.1 test --locked --manifest-path "$source_root/Cargo.toml" \
-            -p mvm-client --test output_binding --no-run --message-format=json \
-            > qualification-evidence/build-output-binding.jsonl 2> qualification-evidence/build-output-binding-stderr.txt
+            -p mvm-hostd -p mvm-agentd -p mvm-client -p mvm-core -p mvm-contract \
+            --lib --bin mvm-hvf-supervisor --test output_binding --no-run --message-format=json \
+            > qualification-evidence/build-selected.jsonl 2> qualification-evidence/build-selected-stderr.txt
           jq -sc '[.[] | select(.reason == "compiler-artifact" and .profile.test == true and .executable != null and (.target.name == "mvm-hvf-supervisor" or .target.name == "mvm_hostd" or .target.name == "mvm_agentd" or .target.name == "mvm_client" or .target.name == "mvm_core" or .target.name == "mvm_contract" or .target.name == "output_binding"))]' \
-            qualification-evidence/build-supervisor.jsonl qualification-evidence/build-libraries.jsonl qualification-evidence/build-output-binding.jsonl \
+            qualification-evidence/build-selected.jsonl \
             > qualification-evidence/selected.json
           test "$(jq length qualification-evidence/selected.json)" = 7
           test "$(jq '[.[].target.name] | unique | length' qualification-evidence/selected.json)" = 7
