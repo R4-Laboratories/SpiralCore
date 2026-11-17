@@ -1,6 +1,38 @@
 # Networking delivery status
 
-## Canonical release networking reconciliation
+## rc.9 persistent admitted dispatch reconciled
+
+Development [MVM eb22dd2f](https://github.com/Casey-allard/mvm/commit/eb22dd2f724583bb0a12e2526046605e0ce05d37),
+tree `28728a91`, follows canonical rc.9 and persistent hostd migration e01504e/#5651,
+retaining the protocol-2 rollback and original object/journal/image/runtime-reader
+custody. A behavioral RED and unchanged regression cover restored Unix journal
+preflight failure/seal before fresh-state commitment.
+[Source, actual costs, artifacts and limits](evidence/2026-11-17-rc9-persistent-dispatch/README.md).
+[PR #325](https://github.com/R4-Laboratories/SpiralCore/pull/325) preserves reviewed/
+native-CI/release tree `881a02ea706883194b0127a42709a81ab5342dec`.
+
+All 88 policies, formatting, Linux workspace/all-target/BDD compilation and strict
+Clippy pass. The 20 focused scopes pass 96 tests/ 6 ignored. All 293 binary harnesses
+complete: **22,136 passed / one original audit failure / 72 ignored**; Rustdoc 29/0/8.
+Command/wrapper 101 and source/prepared-set/358-executable guards zero are explicit.
+Native macOS ARM64 passes 12 controls and Clippy with four actual retained binaries.
+Literal gated wrapper is NOT_RUN; native Linux all-target and explicit BDD checks
+cover its documented blind spots. Stopped 638 Linux, intermediate native and
+historical loss records retain separate outcomes.
+
+Later canonical aba2f61/#5647 adds an unwired pure Call/Reply core outside this
+frozen qualification; the audit interface remains unchanged.
+Selected consumers stay **MVM f2ddbcbf / core 8994951b**. Original readiness still
+refuses before Ready; Ari's confined epoch-health/original-deadline interface
+reply and compatible signed runtime are unavailable. His
+[current A→DEST→B milestone](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6937094235)
+and [destination-authority path](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6938079069)
+remain canonical; new role costs are not silently included in the 24-worker
+endpoint budget. Both #258 criteria, all five #42 outcomes, private MVMD, supported
+native/WAN and capacity stay open. All large artifacts stay on HDD; no final
+upstream contribution is submitted.
+
+## Prior Canonical release networking reconciliation
 
 Development [MVM b60d9fd](https://github.com/Casey-allard/mvm/commit/b60d9fd901e75d030572cb9c497bb8eac37921eb),
 tree `a5379cad`, reconciles through canonical edb0769, including Ari's protocol
