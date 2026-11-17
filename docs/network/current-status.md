@@ -1,33 +1,43 @@
 # Networking delivery status
 
-## Installed audit interface and canonical release sequence
+## Canonical release networking reconciliation
 
-A read-only refresh observes canonical MVM
-[`bee650f`](https://github.com/tinylabscom/mvm/commit/bee650f33618ee99edfc06ebafdf3c0191204086).
-[PR #5652](https://github.com/tinylabscom/mvm/pull/5652) reverts the protocol-3
-cutover from #5628: it landed before the required fresh security review,
-live boot/latency evidence and rc.9/demo sequence. Its design remains approved
-for later qualification. The frozen c52b0d26 development source below predates
-this revert and retains that cutover; it is not the current canonical release
-path. Selected consumers remain **MVM f2ddbcbf / core 8994951b**.
+Development [MVM b60d9fd](https://github.com/Casey-allard/mvm/commit/b60d9fd901e75d030572cb9c497bb8eac37921eb),
+tree `a5379cad`, reconciles through canonical edb0769, including Ari's protocol
+rollback #5652 and admitted CLI dispatch. It uses canonical protocol-2
+AuthenticatedSession with the original deadline/key/process custody. All thirteen
+pre-cutover FC control declarations are byte-identical; the two withdrawn
+protocol-3-only controls stay in frozen c52 history/artifacts. Selected consumers
+remain **MVM f2ddbcbf / core 8994951b**. [Source, exact costs and retained limits](evidence/2026-11-16-canonical-release-reconciliation/README.md).
 
-The canonical audit sink, bound recorder, endpoint binding and signer-helper
-protocol are unchanged from 106d28d. Focused independent source review confirms
-that neither merged cold dispatch #5618 nor pending persistent dispatch #5651
-supplies the installed child's durable epoch-health capability or
-original-deadline missed-decision accounting. The existing signer append path
-is not that complete interface. There is still no Ari answer in the
-[updated canonical-owner handoff](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6935221842).
-The original readiness assertion and both #258 criteria remain open.
+All 88 policies, formatting, workspace/all-target/BDD compilation and strict
+Clippy pass. Sixteen focused scopes report 67 passes / six ignored. All 293
+full binary harnesses complete: **22,132 passes / one unchanged bound-audit-sink
+failure / 72 ignored**; Rustdoc 29 passes / zero failures / eight ignored. Command
+and aggregate remain 101; all source, exact prepared-set and 358 freshly
+compiled executable custody checks pass. This is a failed full workspace result,
+not an installed or all-green MVM release.
 
-Ari's [new function/continuation reference](https://github.com/tinylabscom/mvm/issues/5544#issuecomment-6935330368)
-keeps its ADRs Proposed and adds no runtime, wire, service-startup or mailbox
-authority. Future source adoption must follow the approved release sequence
-and a compatible signed runtime; this read-only refresh performs no new build,
-readiness or WAN qualification. All five #42 outcomes and private MVMD remain
-open. No new build target, payload store or VM disk is created.
+[PR #323](https://github.com/R4-Laboratories/SpiralCore/pull/323) qualifies eight
+native macOS ARM64 RPC/dispatch/CLI/HVF component tests and strict all-target
+Clippy, retaining three actual Mach-O executables. The first run's artifact
+upload failed on colon-containing filenames; its original three binaries and
+manifests were not retained. That failure stays explicit; the corrected new-head
+run retains its own verified evidence. No VM, installed audit, signed-runtime,
+Windows, WAN or capacity qualification follows.
 
-## Four upstream changes qualified through 106d28d
+The ordinary/CLI tail keeps its selected-pair refusal because its result cannot
+return both original worker owners. The new two-entrypoint negative proves no
+backend/state effects; dedicated original-object APIs remain. Actual CLI image
+custody, final runtime-config verification and source-specific finalization
+stay intact. The original readiness assertion is unchanged and still refuses
+before Ready. Ari's [canonical confined health/missed-decision interface request](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6935221842)
+remains unanswered. Both #258 criteria, all five #42 outcomes, compatible signed
+runtime and private MVMD remain open. Proposed function/continuation references
+and private models confer no implemented authority. All large artifacts remain
+on HDD; no final upstream contribution is submitted.
+
+## Prior four-change qualification through 106d28d
 
 Development [MVM c52b0d26](https://github.com/Casey-allard/mvm/commit/c52b0d26fd51d59b5b25fe937e5fdbc4b5ccc387),
 tree `3e3889b7`, reconciles #5639/#5641/#5643/#5644 with the original
