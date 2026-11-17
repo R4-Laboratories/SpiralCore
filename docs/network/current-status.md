@@ -1,5 +1,54 @@
 # Networking delivery status
 
+## Networking reconciliation and current audit handoff
+
+Development MVM
+[`8ec3f12`](https://github.com/Casey-allard/mvm/commit/8ec3f12739737f12cff3a4ecec1b1f659c6acde9),
+tree `d24fc2d9`, reconciles the retained networking branch with canonical
+`1905361`. The original control and journal paths use authenticated per-session
+capability negotiation without changing their absolute deadlines or custody.
+One runtime bundle owner carries the authenticated release through both
+persistent launch scopes; admitted audit identity remains canonical. The new
+original-process negatives preserve baseline Ping and refuse missing
+RunEntrypoint before operation bytes. Selected consumers remain
+**MVM f2ddbcbf / shared core 8994951b**.
+[Source, exact costs, retained failures and qualification boundaries](evidence/2026-11-16-current-main-reconciliation/README.md).
+
+The genuine frozen-source run passes all 87 policies, strict Clippy and
+workspace/all-target/BDD compilation. All 293 binary harnesses complete:
+22,114 passes / one unchanged bound-audit-sink failure / 72 ignored; Rustdoc
+reports 29 passes / zero failures / eight ignored. All 358 freshly compiled
+executables remain unchanged. Original source/Git hashes remain unchanged;
+one generated empty cache lock trips the file-set guard, with original
+aggregate 90 retained and exact source/Git file-set restoration verified after
+owned cleanup. The failed export/concurrent-policy campaign stays separate.
+These results qualify a development checkpoint, not installed enablement or
+an all-green MVM release.
+
+The [audit-interface request and current coordination update](https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6932825147)
+remain open. The original registered exact-transfer assertion still requires a
+canonical confined bound sink/epoch-health and original-deadline missed-decision
+accounting before Ready. Ari's
+[unattended manager-created user-service direction](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6931080540)
+is separate: the existing mvm-hostd package owns a keyless
+mvm-mailbox-scheduler per explicit OS-user/canonical runtime instance; its
+contract, authority transactions, confinement and lifecycle/resource
+qualification remain gated. This slice activates no such role.
+Ari's [latest U1 slice](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6932578338)
+is a pure test-only declaration model with synthetic values, not a production
+validator or measured/enforced resource budget. It remains separate and is not
+imported here.
+
+A subsequent read-only refresh observes canonical `08a2d86`. Its #5639
+preserves musl shared-object target flags, addressing the source mechanism
+behind the earlier guest-runtime assembly failure; successful signed runtime
+and boot evidence remain separate. #5641 adds canonical denial-stage labels
+without supplying the missing installed audit interface. Both deltas are
+outside frozen 8ec qualification and require the next bounded reconciliation
+before adoption. Both unchecked #258 criteria, all five #42 outcomes,
+compatible signed guest runtime, private MVMD, supported platform/WAN and
+measured capacity remain open. No final upstream contribution is submitted.
+
 ## Worker budget candidate: two endpoint partitions at 24
 
 Reviewed development MVM

@@ -1,0 +1,1085 @@
+{
+  "schema_version": 1,
+  "scope": "Current-main networking development reconciliation; no selected consumer promotion or complete installed/VM/WAN/capacity acceptance.",
+  "source": {
+    "kind": "clean committed source",
+    "commit": "8ec3f12739737f12cff3a4ecec1b1f659c6acde9",
+    "tree": "d24fc2d98a4bdb26ff09a3d3465c82a7f4552f70",
+    "parents": [
+      "9a518dcfbd8cb8dd2c170356f541f07f58abbedb"
+    ],
+    "canonical_basis": "190536177eda3879eac3a745efd0005345bdd967",
+    "previous": "9a518dcfbd8cb8dd2c170356f541f07f58abbedb",
+    "changed_files": [
+      "crates/mvm-backends/src/driver/fc/entrypoint/tests.rs"
+    ]
+  },
+  "source_files": 4827,
+  "source_manifest_sha256": "848ab0cd77aeb42321a676159987d2bdbca1a2b8d63f14e592b3160a06f05e1b",
+  "git_tree_verification": {
+    "commit": "8ec3f12739737f12cff3a4ecec1b1f659c6acde9",
+    "tree": "d24fc2d98a4bdb26ff09a3d3465c82a7f4552f70",
+    "files": 4827,
+    "exact_blob_sha256_length_and_executable_modes": true,
+    "proof_sha256": "ee773df2345c7005eaa1cc1f43bf37a5e788c5d3f3d626be1c71827f22183a4c"
+  },
+  "genuine_source_and_metadata_inventory_json_sha256": "c466044420263cfaf53af71adcadf5ed9138dc502d85dc85c92fbf84bdf483a6",
+  "genuine_build_sha256_manifest_sha256": "7ca655c7ace79e77cb18dd9f7fe114d6302cce9f41be25f65f44021a8485debe",
+  "genuine_full_sha256_manifest_sha256": "7ca655c7ace79e77cb18dd9f7fe114d6302cce9f41be25f65f44021a8485debe",
+  "selected_delivery": {
+    "mvm": "f2ddbcbf1039405698e1ac0dcb16e29a5bf3b676",
+    "core": "8994951b7c13fe5acf6f5ea3060ad4e51dc473c2",
+    "changed": false
+  },
+  "environment": {
+    "host": "native Linux x86_64",
+    "rust": "1.97.1",
+    "jobs": 2,
+    "incremental": false,
+    "memory_max_bytes": 6442450944,
+    "swap_max_bytes": 0,
+    "cpu_quota_percent": 200,
+    "tasks_max": 512,
+    "storage": "one shared HDD Cargo target/cache; private short tmpfs test roots",
+    "vm_nix_cloud_service_activation": "NOT_RUN"
+  },
+  "focused_export": {
+    "outcome": {
+      "command_exit": 0,
+      "source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "enumeration_exit": 0,
+      "build_baseline_exit": 0,
+      "executable_hash_exit": 0,
+      "final_exit": 0
+    },
+    "rows": [
+      {
+        "target": "mvm_backends",
+        "selector": "driver::fc::entrypoint::tests::",
+        "listed_cases": 15,
+        "passed": 14,
+        "failed": 0,
+        "ignored": 1,
+        "measured": 0,
+        "filtered": 478,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_backends",
+        "selector": "fc::runtime_artifacts::",
+        "listed_cases": 12,
+        "passed": 12,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 481,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_capture",
+        "selector": "collect::trace::tests::",
+        "listed_cases": 12,
+        "passed": 12,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 22,
+        "conditional_skips": [
+          "test collect::trace::tests::the_child_observes_the_project_directory_as_its_working_directory ... skipped: strace cannot trace here: Ok([])"
+        ],
+        "exit": 0
+      },
+      {
+        "target": "mvm_runtime",
+        "selector": "bundle_runtime::tests::",
+        "listed_cases": 7,
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1486,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_runtime",
+        "selector": "legacy_portable_runtime::tests::",
+        "listed_cases": 6,
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1487,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "launch::bundle_runtime::tests::",
+        "listed_cases": 6,
+        "passed": 5,
+        "failed": 0,
+        "ignored": 1,
+        "measured": 0,
+        "filtered": 1692,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "launch::runtime_source::runtime_overlay_attach_tests::",
+        "listed_cases": 29,
+        "passed": 29,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1669,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "launch::persistent::journal::owned::unused_tests::",
+        "listed_cases": 5,
+        "passed": 5,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1693,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_core",
+        "selector": "private_fs::tests::",
+        "listed_cases": 14,
+        "passed": 14,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 3124,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "broker::daemon::owned::",
+        "listed_cases": 4,
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2606,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "audit::audit_client::tests::",
+        "listed_cases": 8,
+        "passed": 8,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2602,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "audit_signer::owned_helper::",
+        "listed_cases": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2609,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "owned_resources::",
+        "listed_cases": 6,
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2604,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "audit_signer::helper::",
+        "listed_cases": 13,
+        "passed": 13,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2597,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "mailbox_service::tests::",
+        "listed_cases": 7,
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2603,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_vmm",
+        "selector": "host::aux_bin::tests::",
+        "listed_cases": 50,
+        "passed": 50,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1074,
+        "conditional_skips": [],
+        "exit": 0
+      },
+      {
+        "target": "mvm_vmm",
+        "selector": "host::host_agent_spawn::owned::",
+        "listed_cases": 6,
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1118,
+        "conditional_skips": [],
+        "exit": 0
+      }
+    ],
+    "note": "199 outer passes / two ignored; one tracer test conditionally returns early. Same 8ec source bytes, explicitly non-Git export."
+  },
+  "export_full": {
+    "selection": {
+      "started": 293,
+      "expected": 293,
+      "exact_set": true,
+      "all_test_elf_hashes_same": true,
+      "changed": [
+        {
+          "target": "emit_sdk_ctors",
+          "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/emit_sdk_ctors",
+          "test": false,
+          "same": false,
+          "before": "5772c79c38a589541cd9f465c7c62852a4c7d52e803be6c1c942aaa905fd9fa5",
+          "after": "03eccebbb170ad262533123179e59a793655ee762b3e9fcb8d0e24c4b5fa4cb6"
+        },
+        {
+          "target": "emit_sdk_env",
+          "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/emit_sdk_env",
+          "test": false,
+          "same": false,
+          "before": "745159d0317c5b1885abd10166b18c8f7b1eef30d20f8b058f25291ea6915e60",
+          "after": "b9127591c96587ad1a5664fdfd23a3845d4bdb4ae21d3e99d02a652fd6ac8801"
+        },
+        {
+          "target": "emit_sdk_errors",
+          "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/emit_sdk_errors",
+          "test": false,
+          "same": false,
+          "before": "caa2330533630744cc451b6d5b7d8bae8e88c4e543d2c04ce570948d98b5ab53",
+          "after": "165486ef40787089c6b644f4ffa039cd173ec9a994a1c9048e9485667ce0485e"
+        }
+      ]
+    },
+    "binary_targets": 293,
+    "binary_summaries": 293,
+    "binary_totals": {
+      "passed": 22110,
+      "failed": 5,
+      "ignored": 72,
+      "filtered": 0
+    },
+    "binary_zero_pass_targets": 46,
+    "doc_targets": 28,
+    "doc_totals": {
+      "passed": 26,
+      "failed": 3,
+      "ignored": 8,
+      "filtered": 0
+    },
+    "counting": "last outer binary summary per Cargo Running section (nested subprocesses excluded); all distinct Rustdoc harness groups per Doc-tests section (merged and compile-fail groups both counted); absent binary summaries explicit"
+  },
+  "export_full_failed_binary_rows": [
+    {
+      "label": "unittests src/lib.rs",
+      "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/mvm_build-b16f6e05b7fbe1ee",
+      "summary_count_including_nested": 1,
+      "status": "FAILED",
+      "passed": 1444,
+      "failed": 1,
+      "ignored": 7,
+      "measured": 0,
+      "filtered": 0,
+      "seconds": 7.86,
+      "raw_failed_case_lines": [
+        "guest_bins::tests::the_producer_records_the_producing_tree_and_every_member"
+      ]
+    },
+    {
+      "label": "tests/library_only_surface.rs",
+      "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/library_only_surface-49a1f378a8af0ffa",
+      "summary_count_including_nested": 1,
+      "status": "FAILED",
+      "passed": 6,
+      "failed": 1,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0,
+      "seconds": 0.03,
+      "raw_failed_case_lines": []
+    },
+    {
+      "label": "tests/registered_direct_tcp.rs",
+      "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-fa6aa246786b56d0",
+      "summary_count_including_nested": 1,
+      "status": "FAILED",
+      "passed": 10,
+      "failed": 1,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0,
+      "seconds": 2.84,
+      "raw_failed_case_lines": [
+        "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer"
+      ]
+    },
+    {
+      "label": "tests/cve_lab_gcp_controller.rs",
+      "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/cve_lab_gcp_controller-f59f784fb5f6ff83",
+      "summary_count_including_nested": 1,
+      "status": "FAILED",
+      "passed": 0,
+      "failed": 2,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0,
+      "seconds": 0.04,
+      "raw_failed_case_lines": []
+    }
+  ],
+  "export_full_failed_or_incomplete_docs": [
+    {
+      "label": "mvm_cli",
+      "harnesses": [],
+      "outer_summary_absent": true
+    },
+    {
+      "label": "mvm_sdk",
+      "harnesses": [
+        {
+          "status": "FAILED",
+          "passed": 0,
+          "failed": 3,
+          "ignored": 0,
+          "filtered": 0,
+          "seconds": 0.05
+        }
+      ],
+      "passed": 0,
+      "failed": 3,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 0.05
+    }
+  ],
+  "export_full_outcome": {
+    "command_exit": 101,
+    "source_hash_exit": 0,
+    "source_file_set_exit": 0,
+    "enumeration_exit": 0,
+    "build_baseline_exit": 0,
+    "executable_hash_exit": 1,
+    "final_exit": 101
+  },
+  "export_policy": {
+    "outcome": {
+      "command_exit": 1,
+      "source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "enumeration_exit": 0,
+      "build_baseline_exit": 0,
+      "executable_hash_exit": 1,
+      "final_exit": 1
+    },
+    "passed": 84,
+    "failed": [
+      "check-spec-hygiene",
+      "check-root-layout",
+      "check-rust-footprint"
+    ],
+    "reason": "non-Git source export"
+  },
+  "retained_orchestration_failure": "Concurrent policy generation rebuilt three non-test SDK emit binaries and shared SDK library artifacts during export full tests. All 293 test ELFs stayed unchanged; original receipts remain failed. Original emit preimages survive byte-identically in check3 archive. Genuine qualification serializes policy generation before workspace build/test.",
+  "genuine_build": {
+    "outcome": {
+      "command_exit": 0,
+      "source_and_metadata_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "enumeration_exit": 0,
+      "final_exit": 0
+    },
+    "policy_exit": 0,
+    "policies": 87,
+    "source_and_metadata_files": 4989,
+    "artifacts": 358,
+    "test_artifacts": 293,
+    "recompiled": 358,
+    "verified_same_root_reuse": 0,
+    "artifact_manifest_sha256": "221638054ebb3dcb480757566e71fee76cf04a45d5163dafa83368798e3c30a3",
+    "phase_times": {
+      "policy-build": {
+        "User time (seconds)": "26.44",
+        "System time (seconds)": "2.30",
+        "Elapsed (wall clock) time (h:mm:ss or m:ss)": "0:23.87",
+        "Maximum resident set size (kbytes)": "1528428",
+        "Exit status": "0"
+      },
+      "policy": {
+        "User time (seconds)": "219.22",
+        "System time (seconds)": "18.02",
+        "Elapsed (wall clock) time (h:mm:ss or m:ss)": "3:11.89",
+        "Maximum resident set size (kbytes)": "1626908",
+        "Exit status": "0"
+      },
+      "fmt": {
+        "User time (seconds)": "4.52",
+        "System time (seconds)": "0.14",
+        "Elapsed (wall clock) time (h:mm:ss or m:ss)": "0:04.69",
+        "Maximum resident set size (kbytes)": "198456",
+        "Exit status": "0"
+      },
+      "workspace": {
+        "User time (seconds)": "113.60",
+        "System time (seconds)": "14.70",
+        "Elapsed (wall clock) time (h:mm:ss or m:ss)": "1:07.40",
+        "Maximum resident set size (kbytes)": "1747036",
+        "Exit status": "0"
+      },
+      "bdd": {
+        "User time (seconds)": "37.23",
+        "System time (seconds)": "3.10",
+        "Elapsed (wall clock) time (h:mm:ss or m:ss)": "0:36.90",
+        "Maximum resident set size (kbytes)": "1261016",
+        "Exit status": "0"
+      },
+      "clippy": {
+        "User time (seconds)": "163.91",
+        "System time (seconds)": "15.72",
+        "Elapsed (wall clock) time (h:mm:ss or m:ss)": "1:31.97",
+        "Maximum resident set size (kbytes)": "1795336",
+        "Exit status": "0"
+      },
+      "build": {
+        "User time (seconds)": "472.29",
+        "System time (seconds)": "80.83",
+        "Elapsed (wall clock) time (h:mm:ss or m:ss)": "4:45.96",
+        "Maximum resident set size (kbytes)": "2659104",
+        "Exit status": "0"
+      }
+    }
+  },
+  "genuine_full": {
+    "selection": {
+      "started": 293,
+      "expected": 293,
+      "exact_set": true,
+      "all_selected_compiler_elf_hashes_same": true,
+      "selected_compiler_executables": 358
+    },
+    "binary_targets": 293,
+    "binary_summaries": 293,
+    "binary_totals": {
+      "passed": 22114,
+      "failed": 1,
+      "ignored": 72,
+      "filtered": 0
+    },
+    "binary_zero_pass_targets": 45,
+    "doc_targets": 28,
+    "doc_totals": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 8,
+      "filtered": 0
+    },
+    "counting": "last outer binary summary per Cargo Running section (nested subprocesses excluded); all distinct Rustdoc harness groups per Doc-tests section (merged and compile-fail groups both counted); absent binary summaries explicit"
+  },
+  "genuine_full_failed_binary_rows": [
+    {
+      "label": "tests/registered_direct_tcp.rs",
+      "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-fa6aa246786b56d0",
+      "summary_count_including_nested": 1,
+      "status": "FAILED",
+      "passed": 10,
+      "failed": 1,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0,
+      "seconds": 2.83,
+      "raw_failed_case_lines": [
+        "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer"
+      ]
+    }
+  ],
+  "genuine_full_failed_or_incomplete_docs": [],
+  "genuine_full_outcome": {
+    "command_exit": 101,
+    "source_hash_exit": 0,
+    "source_file_set_exit": 1,
+    "enumeration_exit": 0,
+    "build_baseline_exit": 1,
+    "executable_hash_exit": 0,
+    "final_exit": 90
+  },
+  "genuine_generated_footprint": {
+    "original_full_outcome": {
+      "command_exit": 101,
+      "source_hash_exit": 0,
+      "source_file_set_exit": 1,
+      "enumeration_exit": 0,
+      "build_baseline_exit": 1,
+      "executable_hash_exit": 0,
+      "final_exit": 90
+    },
+    "generated_extra": "target/tool-cache/zigbuild-lock.lock",
+    "generated_bytes": 0,
+    "generated_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "original_regular_single_link_current_uid": true,
+    "original_exclusive_lock_acquired": true,
+    "unlinked_original_device": 54,
+    "unlinked_original_inode": 589344,
+    "removed_empty_directories": [
+      "target/tool-cache",
+      "target"
+    ],
+    "post_cleanup_exact_original_source_and_metadata_set": true,
+    "original_files": 4989,
+    "retained_full_result_unchanged": true,
+    "reason": "Canonical guest build-lock acquisition creates an empty owned ignored cache lock during producer fixtures; no source or Git-metadata input changed."
+  },
+  "genuine_full_time": {
+    "User time (seconds)": "177.87",
+    "System time (seconds)": "88.51",
+    "Elapsed (wall clock) time (h:mm:ss or m:ss)": "8:18.18",
+    "Maximum resident set size (kbytes)": "4330652",
+    "Exit status": "101"
+  },
+  "native_worker_only": {
+    "row": {
+      "after": [
+        {
+          "pid": 1551411,
+          "start_ticks": 26832495,
+          "system_ticks": 0,
+          "threads": 4,
+          "user_ticks": 3
+        },
+        {
+          "pid": 1551413,
+          "start_ticks": 26832495,
+          "system_ticks": 0,
+          "threads": 4,
+          "user_ticks": 2
+        }
+      ],
+      "before": [
+        {
+          "pid": 1551411,
+          "start_ticks": 26832495,
+          "system_ticks": 0,
+          "threads": 2,
+          "user_ticks": 0
+        },
+        {
+          "pid": 1551413,
+          "start_ticks": 26832495,
+          "system_ticks": 0,
+          "threads": 3,
+          "user_ticks": 0
+        }
+      ],
+      "broker_framed_bytes_vm1": [
+        5654,
+        5024
+      ],
+      "broker_framed_bytes_vm2": [
+        5654,
+        5024
+      ],
+      "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+      "executable_sha256": [
+        "01a67a1373d7cd153325aa9d7d1f65cbaea8706c331db3fd7061e3358cb70e71",
+        "41eba693978d36ee1e84ad2573a7a071c99ede4a81a8d2d02845daad6ac189c2"
+      ],
+      "original_archives": [
+        {
+          "bytes": 19224,
+          "entries": 32,
+          "sha256": "d846b9debae2ffffd71454555b15ca5ece4361fdf2410c3d14307d0483ee2d4f",
+          "workload": "vm-1"
+        },
+        {
+          "bytes": 19224,
+          "entries": 32,
+          "sha256": "29070a84b633b0057e7c8c521425005f38a7d0f5c1117ad5a7bf0ed39174ff75",
+          "workload": "vm-2"
+        }
+      ],
+      "partial_signer_received_bytes": 0,
+      "partial_signer_sent_bytes": 5,
+      "sample_interval_ms": 1,
+      "sampled_peak_threads": [
+        4,
+        4
+      ],
+      "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+      "setup_to_verified_retirement_ns": 2523440918,
+      "signing_with_partial_frame_ns": 2385733939
+    },
+    "time": {
+      "User time (seconds)": "0.13",
+      "System time (seconds)": "0.07",
+      "Elapsed (wall clock) time (h:mm:ss or m:ss)": "0:02.53",
+      "Maximum resident set size (kbytes)": "42524",
+      "Exit status": "0"
+    },
+    "outer_tests_passed": 2,
+    "outcome": {
+      "command_exit": 0,
+      "source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "enumeration_exit": 0,
+      "build_baseline_exit": 0,
+      "executable_hash_exit": 1,
+      "final_exit": 91
+    },
+    "note": "Actual used registered-test/daemon/signer ELFs stayed unchanged; broad guard detects three unrelated SDK emit binaries already rebuilt by prior policy stage. Aggregate91 retained; all original preimages preserved. These are helper fixture costs, not two Ready endpoints/boot/WAN/phase or per-side CPU/energy."
+  },
+  "archives": [
+    {
+      "archive": "/mnt/plexpool/spiralcore-work/owned-dispatch-gates2-other-compiler-executables.tar.zst",
+      "bytes": 47590949,
+      "sha256": "c2529e1730b7e23c1e74e3632d2228c29623036c981f13a93e4a49c49156aea5",
+      "replay_verified": true
+    },
+    {
+      "archive": "/mnt/plexpool/spiralcore-work/reconcile-check3-executables.tar.zst",
+      "bytes": 1111143845,
+      "sha256": "774a6b7cc69c0242cbae13c75a0c5d6858956e60a8fbd44c1506d868b8549f37",
+      "replay_verified": true
+    },
+    {
+      "archive": "/mnt/plexpool/spiralcore-work/reconcile-check4-and-policy-delta-executables.tar.zst",
+      "bytes": 9480743,
+      "sha256": "7f0af099f07a1d99d947eff69517fd335fddaa36ca2cd4a9eb96cc4919e4913f",
+      "replay_verified": true
+    },
+    {
+      "archive": "/mnt/plexpool/spiralcore-work/reconcile-genuine1-executables.tar.zst",
+      "bytes": 1112186459,
+      "sha256": "ae5b5be442e6684a91ce2ecdd39ddb8aaa2fd0974fc68f61afa66189797b7eff",
+      "test_members": 293,
+      "replay_verified": true,
+      "original_posthash_verified": true,
+      "target_lock_held": true
+    }
+  ],
+  "upstream_basis_ci": {
+    "source": "190536177eda3879eac3a745efd0005345bdd967",
+    "checks": [
+      {
+        "name": "watch",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43977297226/job/133684450129"
+      },
+      {
+        "name": "watch",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43977010794/job/133683463339"
+      },
+      {
+        "name": "Test (main)",
+        "status": "completed",
+        "conclusion": "failure",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133679830519"
+      },
+      {
+        "name": "watch",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43975760919/job/133679188997"
+      },
+      {
+        "name": "Test",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133679092729"
+      },
+      {
+        "name": "watch",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43975715216/job/133679035024"
+      },
+      {
+        "name": "watch",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43975197485/job/133677279843"
+      },
+      {
+        "name": "publish",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742835/job/133674225949"
+      },
+      {
+        "name": "watch",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43974063968/job/133673375560"
+      },
+      {
+        "name": "watch",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972871877/job/133669292163"
+      },
+      {
+        "name": "Test workspace (1) / Read-only runner inventory",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669109526"
+      },
+      {
+        "name": "Build workspace tests",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669108366"
+      },
+      {
+        "name": "Test workspace (1) / Workspace shard 1 (hetzner)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669107612"
+      },
+      {
+        "name": "supply-chain / cargo-deny",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105941"
+      },
+      {
+        "name": "supply-chain / cargo-audit",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105884"
+      },
+      {
+        "name": "Windows compile check (portable crates)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105757"
+      },
+      {
+        "name": "Windows repository identity runtime",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105746"
+      },
+      {
+        "name": "Docs coverage ledger",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105710"
+      },
+      {
+        "name": "Docs static",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105701"
+      },
+      {
+        "name": "Lint core (fmt + clippy)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105691"
+      },
+      {
+        "name": "Lint feature combinations (clippy)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105667"
+      },
+      {
+        "name": "Invariant",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133669105596"
+      },
+      {
+        "name": "build (aarch64-unknown-linux-gnu, aarch64-unknown-linux-musl, ubuntu-latest)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742835/job/133668991199"
+      },
+      {
+        "name": "build (x86_64-unknown-linux-gnu, x86_64-unknown-linux-musl, ubuntu-latest)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742835/job/133668991175"
+      },
+      {
+        "name": "build (aarch64-apple-darwin, aarch64-apple-darwin, macos-latest)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742835/job/133668991162"
+      },
+      {
+        "name": "Guest image boots (pinned base set, tree guest runtime)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668848226"
+      },
+      {
+        "name": "Confinement under the release libc (aarch64-unknown-linux-musl)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846633"
+      },
+      {
+        "name": "Lint feature coverage (signatures)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846570"
+      },
+      {
+        "name": "Test workspace (doctests + feature suites)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846507"
+      },
+      {
+        "name": "BDD conformance / BDD conformance",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846392"
+      },
+      {
+        "name": "Test eBPF telemetry load/attach",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846370"
+      },
+      {
+        "name": "Nix flake check (Linux eval)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846339"
+      },
+      {
+        "name": "Test Linux and conformance",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846335"
+      },
+      {
+        "name": "Lint feature coverage (portable)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846275"
+      },
+      {
+        "name": "Test release profile (overflow + no debug assertions)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846271"
+      },
+      {
+        "name": "Lint feature coverage (test-support)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846253"
+      },
+      {
+        "name": "BDD conformance / BDD live PS-11 frozen volume (Linux, Firecracker)",
+        "status": "completed",
+        "conclusion": "failure",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846223"
+      },
+      {
+        "name": "Confinement under the release libc (x86_64-unknown-linux-musl)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846196"
+      },
+      {
+        "name": "Boot latency ceiling",
+        "status": "completed",
+        "conclusion": "failure",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846081"
+      },
+      {
+        "name": "Lint feature coverage (embed-host-bins)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668846025"
+      },
+      {
+        "name": "Test workspace (aarch64)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742942/job/133668845615"
+      },
+      {
+        "name": "CI scope",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133668845508"
+      },
+      {
+        "name": "Pick runners",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742957/job/133668845114"
+      },
+      {
+        "name": "Warm",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742854/job/133668844809"
+      },
+      {
+        "name": "source",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742835/job/133668844432"
+      },
+      {
+        "name": "Warm test-support",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43972742854/job/133668844344"
+      },
+      {
+        "name": "Test workspace",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133668537096"
+      },
+      {
+        "name": "Test",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133668535884"
+      },
+      {
+        "name": "Docs coverage ledger",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663038206"
+      },
+      {
+        "name": "Windows repository identity runtime",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663038049"
+      },
+      {
+        "name": "Lint feature combinations (clippy)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663038026"
+      },
+      {
+        "name": "Docs static",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663037862"
+      },
+      {
+        "name": "supply-chain",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663037496"
+      },
+      {
+        "name": "Invariant",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663037446"
+      },
+      {
+        "name": "Windows compile check (portable crates)",
+        "status": "completed",
+        "conclusion": "skipped",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663036974"
+      },
+      {
+        "name": "Build workspace tests",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663034679"
+      },
+      {
+        "name": "Lint core (fmt + clippy)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133663034401"
+      },
+      {
+        "name": "Pick runners",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133662673533"
+      },
+      {
+        "name": "CI scope",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/tinylabscom/mvm/actions/runs/43970960640/job/133662673267"
+      }
+    ],
+    "note": "Boot-latency and live frozen-volume failures precede boot during missing musl libmvm_host_services.so assembly; not a measured ceiling violation."
+  },
+  "ari_coordination": "https://github.com/tinylabscom/mvm/issues/5057#issuecomment-6932825147",
+  "ari_latest_structural_update": {
+    "url": "https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6932578338",
+    "scope": "Pure test-only declaration model with synthetic values, no production API/manager client/unit renderer/import/activation; declared agreement is not measured/enforced/Ready authority. Planned checks are not completed results."
+  },
+  "later_upstream_observed": {
+    "commit": "08a2d86d4c1297c94d6e7f4479e8eb8a9fdb3708",
+    "outside_frozen_qualification": true,
+    "deltas": {
+      "842e24e": "Preserves musl shared-object target flags; addresses source mechanism behind older assembly failure. Successful rebuilt/signed runtime and boot remain separate gates.",
+      "08a2d86": "Canonical denial-stage labels/readers, without new bound-sink/health or missed-decision interface."
+    }
+  },
+  "remaining": [
+    "canonical confined bound audit sink/epoch-health and original-deadline missed-decision interface",
+    "both unchecked #258 criteria",
+    "all five #42 outcomes",
+    "Ari compatible signed guest-runtime publication/source pairing",
+    "private MVMD integration",
+    "native supported role/backend/platform and real WAN",
+    "capacity/fairness/backpressure/tails/recovery/saturation",
+    "final qualified upstream contribution"
+  ]
+}
