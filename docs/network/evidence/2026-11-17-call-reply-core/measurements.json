@@ -1,0 +1,1871 @@
+{
+  "schema_version": 1,
+  "scope": "Canonical pure unwired Call/Reply core aba2f61 reconciled with original networking custody; original installed readiness still failed.",
+  "source": {
+    "commit": "86899304562ed3a2f4ef856762dd6eeede20caff",
+    "tree": "19fa1bdd481ce503ca3b7b0d839757205805e5df"
+  },
+  "canonical_basis": "aba2f6173a65b6c2e065105e949fecc07ea21c89",
+  "predecessor": "eb22dd2f724583bb0a12e2526046605e0ce05d37",
+  "selected_consumers": {
+    "mvm": "f2ddbcbf1039405698e1ac0dcb16e29a5bf3b676",
+    "core": "8994951b7c13fe5acf6f5ea3060ad4e51dc473c2",
+    "development_not_promoted": true,
+    "locked_core_packages": [
+      {
+        "name": "spiralcore-directory-macos",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=8994951b7c13fe5acf6f5ea3060ad4e51dc473c2#8994951b7c13fe5acf6f5ea3060ad4e51dc473c2"
+      },
+      {
+        "name": "spiralcore-mvm-flowmux",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=8994951b7c13fe5acf6f5ea3060ad4e51dc473c2#8994951b7c13fe5acf6f5ea3060ad4e51dc473c2"
+      },
+      {
+        "name": "spiralcore-storage-windows",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=8994951b7c13fe5acf6f5ea3060ad4e51dc473c2#8994951b7c13fe5acf6f5ea3060ad4e51dc473c2"
+      },
+      {
+        "name": "spiralcore-transfer",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=8994951b7c13fe5acf6f5ea3060ad4e51dc473c2#8994951b7c13fe5acf6f5ea3060ad4e51dc473c2"
+      },
+      {
+        "name": "uor-r4-object-store",
+        "source": "git+https://github.com/R4-Laboratories/SpiralCore?rev=8994951b7c13fe5acf6f5ea3060ad4e51dc473c2#8994951b7c13fe5acf6f5ea3060ad4e51dc473c2"
+      }
+    ]
+  },
+  "source_identity": {
+    "tracked_files": 4833,
+    "original_inputs": 5007,
+    "prepared_inputs": 5008,
+    "inventory": {
+      "root": "/mnt/plexpool/spiralcore-work/cargo-home/git/checkouts/mvm-5069ae8682aa590e/8689930",
+      "commit": "86899304562ed3a2f4ef856762dd6eeede20caff",
+      "tree": "19fa1bdd481ce503ca3b7b0d839757205805e5df",
+      "tracked_files": 4833,
+      "proof_sha256": "67b0dc3d0bbb3ace6f12b331758d19f78e7194dcf3cc37d552f5dc048bd2ac6a"
+    },
+    "proof": {
+      "bytes": 1265615,
+      "sha256": "67b0dc3d0bbb3ace6f12b331758d19f78e7194dcf3cc37d552f5dc048bd2ac6a"
+    },
+    "canonical_merge": {
+      "base": "eb22dd2f724583bb0a12e2526046605e0ce05d37",
+      "head": "86899304562ed3a2f4ef856762dd6eeede20caff",
+      "incoming": "aba2f6173a65b6c2e065105e949fecc07ea21c89",
+      "changed_paths": [
+        "crates/mvm-core/src/mailbox.rs",
+        "crates/mvm-core/src/mailbox/conversation.rs",
+        "specs/adrs/057-mailbox-semantics-and-threat-model.md"
+      ],
+      "canonical_files": [
+        {
+          "path": "crates/mvm-core/src/mailbox/conversation.rs",
+          "blob": "76195e2ee07482f73905f0d58a9f037c6f572d06",
+          "bytes": 12861,
+          "sha256": "ee001b9ef8666ecafdeefff93609e1c7b3ca7fad0af5787ebc2a7b2008858a6e",
+          "identical_to_canonical": true
+        },
+        {
+          "path": "specs/adrs/057-mailbox-semantics-and-threat-model.md",
+          "blob": "20c37529b756ddae811545cd5ece6977819e6668",
+          "bytes": 42721,
+          "sha256": "1f887c6b05f0f3d68a054ad75f2eb56f060cbaa1cc054354c1e0f573a36f276b",
+          "identical_to_canonical": true
+        }
+      ],
+      "module_export_patch": "diff --git a/crates/mvm-core/src/mailbox.rs b/crates/mvm-core/src/mailbox.rs\nindex e1e2cf8..f7ca381 100644\n--- a/crates/mvm-core/src/mailbox.rs\n+++ b/crates/mvm-core/src/mailbox.rs\n@@ -28,0 +29,3 @@ const ENVELOPE_AEAD_DOMAIN: &[u8] = b\"mvm.mailbox.payload.v1\\0\";\n+/// Pure call/reply bookkeeping: pending calls, tombstones, epoch drops.\n+pub mod conversation;\n+\n",
+      "all_other_paths_unchanged": true,
+      "existing_runtime_owner_deadline_and_readiness_assertions_unchanged": true
+    }
+  },
+  "contract": {
+    "scope": "Pure in-memory conversation bookkeeping, no production callers or new service activation.",
+    "clock": "Caller supplies monotonic now to expire; complete/register do not consult a clock. Future owner must expire before deadline-dependent completion and independently enforce admission/currentness.",
+    "correlation": "Exact principal/epoch/correlation key; remembered reuse refuses, tombstone wrap forgets and caller non-reuse remains required.",
+    "bounds": "Logical pending/ring entry-count bounds, not fallible funded allocation/RSS/transient-vector accounting or authoritative quota credit.",
+    "outcomes": "Timeout/cancel advisory; epoch drop resolves pending state but does not revoke authority or prohibit later admission.",
+    "authority": "No reply authentication, durable receipts, guest envelope, new wire refusal, quota ledger, audit schema or process/epoch custody introduced.",
+    "adr": "D1-D6 Proposed; D7 settled MVMD/Iroh mailbox peer transport ownership; separately admitted host FlowMux authority remains distinct."
+  },
+  "environment": {
+    "host": "native Linux x86_64",
+    "rust": "1.97.1",
+    "cargo_jobs": 2,
+    "incremental": false,
+    "debug_info": false,
+    "memory_max_bytes": 6442450944,
+    "swap_max_bytes": 0,
+    "cpu_quota_percent": 200,
+    "tasks_max": 512,
+    "nofile": 4096,
+    "stack_bytes": 8388608,
+    "storage": "HDD shared Cargo target/home/archive; private short tmpfs execution state; no local target/payload/VM disk"
+  },
+  "build": {
+    "outcome": {
+      "command_exit": 0,
+      "source_and_metadata_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "enumeration_exit": 0,
+      "final_exit": 0
+    },
+    "policies": 88,
+    "format": "pass",
+    "workspace_all_targets": "pass",
+    "explicit_bdd_compilation": "pass; scenarios NOT_RUN",
+    "strict_workspace_all_targets_clippy": "pass",
+    "executables": {
+      "test_executables": 293,
+      "other_executables": 65,
+      "recompiled": 358,
+      "verified_same_root_reuse": 0
+    },
+    "gated_recipe": "Literal just check::gated NOT_RUN: just/cargo-zigbuild/zig unavailable. Native Linux all-target plus explicit features=bdd compilation cover the documented blind spots; no exact-wrapper, all-features or cross-platform execution claim.",
+    "policy-build_cost": {
+      "wall_printed": "0:27.15",
+      "user_seconds_printed": 26.48,
+      "system_seconds_printed": 2.12,
+      "max_rss_kib": 1565448,
+      "raw": "\tCommand being timed: \"cargo build --locked --offline -p xtask --bin xtask --message-format=json\"\n\tUser time (seconds): 26.48\n\tSystem time (seconds): 2.12\n\tPercent of CPU this job got: 105%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:27.15\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1565448\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 132534\n\tMinor (reclaiming a frame) page faults: 1457920\n\tVoluntary context switches: 10999\n\tInvoluntary context switches: 694\n\tSwaps: 0\n\tFile system inputs: 592947\n\tFile system outputs: 950097\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "policy_cost": {
+      "wall_printed": "3:28.54",
+      "user_seconds_printed": 225.47,
+      "system_seconds_printed": 17.82,
+      "max_rss_kib": 1624780,
+      "raw": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/xtask check-all\"\n\tUser time (seconds): 225.47\n\tSystem time (seconds): 17.82\n\tPercent of CPU this job got: 116%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 3:28.54\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1624780\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 708633\n\tMinor (reclaiming a frame) page faults: 9967731\n\tVoluntary context switches: 90892\n\tInvoluntary context switches: 5440\n\tSwaps: 0\n\tFile system inputs: 1103220\n\tFile system outputs: 6018138\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "fmt_cost": {
+      "wall_printed": "0:04.49",
+      "user_seconds_printed": 4.36,
+      "system_seconds_printed": 0.08,
+      "max_rss_kib": 198616,
+      "raw": "\tCommand being timed: \"cargo fmt --all -- --check\"\n\tUser time (seconds): 4.36\n\tSystem time (seconds): 0.08\n\tPercent of CPU this job got: 98%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:04.49\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 198616\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 126\n\tMinor (reclaiming a frame) page faults: 46521\n\tVoluntary context switches: 154\n\tInvoluntary context switches: 38\n\tSwaps: 0\n\tFile system inputs: 17576\n\tFile system outputs: 0\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "workspace_cost": {
+      "wall_printed": "1:10.13",
+      "user_seconds_printed": 116.69,
+      "system_seconds_printed": 14.17,
+      "max_rss_kib": 1746464,
+      "raw": "\tCommand being timed: \"cargo check --locked --offline --workspace --all-targets\"\n\tUser time (seconds): 116.69\n\tSystem time (seconds): 14.17\n\tPercent of CPU this job got: 186%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 1:10.13\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1746464\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 36176\n\tMinor (reclaiming a frame) page faults: 9225835\n\tVoluntary context switches: 11392\n\tInvoluntary context switches: 3254\n\tSwaps: 0\n\tFile system inputs: 369818\n\tFile system outputs: 196182\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "bdd_cost": {
+      "wall_printed": "0:42.40",
+      "user_seconds_printed": 42.83,
+      "system_seconds_printed": 3.21,
+      "max_rss_kib": 1259196,
+      "raw": "\tCommand being timed: \"cargo check --locked --offline -p mvm-conformance --all-targets --features bdd\"\n\tUser time (seconds): 42.83\n\tSystem time (seconds): 3.21\n\tPercent of CPU this job got: 108%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:42.40\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1259196\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 25226\n\tMinor (reclaiming a frame) page faults: 2414004\n\tVoluntary context switches: 5106\n\tInvoluntary context switches: 584\n\tSwaps: 0\n\tFile system inputs: 182668\n\tFile system outputs: 187614\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "clippy_cost": {
+      "wall_printed": "1:42.00",
+      "user_seconds_printed": 182.86,
+      "system_seconds_printed": 16.25,
+      "max_rss_kib": 1793236,
+      "raw": "\tCommand being timed: \"cargo clippy --locked --offline --workspace --all-targets -- -D warnings\"\n\tUser time (seconds): 182.86\n\tSystem time (seconds): 16.25\n\tPercent of CPU this job got: 195%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 1:42.00\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 1793236\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 19271\n\tMinor (reclaiming a frame) page faults: 9697684\n\tVoluntary context switches: 9688\n\tInvoluntary context switches: 3736\n\tSwaps: 0\n\tFile system inputs: 51309\n\tFile system outputs: 201252\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "build_cost": {
+      "wall_printed": "5:16.13",
+      "user_seconds_printed": 528.3,
+      "system_seconds_printed": 79.31,
+      "max_rss_kib": 2626208,
+      "raw": "\tCommand being timed: \"cargo test --locked --offline --workspace --no-run --message-format=json\"\n\tUser time (seconds): 528.30\n\tSystem time (seconds): 79.31\n\tPercent of CPU this job got: 192%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 5:16.13\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 2626208\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 1971354\n\tMinor (reclaiming a frame) page faults: 37051181\n\tVoluntary context switches: 1374565\n\tInvoluntary context switches: 85675\n\tSwaps: 0\n\tFile system inputs: 743601\n\tFile system outputs: 15368287\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    }
+  },
+  "focused": {
+    "scopes": [
+      {
+        "target": "mvm_build",
+        "selector": "guest_bins::tests::the_producer_records_the_producing_tree_and_every_member",
+        "exact": true,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1452,
+        "command_exit": 0
+      },
+      {
+        "target": "library_only_surface",
+        "selector": "preparing_the_guest_runtime_cold_never_runs_the_toolchain",
+        "exact": true,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 6,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_core",
+        "selector": "mailbox::conversation::tests::",
+        "exact": false,
+        "listed": 11,
+        "passed": 11,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 3128,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_agentd",
+        "selector": "vsock::rpc::tests::retained_entrypoint_",
+        "exact": false,
+        "listed": 2,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1157,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_agentd",
+        "selector": "vsock::rpc::tests::test_require_capabilities_",
+        "exact": false,
+        "listed": 3,
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1156,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "plan_admission::start_tests::cli_transient_",
+        "exact": false,
+        "listed": 4,
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2620,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "plan_admission::start_tests::persistent_dispatch_",
+        "exact": false,
+        "listed": 2,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2622,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "plan_admission::start_tests::ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects",
+        "exact": false,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2623,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "plan_admission::start_tests::dispatch_without_verified_owner_refuses_signed_runtime_identity_before_effects",
+        "exact": false,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2623,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "supervisor::endpoint::flowmux::decision_audit::",
+        "exact": false,
+        "listed": 7,
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2617,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "installed_endpoint::audit::tests::",
+        "exact": false,
+        "listed": 4,
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2620,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_runtime",
+        "selector": "kernel_custody::",
+        "exact": false,
+        "listed": 14,
+        "passed": 10,
+        "failed": 0,
+        "ignored": 4,
+        "measured": 0,
+        "filtered": 1479,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_runtime",
+        "selector": "legacy_portable_runtime::tests::",
+        "exact": false,
+        "listed": 6,
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1487,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_runtime",
+        "selector": "bundle_runtime::tests::",
+        "exact": false,
+        "listed": 7,
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1486,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "admission::cli_dispatch::tests::",
+        "exact": false,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1722,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "launch::bundle_runtime::tests::",
+        "exact": false,
+        "listed": 6,
+        "passed": 5,
+        "failed": 0,
+        "ignored": 1,
+        "measured": 0,
+        "filtered": 1717,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "boot::tests::persistent_dispatch_",
+        "exact": false,
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1722,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "launch::persistent::persistent_oci_boot_tests::",
+        "exact": false,
+        "listed": 8,
+        "passed": 8,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1715,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_client",
+        "selector": "launch::persistent::journal::",
+        "exact": false,
+        "listed": 18,
+        "passed": 18,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 1705,
+        "command_exit": 0
+      },
+      {
+        "target": "mvm_backends",
+        "selector": "driver::fc::entrypoint::tests::",
+        "exact": false,
+        "listed": 13,
+        "passed": 12,
+        "failed": 0,
+        "ignored": 1,
+        "measured": 0,
+        "filtered": 478,
+        "command_exit": 0
+      },
+      {
+        "target": "registered_direct_tcp",
+        "selector": "worker_budget_tests::",
+        "exact": false,
+        "listed": 2,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 9,
+        "command_exit": 0
+      }
+    ],
+    "totals": {
+      "listed": 113,
+      "passed": 107,
+      "failed": 0,
+      "ignored": 6
+    },
+    "outcome": {
+      "command_exit": 0,
+      "original_source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "executable_hash_exit": 0,
+      "final_exit": 0
+    },
+    "preparation": {
+      "original_inputs": 5007,
+      "all_original_source_and_metadata_unchanged": true,
+      "generated_files": {
+        "target/tool-cache/zigbuild-lock.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "scope": "Only canonical empty guest-build lock may be added by executed producer fixtures; it remains in the full-run baseline."
+    }
+  },
+  "full": {
+    "command": "cargo test --locked --offline --workspace --no-fail-fast -- --test-threads=1",
+    "outcome": {
+      "command_exit": 101,
+      "original_source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "executable_hash_exit": 0,
+      "runner_hash_exit": 0,
+      "bulk_tmpdir_removal_exit": 0,
+      "final_exit": 101
+    },
+    "selection": {
+      "expected": 293,
+      "running_lines": 293,
+      "unique_executed": 293,
+      "exact_match": true
+    },
+    "binary_totals": {
+      "passed": 22147,
+      "failed": 1,
+      "ignored": 72,
+      "filtered": 0
+    },
+    "doc_totals": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 8,
+      "filtered": 0
+    },
+    "doc_sections": 28,
+    "doc_harness_groups": 30,
+    "failed_binary_rows": [
+      {
+        "label": "tests/registered_direct_tcp.rs",
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-62f41add9b9b2cb1",
+        "summary_count_including_nested": 1,
+        "status": "FAILED",
+        "passed": 10,
+        "failed": 1,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0,
+        "seconds": 2.84,
+        "raw_failed_case_lines": [
+          "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer"
+        ]
+      }
+    ],
+    "cargo_error_lines": [
+      "error: test failed, to rerun pass `-p mvm-hostd --test registered_direct_tcp`",
+      "error: 1 target failed:"
+    ],
+    "source_guard": {
+      "mode": "exact",
+      "original_inputs": 5008,
+      "actual_inputs": 5008,
+      "changed": [],
+      "extra": {},
+      "valid": true
+    },
+    "whole_command_cost": {
+      "wall_printed": "8:29.13",
+      "user_seconds_printed": 186.6,
+      "system_seconds_printed": 87.76,
+      "max_rss_kib": 4299876,
+      "raw": "Command exited with non-zero status 101\n\tCommand being timed: \"cargo test --locked --offline --workspace --no-fail-fast -- --test-threads=1\"\n\tUser time (seconds): 186.60\n\tSystem time (seconds): 87.76\n\tPercent of CPU this job got: 53%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 8:29.13\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 4299876\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 223657\n\tMinor (reclaiming a frame) page faults: 61666901\n\tVoluntary context switches: 1016519\n\tInvoluntary context switches: 37573\n\tSwaps: 0\n\tFile system inputs: 277704\n\tFile system outputs: 603164\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 101\n"
+    },
+    "storage_profile": "Only exact hash-bound96MiB streaming-bundle fixture uses privateHDD TMPDIR; all other targets keep original shorttmpfs. Cargo runner direct-execs original targets/args; unchanged source/358payloadELFs/assertions/heap bound/deadlines/resourcecaps.",
+    "runner_route_marker": "sc_bundle_fixture tmpdir=/mnt/plexpool/spiralcore-work/bulk-fixture.53Smp0 original_executable=/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/bundle_streaming_memory-4fb5a0dfe454b5c6 sha256=b0a33fa3176818657e04806a00444b6c691a798b388e830a0d6064f8e8c7805b"
+  },
+  "executable_archive": {
+    "source": "86899304562ed3a2f4ef856762dd6eeede20caff",
+    "tree": "19fa1bdd481ce503ca3b7b0d839757205805e5df",
+    "archive": "/mnt/plexpool/spiralcore-work/sc-callcore-build1-executables.tar.zst",
+    "bytes": 1106446409,
+    "sha256": "61846bcfb1e2f5d628e64c87287aa13028a61d33c313957590113908f23f37eb",
+    "test_members": 293,
+    "replay_verified": true,
+    "original_posthash_verified": true,
+    "target_lock_held": true
+  },
+  "native_mac": {
+    "run_id": 44118810800,
+    "job_id": 134164184674,
+    "workflow_head": "f645249f82c5adbb5d2daa4c9cc39f4842e216be",
+    "artifact_id": 14345337640,
+    "zip_bytes": 107418535,
+    "zip_sha256": "63aab31a5d52c238f2bca90fc973046a28ad0e360e11e51b16bf8999fa702359",
+    "zip_member_crc_verified": true,
+    "member_count": 76,
+    "members": {
+      "archived-executables-before.sha256": {
+        "bytes": 410,
+        "sha256": "b1be6cf2a4460dd6df035e4933898185284ac3c6cf693430f8fb8d0c47cb2764"
+      },
+      "archived-executables-finally.txt": {
+        "bytes": 100,
+        "sha256": "544a03838edf8ee4ab0c3f14b81f5d9c8152ac9346ed1ae42a929c55f40dd021"
+      },
+      "build-libraries-stderr.txt": {
+        "bytes": 8872,
+        "sha256": "a29a07b6ae6b4b970c15da9c30ab08fc5aab1a24f5e525571fc642fa8dd104ef"
+      },
+      "build-libraries.jsonl": {
+        "bytes": 375517,
+        "sha256": "3edc47b2c77ccb98531eee7bf7c12b1190cdafa5b2120e08ff7f1bd6be1acc5a"
+      },
+      "build-supervisor-stderr.txt": {
+        "bytes": 21730,
+        "sha256": "1b77d34e1f78816a8a6cb314136200120884328acd74ee09aad2e97e5ac056f4"
+      },
+      "build-supervisor.jsonl": {
+        "bytes": 310800,
+        "sha256": "a15aacbbf14c63ca03740657f2fbeba6dd0c8c2ae0d2b5a4024ff5164f63e5b5"
+      },
+      "clippy.txt": {
+        "bytes": 13087,
+        "sha256": "d1e0cb64aac72db3dee707f33dd92ba1877dd43506003f176a05ea046fc7f757"
+      },
+      "commit.txt": {
+        "bytes": 41,
+        "sha256": "e3050e41b1a3f9278fa9cb7c4ca677c73233e038dcf5e7aeb1fa73d968bcde16"
+      },
+      "custody-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "executables-before.sha256": {
+        "bytes": 750,
+        "sha256": "a1c78dfe504887daba41ed105d2d58bec9753d6e6386c0b4a9460b03a8facaad"
+      },
+      "executables-finally.txt": {
+        "bytes": 440,
+        "sha256": "10b37c96ae41e9f68a422e861fc51e563b7f25b5b39927e18d799febbe13f894"
+      },
+      "git-status-after.txt": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "git-tree.txt": {
+        "bytes": 476879,
+        "sha256": "a0b5b227e3ecf5a65e1d6bb21b8a6910ffb8e6bcea1ec881338e665d88080622"
+      },
+      "mvm-hvf-supervisor-tests--only_a_complete_checked_set_or_a_kernel_alone_may_start-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm-hvf-supervisor-tests--only_a_complete_checked_set_or_a_kernel_alone_may_start-list.txt": {
+        "bytes": 91,
+        "sha256": "3f24cd8f36c3bbbac6808512cd6de5451327362928630a6e2680c8f6f8e868d2"
+      },
+      "mvm-hvf-supervisor-tests--only_a_complete_checked_set_or_a_kernel_alone_may_start-outer.txt": {
+        "bytes": 94,
+        "sha256": "633cbcd1f4a31292a058aee394b50d468f16ddf7849f6e1254e095e875ff03c1"
+      },
+      "mvm-hvf-supervisor-tests--only_a_complete_checked_set_or_a_kernel_alone_may_start-test.txt": {
+        "bytes": 187,
+        "sha256": "c716df43f52741b38211cef989d6f37b6ea3939dc6ffe359197492a47ccaee7e"
+      },
+      "mvm-hvf-supervisor-type.txt": {
+        "bytes": 123,
+        "sha256": "a72c3ae72aed9168bdb03b1ecc6918b9cb4365324649774c1ce5dbd02a9d9739"
+      },
+      "mvm-hvf-supervisor-tests--only_a_complete_checked_set_or_a_kernel_alone_may_start-time.txt": {
+        "bytes": 697,
+        "sha256": "c9fb3cd67fded3d4107c92b8cc0b45d626f45e6eb28c719302483c62ddf1377e"
+      },
+      "mvm-hvf-supervisor.bin": {
+        "bytes": 2859312,
+        "sha256": "2843f20c8399d45b2a91aa2fcb5d3aae29b4d0df31e021e2a25d77cc76e14939"
+      },
+      "mvm_agentd-type.txt": {
+        "bytes": 115,
+        "sha256": "a2bd8f1633d575b2d269899d1cd68ff92c18c2cfe16ce9096beb9546c24443fb"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_preserves_real_keys_counters_and_original_verbs-list.txt": {
+        "bytes": 115,
+        "sha256": "29dbee2f21de00dee02f2c0ebd116f1e5e812999842946ccf411273080b0263d"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_preserves_real_keys_counters_and_original_verbs-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_preserves_real_keys_counters_and_original_verbs-outer.txt": {
+        "bytes": 97,
+        "sha256": "349b7c08df8bd0b07b103b9f2b5a59d01409a51478678d1e1ab744479effda48"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_preserves_real_keys_counters_and_original_verbs-test.txt": {
+        "bytes": 214,
+        "sha256": "26614a8eec930618199056bd2467cca68537e9f3cb933418b0b9531351a6c8df"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame-list.txt": {
+        "bytes": 122,
+        "sha256": "d55dbbfb6429a7e93e31cfa1f4ea8743ee0209aaa953d0911c6177834383be0a"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_preserves_real_keys_counters_and_original_verbs-time.txt": {
+        "bytes": 697,
+        "sha256": "4682180c990728529b38eeb3756ea37643787776d7bf2d022a0863563e305ade"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame-outer.txt": {
+        "bytes": 97,
+        "sha256": "ede9b28522556d33f960fa9c322deea8d5ec7df0437eb98a4112a68ec912c2d9"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame-test.txt": {
+        "bytes": 221,
+        "sha256": "46c5a6ecebca8958576ec19375fc0dbec8eddb100967526d2bac41023bcd0477"
+      },
+      "mvm_agentd-vsock--rpc--tests--retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame-time.txt": {
+        "bytes": 697,
+        "sha256": "3aba5f3f7c54be8291491901997c038aa5223769f027d58e59e1aeae867ed510"
+      },
+      "mvm_agentd.bin": {
+        "bytes": 50598784,
+        "sha256": "b8c3ad7fa42eb01202e19679a3d8dcefc34ac97d36ec41da96d5d631979cd89d"
+      },
+      "mvm_client-boot--tests--persistent_dispatch_refusal_seals_the_recorded_audit_failure-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_client-boot--tests--persistent_dispatch_refusal_seals_the_recorded_audit_failure-list.txt": {
+        "bytes": 102,
+        "sha256": "0e1b46baff543a8474cd7a8f4d7867ca86413e320784c2cc8f74b8b7f8dc737f"
+      },
+      "mvm_client-boot--tests--persistent_dispatch_refusal_seals_the_recorded_audit_failure-outer.txt": {
+        "bytes": 97,
+        "sha256": "5dfbfd99e1b21a52a39cabc6bc8d691160d62c9ab2f3e5c41b84d4cc847fc3ee"
+      },
+      "mvm_client-boot--tests--persistent_dispatch_refusal_seals_the_recorded_audit_failure-test.txt": {
+        "bytes": 201,
+        "sha256": "bff88e8dbc71e3a560a73720e64123a5f708ce1802dac839f1a4483c001dc387"
+      },
+      "mvm_client-boot--tests--persistent_dispatch_refusal_seals_the_recorded_audit_failure-time.txt": {
+        "bytes": 697,
+        "sha256": "33e2a5e380baa92df7b41b61e2c1fc1a58ca8a18070684bc0ff79b6b50e7f797"
+      },
+      "mvm_client-launch--persistent--persistent_oci_boot_tests--journal_preflight_refusal_seals_exactly_one_failed_session_before_dispatch-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_client-launch--persistent--persistent_oci_boot_tests--journal_preflight_refusal_seals_exactly_one_failed_session_before_dispatch-list.txt": {
+        "bytes": 150,
+        "sha256": "7648607ed3cbe3077a0319f333bfed7aab6c0f72e1818223faeb209d92fe7d46"
+      },
+      "mvm_client-launch--persistent--persistent_oci_boot_tests--journal_preflight_refusal_seals_exactly_one_failed_session_before_dispatch-outer.txt": {
+        "bytes": 97,
+        "sha256": "d7f11257122cff62c2ed329079583e5ac306f915f10e5e8f7f8472f1534187c0"
+      },
+      "mvm_client-launch--persistent--persistent_oci_boot_tests--journal_preflight_refusal_seals_exactly_one_failed_session_before_dispatch-test.txt": {
+        "bytes": 249,
+        "sha256": "91f4611a5138d2792183b7762644cab5e3f9b1da95ff38fbca82b8dd26f68ec1"
+      },
+      "mvm_client-launch--persistent--persistent_oci_boot_tests--journal_preflight_refusal_seals_exactly_one_failed_session_before_dispatch-time.txt": {
+        "bytes": 697,
+        "sha256": "600abdbaf7cbc070f7bab1156b727d049b0a40b3bd5a7f6dc2b7deb171008a7b"
+      },
+      "mvm_client-type.txt": {
+        "bytes": 115,
+        "sha256": "996bbd708cc83ea268c7d134a35c255ea736a1d6fbb12c1db37370dc3dd6ac9c"
+      },
+      "mvm_client.bin": {
+        "bytes": 143401824,
+        "sha256": "0c743e8e514fc45d1e16354d1bb0ec99f12f56232a6876cb5cece36f96c4b4d8"
+      },
+      "mvm_core-mailbox--conversation--tests---exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_core-mailbox--conversation--tests---list.txt": {
+        "bytes": 911,
+        "sha256": "b6a2bcad292310c60564ac85f1caa7b08eb088f7827931d70f558d45ba267cf6"
+      },
+      "mvm_core-mailbox--conversation--tests---outer.txt": {
+        "bytes": 98,
+        "sha256": "f3c471d73e2b3c12221667bdc9d113d968bec8c22e1c3c7aa2fdda114f64bc7d"
+      },
+      "mvm_core-mailbox--conversation--tests---test.txt": {
+        "bytes": 1071,
+        "sha256": "6feea063271cd095cdab78a01794866c18a20aa6eccf64103f4fa95b9e22ebf9"
+      },
+      "mvm_core-mailbox--conversation--tests---time.txt": {
+        "bytes": 697,
+        "sha256": "f4d80ac0ba56a3914d8faaa6b585795c26334eae7badf54c1ad81bc7c5ece214"
+      },
+      "mvm_core-type.txt": {
+        "bytes": 113,
+        "sha256": "c27be963e57c4cb8a614d267804edcc9df745a5ed795e917c9587bef38542e3f"
+      },
+      "mvm_core.bin": {
+        "bytes": 101432640,
+        "sha256": "09fb9c3600f9ffa6b6c33f8f457e97ff54436b2652a17a56b234ada7cfa45704"
+      },
+      "mvm_hostd-plan_admission--start_tests--cli_transient_-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_hostd-plan_admission--start_tests--cli_transient_-list.txt": {
+        "bytes": 427,
+        "sha256": "c41e6ac3fc783c3cf3a5f92f47355593c2685ab2ee707c3695597c03632da7b6"
+      },
+      "mvm_hostd-plan_admission--start_tests--cli_transient_-outer.txt": {
+        "bytes": 97,
+        "sha256": "4ec2c19502dc5c43bc6e6096501782480f8d73f811352d8301a548ce497349c4"
+      },
+      "mvm_hostd-plan_admission--start_tests--cli_transient_-test.txt": {
+        "bytes": 544,
+        "sha256": "94f6ea7e9b3006f2efaa90e969fa5ac184ace868089aa164e71f40c27cef2b80"
+      },
+      "mvm_hostd-plan_admission--start_tests--cli_transient_-time.txt": {
+        "bytes": 697,
+        "sha256": "34a427b8d5ed6a35e3c3f66c0e47e39baebe21d43633978d37d5e97f02d4d0a8"
+      },
+      "mvm_hostd-plan_admission--start_tests--ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_hostd-plan_admission--start_tests--ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects-list.txt": {
+        "bytes": 140,
+        "sha256": "581d0bd5dc225e623e59ecd613f097b60a52cddaa4810aaeee6d111df2ceee74"
+      },
+      "mvm_hostd-plan_admission--start_tests--ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects-outer.txt": {
+        "bytes": 97,
+        "sha256": "3ca24d770189ec0132ea01a19f1d956b48fc5d727f2ba6d4bf02f27096d16c15"
+      },
+      "mvm_hostd-plan_admission--start_tests--ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects-test.txt": {
+        "bytes": 239,
+        "sha256": "ee9e5532c19455e601af9b870576d236af7ba64cbb893dd2868304c8da3b8bef"
+      },
+      "mvm_hostd-plan_admission--start_tests--ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects-time.txt": {
+        "bytes": 697,
+        "sha256": "19398f96cd30da0bb55fc1e5f25498968d5b95b099dac8d4661995704c798aa3"
+      },
+      "mvm_hostd-plan_admission--start_tests--persistent_dispatch_-outer.txt": {
+        "bytes": 97,
+        "sha256": "7db04d0130bedd23a12c2703de8879627503a4ae135170dfaf135fe6bec5ee21"
+      },
+      "mvm_hostd-plan_admission--start_tests--persistent_dispatch_-list.txt": {
+        "bytes": 214,
+        "sha256": "e9e9484d106d4879c1eb896631f175b2130c1c6907fccf8dc76843e40f1c778f"
+      },
+      "mvm_hostd-plan_admission--start_tests--persistent_dispatch_-exit.txt": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "mvm_hostd-plan_admission--start_tests--persistent_dispatch_-test.txt": {
+        "bytes": 319,
+        "sha256": "ff331e5c1b08db8e32f1e2155df50db82c2f5a5ad74b517275a1ad9827a9a02a"
+      },
+      "mvm_hostd-plan_admission--start_tests--persistent_dispatch_-time.txt": {
+        "bytes": 697,
+        "sha256": "cb38b0950af8ef33df9466bbf155e6b2b1980bd8a6272a3b8c6dad6e67873d6a"
+      },
+      "mvm_hostd-type.txt": {
+        "bytes": 114,
+        "sha256": "91fee64d4d9116e361e20b9800bdb88cab62e6ef5f763338a9ed1009f9c9158c"
+      },
+      "mvm_hostd.bin": {
+        "bytes": 179028576,
+        "sha256": "3fb4e6d5e11ea0f72ccb3e69f05cd8ecacf2c8d876058cf713c734f146008dc2"
+      },
+      "platform.txt": {
+        "bytes": 267,
+        "sha256": "17f31e5f174067e78e9a37db176f012459a47768b2b779f5d22e0b5eaab9be7b"
+      },
+      "rustc.txt": {
+        "bytes": 192,
+        "sha256": "e794146d99fad54562fdcbd4a7c8b22b0240d2b0312ff6d879d67939b3131850"
+      },
+      "scope.txt": {
+        "bytes": 295,
+        "sha256": "12e873cfd6e70d0ba2a0e5e2ec518796a54e8d143f73254c28fad59329787af8"
+      },
+      "selected.json": {
+        "bytes": 3990,
+        "sha256": "629d764e9e4e9200fe5973810e6627dcfcde38c8e4500c80cbe6cbeb33445a87"
+      },
+      "source-after.txt": {
+        "bytes": 240062,
+        "sha256": "b7612e3cbf689d414ef79a93fe1ff4a027f71f07016dec935b94ee4ab07ab924"
+      },
+      "source-root.txt": {
+        "bytes": 45,
+        "sha256": "c2d76fca1575a78a25e13069620acd4cebc47cd5808da888ad22b0b5f128f14e"
+      },
+      "tree.txt": {
+        "bytes": 41,
+        "sha256": "6f22214dd54c012ea747ca0660efb92e9c51f0b049a72cfdb7d237c5f57ba753"
+      },
+      "source-before.sha256": {
+        "bytes": 539708,
+        "sha256": "34264d01df5b97fd1683b7f23854ced0e69908b53a3d41c06ed3d15ec5f4f702"
+      }
+    },
+    "commit": "86899304562ed3a2f4ef856762dd6eeede20caff",
+    "tree": "19fa1bdd481ce503ca3b7b0d839757205805e5df",
+    "tracked_source_files": 4833,
+    "tracked_source_matches_operator_git": true,
+    "original_and_copied_executables_unchanged": true,
+    "executables": [
+      {
+        "target": "mvm-hvf-supervisor",
+        "bytes": 2859312,
+        "sha256": "2843f20c8399d45b2a91aa2fcb5d3aae29b4d0df31e021e2a25d77cc76e14939",
+        "compiler_selected_fresh": true,
+        "macho_arm64_verified": true
+      },
+      {
+        "target": "mvm_core",
+        "bytes": 101432640,
+        "sha256": "09fb9c3600f9ffa6b6c33f8f457e97ff54436b2652a17a56b234ada7cfa45704",
+        "compiler_selected_fresh": true,
+        "macho_arm64_verified": true
+      },
+      {
+        "target": "mvm_hostd",
+        "bytes": 179028576,
+        "sha256": "3fb4e6d5e11ea0f72ccb3e69f05cd8ecacf2c8d876058cf713c734f146008dc2",
+        "compiler_selected_fresh": true,
+        "macho_arm64_verified": true
+      },
+      {
+        "target": "mvm_agentd",
+        "bytes": 50598784,
+        "sha256": "b8c3ad7fa42eb01202e19679a3d8dcefc34ac97d36ec41da96d5d631979cd89d",
+        "compiler_selected_fresh": true,
+        "macho_arm64_verified": true
+      },
+      {
+        "target": "mvm_client",
+        "bytes": 143401824,
+        "sha256": "0c743e8e514fc45d1e16354d1bb0ec99f12f56232a6876cb5cece36f96c4b4d8",
+        "compiler_selected_fresh": true,
+        "macho_arm64_verified": true
+      }
+    ],
+    "scopes": [
+      {
+        "target": "mvm-hvf-supervisor",
+        "selector": "tests::only_a_complete_checked_set_or_a_kernel_alone_may_start",
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.02 real         0.00 user         0.00 sys\n             6586368  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 589  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  20  involuntary context switches\n             1573760  peak memory footprint\n",
+        "wall_seconds_printed": 0.02,
+        "user_seconds_printed": 0.0,
+        "system_seconds_printed": 0.0,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_agentd",
+        "selector": "vsock::rpc::tests::retained_entrypoint_preserves_real_keys_counters_and_original_verbs",
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.04 real         0.00 user         0.01 sys\n            12566528  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1000  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                  32  messages sent\n                  42  messages received\n                   0  signals received\n                  13  voluntary context switches\n                  36  involuntary context switches\n             2573312  peak memory footprint\n",
+        "wall_seconds_printed": 0.04,
+        "user_seconds_printed": 0.0,
+        "system_seconds_printed": 0.01,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_agentd",
+        "selector": "vsock::rpc::tests::retained_entrypoint_terminates_on_refusal_wrong_terminal_and_partial_frame",
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.01 real         0.00 user         0.00 sys\n            12550144  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1002  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                  29  messages sent\n                  36  messages received\n                   0  signals received\n                  13  voluntary context switches\n                   9  involuntary context switches\n             2589632  peak memory footprint\n",
+        "wall_seconds_printed": 0.01,
+        "user_seconds_printed": 0.0,
+        "system_seconds_printed": 0.0,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "plan_admission::start_tests::ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects",
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.05 real         0.01 user         0.03 sys\n            20086784  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1584  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  18  involuntary context switches\n             5194944  peak memory footprint\n",
+        "wall_seconds_printed": 0.05,
+        "user_seconds_printed": 0.01,
+        "system_seconds_printed": 0.03,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "plan_admission::start_tests::cli_transient_",
+        "listed": 4,
+        "passed": 4,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.36 real         0.03 user         0.05 sys\n            31490048  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                2386  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                 106  voluntary context switches\n                 195  involuntary context switches\n             5915840  peak memory footprint\n",
+        "wall_seconds_printed": 0.36,
+        "user_seconds_printed": 0.03,
+        "system_seconds_printed": 0.05,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_hostd",
+        "selector": "plan_admission::start_tests::persistent_dispatch_",
+        "listed": 2,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.16 real         0.01 user         0.02 sys\n            27213824  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                2071  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                  28  voluntary context switches\n                  54  involuntary context switches\n             5375104  peak memory footprint\n",
+        "wall_seconds_printed": 0.16,
+        "user_seconds_printed": 0.01,
+        "system_seconds_printed": 0.02,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_client",
+        "selector": "boot::tests::persistent_dispatch_refusal_seals_the_recorded_audit_failure",
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.06 real         0.01 user         0.04 sys\n            30031872  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                2181  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                  39  voluntary context switches\n                  66  involuntary context switches\n             5243968  peak memory footprint\n",
+        "wall_seconds_printed": 0.06,
+        "user_seconds_printed": 0.01,
+        "system_seconds_printed": 0.04,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_client",
+        "selector": "launch::persistent::persistent_oci_boot_tests::journal_preflight_refusal_seals_exactly_one_failed_session_before_dispatch",
+        "listed": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.05 real         0.01 user         0.01 sys\n            31211520  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                2274  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                  65  voluntary context switches\n                  60  involuntary context switches\n             5391424  peak memory footprint\n",
+        "wall_seconds_printed": 0.05,
+        "user_seconds_printed": 0.01,
+        "system_seconds_printed": 0.01,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      },
+      {
+        "target": "mvm_core",
+        "selector": "mailbox::conversation::tests::",
+        "listed": 11,
+        "passed": 11,
+        "failed": 0,
+        "ignored": 0,
+        "raw_bsd_time": "        0.02 real         0.00 user         0.01 sys\n            11829248  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1043  page reclaims\n                   0  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  31  involuntary context switches\n             4080704  peak memory footprint\n",
+        "wall_seconds_printed": 0.02,
+        "user_seconds_printed": 0.0,
+        "system_seconds_printed": 0.01,
+        "precision_note": "BSD printed precision; 0.00 is not proof of zero cost"
+      }
+    ],
+    "total_passed": 23,
+    "total_failed": 0,
+    "total_ignored": 0,
+    "strict_all_target_clippy": "pass per successful execution step; raw log retained",
+    "scope": "Native macOS ARM64 retained-RPC/dispatch/CLI-finalization/eight-HVF-shape and canonical pure conversation component controls; no VM boot, installed audit readiness, signed-runtime, Windows, WAN or capacity qualification"
+  },
+  "native_helpers_only": {
+    "after": [
+      {
+        "pid": 3565978,
+        "start_ticks": 32764508,
+        "system_ticks": 1,
+        "threads": 4,
+        "user_ticks": 2
+      },
+      {
+        "pid": 3565980,
+        "start_ticks": 32764508,
+        "system_ticks": 0,
+        "threads": 4,
+        "user_ticks": 2
+      }
+    ],
+    "before": [
+      {
+        "pid": 3565978,
+        "start_ticks": 32764508,
+        "system_ticks": 0,
+        "threads": 2,
+        "user_ticks": 0
+      },
+      {
+        "pid": 3565980,
+        "start_ticks": 32764508,
+        "system_ticks": 0,
+        "threads": 3,
+        "user_ticks": 0
+      }
+    ],
+    "broker_framed_bytes_vm1": [
+      5654,
+      5024
+    ],
+    "broker_framed_bytes_vm2": [
+      5654,
+      5024
+    ],
+    "cpu_scope": "helper /proc ticks post-registration through post-signing, excluding retirement; orchestration unit CPU reported separately",
+    "executable_sha256": [
+      "a8853eab068ccd0a8afc2d300c13498702163db2eafb69d98b049cb2cf9e9f47",
+      "cd9030d6e0a169666714f8dfbed58a4e31ad50b5092d6f473f642484eed25d0c"
+    ],
+    "original_archives": [
+      {
+        "bytes": 19224,
+        "entries": 32,
+        "sha256": "f640d8dfa8f24d0f77544869caf938ec3e8a0353a4f2d7083fdaf85088db4a32",
+        "workload": "vm-1"
+      },
+      {
+        "bytes": 19224,
+        "entries": 32,
+        "sha256": "279521a43c4d163b1b3a8e16d461d3f21f2ebf7c8df027cdf75b813b16cbd8fb",
+        "workload": "vm-2"
+      }
+    ],
+    "partial_signer_received_bytes": 0,
+    "partial_signer_sent_bytes": 5,
+    "sample_interval_ms": 1,
+    "sampled_peak_threads": [
+      4,
+      4
+    ],
+    "scope": "native owned helpers, two registrations, no booted VM or installed Ready endpoint",
+    "setup_to_verified_retirement_ns": 2510244505,
+    "signing_with_partial_frame_ns": 2386256665,
+    "whole_two_test_command_cost": {
+      "wall_printed": "0:02.52",
+      "user_seconds_printed": 0.12,
+      "system_seconds_printed": 0.07,
+      "max_rss_kib": 39212,
+      "raw": "\tCommand being timed: \"/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-62f41add9b9b2cb1 worker_budget_tests:: --nocapture --test-threads=1\"\n\tUser time (seconds): 0.12\n\tSystem time (seconds): 0.07\n\tPercent of CPU this job got: 7%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:02.52\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 39212\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 2738\n\tMinor (reclaiming a frame) page faults: 16906\n\tVoluntary context switches: 3428\n\tInvoluntary context switches: 22\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 2\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "limits": "Actual original helpers/IPC/signing/retirement, not installed Ready, booted VMs, WAN or density; excludes proposed destination-authority/shared-scheduler costs."
+  },
+  "guard_controls": {
+    "guard_sha256": "85e14b277cc143776ba481fd7f99ffcdb6be9978efa46a0b275a9c1672652ece",
+    "cases": [
+      {
+        "mode": "prepare",
+        "shape": "absent",
+        "expected_accept": true,
+        "actual_exit": 0
+      },
+      {
+        "mode": "prepare",
+        "shape": "empty",
+        "expected_accept": true,
+        "actual_exit": 0
+      },
+      {
+        "mode": "prepare",
+        "shape": "nonempty",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "prepare",
+        "shape": "directory",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "prepare",
+        "shape": "fifo",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "prepare",
+        "shape": "symlink_empty",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "prepare",
+        "shape": "symlink_dangling",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "prepare",
+        "shape": "symlink_directory",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "prepare",
+        "shape": "hardlink",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "absent",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "empty",
+        "expected_accept": true,
+        "actual_exit": 0
+      },
+      {
+        "mode": "exact",
+        "shape": "nonempty",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "directory",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "fifo",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "symlink_empty",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "symlink_dangling",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "symlink_directory",
+        "expected_accept": false,
+        "actual_exit": 1
+      },
+      {
+        "mode": "exact",
+        "shape": "hardlink",
+        "expected_accept": false,
+        "actual_exit": 1
+      }
+    ],
+    "all_expected_results": true,
+    "scope": "Only canonical generated lock-name guard; temporary synthetic files, no product source/cache mutation"
+  },
+  "ari_and_runtime": {
+    "observed_at_utc": "2026-11-17T15:57:35.771206+00:00",
+    "audit_interface": {
+      "issue": "https://github.com/tinylabscom/mvm/issues/5057",
+      "latest_comment_id": 6939537279,
+      "latest_author": "Casey-allard",
+      "ari_reply_available": false,
+      "canonical_four_files_unchanged_through_later_main": true
+    },
+    "runtime": {
+      "rc9_release_endpoint_status": 404,
+      "rc10_release_endpoint_status": 404,
+      "tag_bound_run": {
+        "id": 44020798280,
+        "head": "77a91c3fe0cd6ed24f01eea6ddd26ac5f67b3ab8",
+        "conclusion": "failure",
+        "guest_bins": "success",
+        "proof_input": "success",
+        "signed_candidate": "success",
+        "linux_fc_shard0": "failure",
+        "release": "skipped",
+        "promotion": "skipped",
+        "candidate_artifact": {
+          "id": 14303986195,
+          "name": "mvm-runtime-proof-candidate-attempt-1",
+          "bytes": 22345554,
+          "sha256": "8cb4f4332543b1f7e7cefdc622783d2f5ee799d2c14fa13ee11c8051b28cb0b4"
+        }
+      },
+      "qualification": "Signed candidate metadata/CI observed; not downloaded/authenticated/booted for this source. No compatible published runtime or accepted source/runtime pair inferred."
+    },
+    "integration": {
+      "continuous_milestone": "Encrypted A publishes to preallocated DEST durable acceptance, A exits, independently admitted B receives and explicitly ACKs with restart/lost-ACK/retry/refusal coverage.",
+      "destination_role": "Approved to build/qualify scoped destination receipt/history/anchor authority in existing hostd; shared scheduler keyless and payload keys endpoint-owned; no production activation.",
+      "pending_pr": {
+        "number": 5668,
+        "state": "open",
+        "head": "453d8ae80e7c067adca5e8282836c28e9f7f9d4b",
+        "scope": "Signed V3 selector/early refusal; retained trusted-host local V2 receipts; runtime-cache publication repair. No positive V3 destination authority. Not imported."
+      },
+      "latest_ari_update": "https://github.com/tinylabscom/mvm/issues/5255#issuecomment-6939724669"
+    },
+    "later_canonical": {
+      "head": "3d474dd15022450e5b69f68a7c8c375305cfd96d",
+      "scope": "Eleven later commits /207files beyond aba2f61, including lifecycle/current-generation/history/runtime/resource changes and rc.10; outside frozen source qualification."
+    },
+    "remaining": "No installed Ready, complete #258, supported VM/WAN/platform/capacity/privateMVMD or full contribution acceptance.",
+    "final_refresh": {
+      "observed_at_utc": "2026-11-17T16:36:27.745990+00:00",
+      "latest_audit_comment": 6939537279,
+      "latest_audit_author": "Casey-allard",
+      "ari_reply_available": false,
+      "rc9_release_endpoint_status": 404,
+      "rc10_release_endpoint_status": 404,
+      "pending5668_state": "open",
+      "pending5668_head": "453d8ae80e7c067adca5e8282836c28e9f7f9d4b",
+      "canonical_main": "3d474dd15022450e5b69f68a7c8c375305cfd96d",
+      "canonical_main_clean_and_synchronized": true,
+      "audit_four_files_unchanged": true
+    }
+  },
+  "remaining": [
+    "Canonical confined bound sink/durable journal-side epoch-health and original-deadline missed-decision interface",
+    "Both #258 storage/resource/identity/retirement/quota/negative/crash/recovery/default-profile/platform criteria",
+    "All five #42 delivery outcomes",
+    "Compatible published signed runtime, authenticated supported source pairing and actual boot",
+    "Private MVMD integration; canonical mailbox service/wire/authority decisions",
+    "Supported role/version/architecture/backend matrix and executed Linux/macOS/Windows two-host WAN",
+    "Capacity/fairness/backpressure/tails/recovery/saturation and complete qualified upstream contribution"
+  ],
+  "historical_limits": "Earlier stopped/malformed/feature-distinct RED-GREEN/failed-upload and79 lost executable preimages remain explicit in the predecessor packet; current evidence does not recover them.",
+  "local_disk_cleanup": {
+    "utc": "2026-11-17T16:03:21.945817+00:00",
+    "files_removed": [
+      {
+        "name": "sc-callcore-git-tree-proof.json",
+        "bytes": 1265615,
+        "sha256": "67b0dc3d0bbb3ace6f12b331758d19f78e7194dcf3cc37d552f5dc048bd2ac6a"
+      }
+    ],
+    "file_bytes_removed": 1265615,
+    "surviving_hdd_copy_verified": true,
+    "physical_blocks_not_measured": true,
+    "no_local_target_payload_or_vm_disk_created": true,
+    "runtime_session_torrent_media_untouched": true
+  },
+  "initial_full": {
+    "outcome": {
+      "command_exit": 101,
+      "original_source_hash_exit": 0,
+      "source_file_set_exit": 0,
+      "executable_hash_exit": 0,
+      "final_exit": 101
+    },
+    "binary_totals": {
+      "passed": 22146,
+      "failed": 2,
+      "ignored": 72,
+      "filtered": 0
+    },
+    "doc_totals": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 8,
+      "filtered": 0
+    },
+    "failed_binary_rows": [
+      {
+        "label": "tests/bundle_streaming_memory.rs",
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/bundle_streaming_memory-4fb5a0dfe454b5c6",
+        "summary_count_including_nested": 1,
+        "status": "FAILED",
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0,
+        "seconds": 0.28,
+        "raw_failed_case_lines": [
+          "sealing_verifying_and_installing_a_large_bundle_stay_within_a_fixed_heap"
+        ]
+      },
+      {
+        "label": "tests/registered_direct_tcp.rs",
+        "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/registered_direct_tcp-62f41add9b9b2cb1",
+        "summary_count_including_nested": 1,
+        "status": "FAILED",
+        "passed": 10,
+        "failed": 1,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0,
+        "seconds": 2.82,
+        "raw_failed_case_lines": [
+          "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer"
+        ]
+      }
+    ],
+    "cost": {
+      "wall_printed": "8:36.83",
+      "user_seconds_printed": 186.36,
+      "system_seconds_printed": 88.74,
+      "max_rss_kib": 4326392,
+      "raw": "Command exited with non-zero status 101\n\tCommand being timed: \"cargo test --locked --offline --workspace --no-fail-fast -- --test-threads=1\"\n\tUser time (seconds): 186.36\n\tSystem time (seconds): 88.74\n\tPercent of CPU this job got: 53%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 8:36.83\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 4326392\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 209863\n\tMinor (reclaiming a frame) page faults: 62000511\n\tVoluntary context switches: 1035445\n\tInvoluntary context switches: 42484\n\tSwaps: 0\n\tFile system inputs: 1375442\n\tFile system outputs: 12584\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 101\n"
+    },
+    "status": "Failed campaign retained unchanged; bundle fixture hit EDQUOT and original Ready failure remained."
+  },
+  "bulk_fixture_diagnostic": {
+    "results": [
+      {
+        "profile": "tmpfs",
+        "tmpdir": "/tmp/scbd.xdjrmtta",
+        "command_exit": 101,
+        "executable": {
+          "target": "bundle_streaming_memory",
+          "source_path": "/mnt/plexpool/spiralcore-work/cargo-home/git/checkouts/mvm-5069ae8682aa590e/8689930/crates/mvm-core/tests/bundle_streaming_memory.rs",
+          "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/bundle_streaming_memory-4fb5a0dfe454b5c6",
+          "test": true,
+          "fresh": false,
+          "bytes": 10702192,
+          "sha256": "b0a33fa3176818657e04806a00444b6c691a798b388e830a0d6064f8e8c7805b"
+        },
+        "source": "86899304562ed3a2f4ef856762dd6eeede20caff",
+        "heap_bound_bytes": 8388608,
+        "rootfs_bytes": 100663296,
+        "assertions_unchanged": true
+      },
+      {
+        "profile": "hdd",
+        "tmpdir": "/mnt/plexpool/spiralcore-work/scbd.x7_zxs2h",
+        "command_exit": 0,
+        "executable": {
+          "target": "bundle_streaming_memory",
+          "source_path": "/mnt/plexpool/spiralcore-work/cargo-home/git/checkouts/mvm-5069ae8682aa590e/8689930/crates/mvm-core/tests/bundle_streaming_memory.rs",
+          "path": "/mnt/plexpool/spiralcore-work/cargo-target/debug/deps/bundle_streaming_memory-4fb5a0dfe454b5c6",
+          "test": true,
+          "fresh": false,
+          "bytes": 10702192,
+          "sha256": "b0a33fa3176818657e04806a00444b6c691a798b388e830a0d6064f8e8c7805b"
+        },
+        "source": "86899304562ed3a2f4ef856762dd6eeede20caff",
+        "heap_bound_bytes": 8388608,
+        "rootfs_bytes": 100663296,
+        "assertions_unchanged": true
+      }
+    ],
+    "tmpfs_trace": "3890537 write(4</tmp/scbd.xdjrmtta/.tmp3aPyYE/big.mvmpkg>, \"3456789:;<=>?@ABCDEFGHIJKLMNOPQR\"..., 6656) = -1 EDQUOT (Disk quota exceeded)\n3890537 write(4</tmp/scbd.xdjrmtta/.tmp3aPyYE/big.mvmpkg>, \"\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\"..., 1024) = -1 EDQUOT (Disk quota exceeded)\n",
+    "tmpfs_cost": {
+      "wall_printed": "0:00.24",
+      "user_seconds_printed": 0.08,
+      "system_seconds_printed": 0.15,
+      "max_rss_kib": 4224,
+      "raw": "Command exited with non-zero status 101\n\tCommand being timed: \"strace -f -qq -yy -e trace=write,pwrite64,writev,openat,rename,fallocate,fsync -e status=failed -o /mnt/plexpool/spiralcore-work/sc-callcore-bundle-tmpfs-trace.txt /mnt/plexpool/spiralcore-work/cargo-target/debug/deps/bundle_streaming_memory-4fb5a0dfe454b5c6 sealing_verifying_and_installing_a_large_bundle_stay_within_a_fixed_heap --exact --nocapture --test-threads=1\"\n\tUser time (seconds): 0.08\n\tSystem time (seconds): 0.15\n\tPercent of CPU this job got: 97%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:00.24\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 4224\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 572\n\tMinor (reclaiming a frame) page faults: 691\n\tVoluntary context switches: 92821\n\tInvoluntary context switches: 6\n\tSwaps: 0\n\tFile system inputs: 1280\n\tFile system outputs: 0\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 101\n"
+    },
+    "hdd_cost": {
+      "wall_printed": "0:02.16",
+      "user_seconds_printed": 1.0,
+      "system_seconds_printed": 0.46,
+      "max_rss_kib": 4452,
+      "raw": "\tCommand being timed: \"strace -f -qq -yy -e trace=write,pwrite64,writev,openat,rename,fallocate,fsync -e status=failed -o /mnt/plexpool/spiralcore-work/sc-callcore-bundle-hdd-trace.txt /mnt/plexpool/spiralcore-work/cargo-target/debug/deps/bundle_streaming_memory-4fb5a0dfe454b5c6 sealing_verifying_and_installing_a_large_bundle_stay_within_a_fixed_heap --exact --nocapture --test-threads=1\"\n\tUser time (seconds): 1.00\n\tSystem time (seconds): 0.46\n\tPercent of CPU this job got: 67%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:02.16\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 4452\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 195\n\tMinor (reclaiming a frame) page faults: 974\n\tVoluntary context switches: 315710\n\tInvoluntary context switches: 31\n\tSwaps: 0\n\tFile system inputs: 72\n\tFile system outputs: 590598\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "limit": "strace diagnostic overhead; carrier-dependent EDQUOT observed at archive write, original full1 extraction refusal separate. Quota threshold NOT_MEASURED; no quota increase. HDD pass retains original96MiB/8MiBbound and signature/length checks."
+  },
+  "qualification_runner": {
+    "controls": {
+      "non_target_original_tmpdir": {
+        "exit": 0,
+        "stdout": "/tmp/sc-forward-sentinel\n"
+      },
+      "original_nonzero_exit": 1,
+      "selected_missing_scratch_refuses_before_payload": {
+        "exit": 126,
+        "stderr": "qualification runner refused: bundle fixture HDD scratch is not declared\n"
+      },
+      "assertions_unchanged": true
+    },
+    "source": {
+      "bytes": 2163,
+      "sha256": "ee74b0395c8f61acb8b353feb7b67608f84b6dd1995d7c7ca390553be2c511d3"
+    },
+    "executable": {
+      "bytes": 4514440,
+      "sha256": "f9b72fe57bcdf81866f17d3b10ff7e0990cd3c93eca6ed3e5e9990bcef7675a8"
+    },
+    "compile_cost": {
+      "wall_printed": "0:00.05",
+      "user_seconds_printed": 0.05,
+      "system_seconds_printed": 0.02,
+      "max_rss_kib": 120096,
+      "raw": "\tCommand being timed: \"rustc +1.97.1 --edition=2024 -D warnings -C opt-level=0 -C debuginfo=0 /mnt/plexpool/spiralcore-work/sc-callcore-temp-runner.rs -o /mnt/plexpool/spiralcore-work/sc-callcore-temp-runner\"\n\tUser time (seconds): 0.05\n\tSystem time (seconds): 0.02\n\tPercent of CPU this job got: 122%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:00.05\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 120096\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 1156\n\tMinor (reclaiming a frame) page faults: 14184\n\tVoluntary context switches: 522\n\tInvoluntary context switches: 10\n\tSwaps: 0\n\tFile system inputs: 168\n\tFile system outputs: 9221\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+    },
+    "identity_manifest": "f9b72fe57bcdf81866f17d3b10ff7e0990cd3c93eca6ed3e5e9990bcef7675a8  /mnt/plexpool/spiralcore-work/sc-callcore-temp-runner\nee74b0395c8f61acb8b353feb7b67608f84b6dd1995d7c7ca390553be2c511d3  /mnt/plexpool/spiralcore-work/sc-callcore-temp-runner.rs\n",
+    "runner_hash_exit": 0,
+    "bulk_tmpdir_removal_exit": 0,
+    "profile": "Qualification-only Rust driver, not product fallback or runtime authority."
+  },
+  "retained_receipts": {
+    "sc-callcore-git-tree-proof.json": {
+      "bytes": 1265615,
+      "sha256": "67b0dc3d0bbb3ace6f12b331758d19f78e7194dcf3cc37d552f5dc048bd2ac6a"
+    },
+    "sc-callcore-canonical-merge.json": {
+      "bytes": 1447,
+      "sha256": "95031c0e9c0af112d5cdac1cdf80ee276286303018bc26c56485072ce21113d7"
+    },
+    "sc-callcore-authority-observation.json": {
+      "bytes": 2963,
+      "sha256": "c857a15cb9b031709abe2eb3f759667c65029eddf28c62d7646c774fbf97e77f"
+    },
+    "sc-callcore-source-inventory.json": {
+      "bytes": 606401,
+      "sha256": "1106c68a9459fbe2f599ca3c44ff18c5595fcef64225d3f9fb61a81659335666"
+    },
+    "sc-callcore-baseline-preservation.json": {
+      "bytes": 202,
+      "sha256": "5be0794452ef6a4f02e6f42ea3c2cb4a4050cd9cbc78253ef1bcf4ee707e372e"
+    },
+    "sc-callcore-fetch.sh": {
+      "bytes": 2944,
+      "sha256": "47a406e60b8c337d9c8e783e8904347c6136c624a4d40688f3567c0ea01db2da"
+    },
+    "sc-callcore-fetch-time.txt": {
+      "bytes": 850,
+      "sha256": "ddc16808f383cb6459d32f97eebe841df704dcd97d6b11ab15a29f705fc87b83"
+    },
+    "sc-callcore-build1.sh": {
+      "bytes": 4885,
+      "sha256": "fd1ae219c32c0683b7521f52ec8a47722cdb6ca7301518f056648db79e5e0a26"
+    },
+    "sc-callcore-build1-outcome.json": {
+      "bytes": 114,
+      "sha256": "1ddadf9ba869b6d790815e1d7fa175059abd6e3c50ee9473b659a30d8b119706"
+    },
+    "sc-callcore-build1-inputs-before.sha256": {
+      "bytes": 570990,
+      "sha256": "2a3dc67472d2d5423c2b7c4f251c5886f530443fbf73b43ab3f239104a822244"
+    },
+    "sc-callcore-build1-inputs-after.sha256": {
+      "bytes": 570990,
+      "sha256": "2a3dc67472d2d5423c2b7c4f251c5886f530443fbf73b43ab3f239104a822244"
+    },
+    "sc-callcore-build1-metadata.json": {
+      "bytes": 2891351,
+      "sha256": "d9ed278bc477d7e755b67977300b87ada1867b81799eded00bd857b906a9b887"
+    },
+    "sc-callcore-build1-policies.txt": {
+      "bytes": 22798,
+      "sha256": "b5fef754a558f71a6fb3cbd91fa06f67d65049892b863240e0d5a6559f361e07"
+    },
+    "sc-callcore-build1-policy-exit.txt": {
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "sc-callcore-build1-build.jsonl": {
+      "bytes": 810329,
+      "sha256": "f3c69ac0a64f3a57d808a81cb1dd03d12febba46468ff6bcb511d9cccc0720be"
+    },
+    "sc-callcore-build1-executables-before.json": {
+      "bytes": 155285,
+      "sha256": "39d5e914e4125525d6575d07103e55527d49ab887b4165591e45f52f7e3250be"
+    },
+    "sc-callcore-build1-executables-before.sha256": {
+      "bytes": 54349,
+      "sha256": "dbcf0702e9e68ff0f4a9eecce3bd4f9e2d984c15a6b53165b5bfdd8be8788be6"
+    },
+    "sc-callcore-build1-executable-validation.json": {
+      "bytes": 101,
+      "sha256": "39005fc831ec79188cd7d7554a0d105fd82a347b8882fd913e9ce222b905382d"
+    },
+    "sc-callcore-build1-executable-archive.json": {
+      "bytes": 58007,
+      "sha256": "12fc91ad1bc123059ed6767ef6de8708e32556c9bf1e472afee193990172f1a2"
+    },
+    "sc-callcore-archive.py": {
+      "bytes": 2471,
+      "sha256": "7b24f3909ce7f9563ff4b326a9dc81125fd260a1d0b4f10e2b1690c11d5eff28"
+    },
+    "sc-callcore-focused.py": {
+      "bytes": 4475,
+      "sha256": "c361a3f11982104471b833e05c8c60f3457dd719d2e630cd322eb340522f8811"
+    },
+    "sc-callcore-focused1.sh": {
+      "bytes": 2160,
+      "sha256": "39a9f4e24657b316909b768b70f47cf1511da35b5275e92586fa5a8a1623a065"
+    },
+    "sc-callcore-focused1-results.json": {
+      "bytes": 5340,
+      "sha256": "6ac595f4fc16bfd037a38542633ce6a2df1892c302727673a9d63cb5af0cba2f"
+    },
+    "sc-callcore-focused1-outcome.json": {
+      "bytes": 114,
+      "sha256": "2778a08b1b75380a5c33cf1229325f07899556a1f31bcfeef3975cd853f1bb6b"
+    },
+    "sc-callcore-focused1-preparation.json": {
+      "bytes": 356,
+      "sha256": "a8308f3de81cb1b2ed05a9fee4c876eb81b1b51222769ae0e3a4b04361ad3363"
+    },
+    "sc-callcore-focused1-prepared-inputs-before.sha256": {
+      "bytes": 571095,
+      "sha256": "d9d46e971d887826c495d4f037f87df5c0d128cfd4b5534e2ea08d13a6792333"
+    },
+    "sc-callcore-focused1-mvm_core-mailbox-conversation-tests--tests.txt": {
+      "bytes": 1071,
+      "sha256": "53eefbaf6895714a7ccb9d6d6c21a27c51aeee3c3917dfabcdc8da0ec9c71909"
+    },
+    "sc-callcore-focused1-mvm_core-mailbox-conversation-tests--list.txt": {
+      "bytes": 911,
+      "sha256": "b6a2bcad292310c60564ac85f1caa7b08eb088f7827931d70f558d45ba267cf6"
+    },
+    "sc-callcore-focused1-registered_direct_tcp-worker_budget_tests--tests.txt": {
+      "bytes": 1690,
+      "sha256": "eae5b019eae4bf106d8b3f8481b2a11de0dee6078a986b0e3df9deef55897af8"
+    },
+    "sc-callcore-full1.sh": {
+      "bytes": 2359,
+      "sha256": "c08a1bb8729a93ca1e27db9ec6cc21c3e3c9a6f17d4f2443f31d986e4854ec1b"
+    },
+    "sc-callcore-full1-tests.txt": {
+      "bytes": 2022552,
+      "sha256": "6617016dab8a6b98f3e00f3f7846ce7758601daf9068d28b3aa6f702700e7a39"
+    },
+    "sc-callcore-full1-summary.json": {
+      "bytes": 115043,
+      "sha256": "2ccd85ace4dc9defd1b36c9b372b84df101967a168d047960ec6ed1b8c0474a3"
+    },
+    "sc-callcore-full1-runtime-executable-set.json": {
+      "bytes": 95,
+      "sha256": "4c92d647d3e6b58b4c81b259a96253dd9eeccb75085265ac1e4f975a9631df78"
+    },
+    "sc-callcore-full1-outcome.json": {
+      "bytes": 118,
+      "sha256": "af2eeb18629c54ccd38c56a270d05d479ae8f5b417b34f1091c94924b2d8cc2f"
+    },
+    "sc-callcore-full1-source-guard.json": {
+      "bytes": 109,
+      "sha256": "98a840b341b309ae19f77f9f3dd6406c0f803defd0ca80bd765423673086fb08"
+    },
+    "sc-callcore-full1-inputs-before.sha256": {
+      "bytes": 571095,
+      "sha256": "d9d46e971d887826c495d4f037f87df5c0d128cfd4b5534e2ea08d13a6792333"
+    },
+    "sc-callcore-full1-postverified-inputs.sha256": {
+      "bytes": 571095,
+      "sha256": "d9d46e971d887826c495d4f037f87df5c0d128cfd4b5534e2ea08d13a6792333"
+    },
+    "sc-callcore-full1-original-inputs-after.txt": {
+      "bytes": 260562,
+      "sha256": "e2a6882da0f3183706f8da9eb9a79bb2923c40631f416328697e1e7a7d46ca8c"
+    },
+    "sc-callcore-full1-executables-after.txt": {
+      "bytes": 32153,
+      "sha256": "85ce6a41dc8622acf1724cc711c39871e8e0e02bbf35fd390bbb644b50f59137"
+    },
+    "sc-callcore-full1-limits.txt": {
+      "bytes": 154,
+      "sha256": "d984efcab3c101304eba818123b329e08fb91b706a367778ca508dc5fbf60c33"
+    },
+    "sc-callcore-input-guard.py": {
+      "bytes": 1518,
+      "sha256": "85e14b277cc143776ba481fd7f99ffcdb6be9978efa46a0b275a9c1672652ece"
+    },
+    "sc-callcore-guard-controls.py": {
+      "bytes": 2118,
+      "sha256": "8bb41bfed8751da7abcda362a82bcfb44be299a524a05130e0f2ba42b84de488"
+    },
+    "sc-callcore-input-guard-controls.json": {
+      "bytes": 2421,
+      "sha256": "f35e846e680643d94e6faae080ccca1e8bda3cdc9ff1422191e51f9279b3a49e"
+    },
+    "sc-callcore-macos-run.json": {
+      "bytes": 2022,
+      "sha256": "66f4b9c01ec2b3963200937ed986ec1c0a7ac7719482b0aba8fc825eed896c8d"
+    },
+    "sc-callcore-macos-artifact-meta.json": {
+      "bytes": 767,
+      "sha256": "367c860cb772aa707aa7804902a662648061d27b96d6ba3e198c2b32362f4e99"
+    },
+    "sc-callcore-macos-artifact-verification.json": {
+      "bytes": 26397,
+      "sha256": "23e029e8d27e2e4e94060802581e44beade626edd571d8d90b7249bff88123eb"
+    },
+    "sc-callcore-macos-verify.py": {
+      "bytes": 6339,
+      "sha256": "19d12cfb41440ef20e9fea6c3c8895c54b6724b090fc56d49e05c11ea054a88c"
+    },
+    "sc-callcore-summarize.py": {
+      "bytes": 2788,
+      "sha256": "193a3913292a558dcc11767c366228f9f14bcbbe2ec25c1285a7bfc7a87b1a32"
+    },
+    "sc-callcore-local-cleanup.json": {
+      "bytes": 459,
+      "sha256": "293132b58a1caab63eb8cd4277ce78068ed1c0a7733ef3bf70da1406af1e0580"
+    },
+    "sc-callcore-guard-controls-run.txt": {
+      "bytes": 128,
+      "sha256": "81311a4041dcf258513c8e9ccb29d8393c7f9266fc40c247a6750495bb97c2f4"
+    },
+    "sc-callcore-full1-summarize.py": {
+      "bytes": 2870,
+      "sha256": "971f4962c573cec86cbd2d721fffe1735507593036c22cc3bbe8325646f412a6"
+    },
+    "sc-callcore-full1-tests-time.txt": {
+      "bytes": 867,
+      "sha256": "45f3cbba2bb62386ab54afaaf8a9067b8be5d79bb21132450fa7ee67e99c7093"
+    },
+    "sc-callcore-full2.sh": {
+      "bytes": 3124,
+      "sha256": "bf5c852e6367f379455c972f1d18d0b892c6769a02aac6726a1432a8bfa124c0"
+    },
+    "sc-callcore-full2-tests.txt": {
+      "bytes": 2022881,
+      "sha256": "cc048dc308574ed9eec875be7e4bfb7932040a57b0cb16fce5a34549b0ffb048"
+    },
+    "sc-callcore-full2-tests-time.txt": {
+      "bytes": 867,
+      "sha256": "45440ebfff3f7c2c48b2dec19007b8e546bd13b80c36368051c7d56fd836e5f1"
+    },
+    "sc-callcore-full2-summary.json": {
+      "bytes": 114824,
+      "sha256": "064aee22f2514ae26c8f0dc56e5511810480ca0d6bf2c31a1a388541748647f4"
+    },
+    "sc-callcore-full2-runtime-executable-set.json": {
+      "bytes": 95,
+      "sha256": "4c92d647d3e6b58b4c81b259a96253dd9eeccb75085265ac1e4f975a9631df78"
+    },
+    "sc-callcore-full2-outcome.json": {
+      "bytes": 168,
+      "sha256": "af3f89ed3df48114d210e52b8c76b43e18c98dfa4a2515250784db788d79280e"
+    },
+    "sc-callcore-full2-source-guard.json": {
+      "bytes": 109,
+      "sha256": "98a840b341b309ae19f77f9f3dd6406c0f803defd0ca80bd765423673086fb08"
+    },
+    "sc-callcore-full2-inputs-before.sha256": {
+      "bytes": 571095,
+      "sha256": "d9d46e971d887826c495d4f037f87df5c0d128cfd4b5534e2ea08d13a6792333"
+    },
+    "sc-callcore-full2-postverified-inputs.sha256": {
+      "bytes": 571095,
+      "sha256": "d9d46e971d887826c495d4f037f87df5c0d128cfd4b5534e2ea08d13a6792333"
+    },
+    "sc-callcore-full2-original-inputs-after.txt": {
+      "bytes": 260562,
+      "sha256": "e2a6882da0f3183706f8da9eb9a79bb2923c40631f416328697e1e7a7d46ca8c"
+    },
+    "sc-callcore-full2-executables-after.txt": {
+      "bytes": 32153,
+      "sha256": "85ce6a41dc8622acf1724cc711c39871e8e0e02bbf35fd390bbb644b50f59137"
+    },
+    "sc-callcore-full2-limits.txt": {
+      "bytes": 154,
+      "sha256": "79e7279e69e60c16c8ef6f3f6189c26fe76005888baf487aa1f3ec49fe83d82f"
+    },
+    "sc-callcore-full2-runner-before.sha256": {
+      "bytes": 243,
+      "sha256": "22fa09eff0776fb5580587df62b8447622d8e9090ba7979d9082eaa8d18b33f1"
+    },
+    "sc-callcore-full2-runner-after.txt": {
+      "bytes": 119,
+      "sha256": "c03a484a35df006227934ba92e2c7e939de9882f7213b98b77e28c8d0abcbbc4"
+    },
+    "sc-callcore-full2-bundle-tmpdir.txt": {
+      "bytes": 50,
+      "sha256": "1b0e3514db22c03871035d695034228f29b88e9618449534949360d1ce14a297"
+    },
+    "sc-callcore-full2-bundle-mount.txt": {
+      "bytes": 105,
+      "sha256": "b8060c38619f3177bf37f113141be1b73b2003ad616396ef71ab8c01c7737508"
+    },
+    "sc-callcore-full2-summarize.py": {
+      "bytes": 2788,
+      "sha256": "ef3a2df06a24a2fdb8e55f7f01ab5520c453ababe891009109036a2da3a8dbbd"
+    },
+    "sc-callcore-bundle-diagnostic.py": {
+      "bytes": 1876,
+      "sha256": "208586b193bfa3edf83659638bcd5a6394694c43a71fbece117bd9476cb86500"
+    },
+    "sc-callcore-bundle-carrier-diagnostic.json": {
+      "bytes": 1500,
+      "sha256": "edf2ae922c24a3336257ec5a11a540a2449b9de45f8de1b1de604eaf659276db"
+    },
+    "sc-callcore-bundle-tmpfs-tests.txt": {
+      "bytes": 641,
+      "sha256": "5a3440535af837a8b717dd8d79eea416259800338b10db0b1d8d74936e9ba87c"
+    },
+    "sc-callcore-bundle-tmpfs-trace.txt": {
+      "bytes": 308,
+      "sha256": "99f7250444b77b357739625ac8f4c01c12bb543501ae9f68b9bb85293b805445"
+    },
+    "sc-callcore-bundle-tmpfs-time.txt": {
+      "bytes": 1132,
+      "sha256": "34972e7e33b19775e06b3a2f947060f75cc2df52b7d1d324c9ccec2e5b564cba"
+    },
+    "sc-callcore-bundle-tmpfs-mount.txt": {
+      "bytes": 101,
+      "sha256": "dd2bb9f685d673ea56b997bfd960a95f662cf7c39d787fb431798e341842c1fb"
+    },
+    "sc-callcore-bundle-hdd-tests.txt": {
+      "bytes": 197,
+      "sha256": "e388d8e2a54fd93c5a45dad7e4431913cfdef3f7b207ea88e46bb2483dbd51da"
+    },
+    "sc-callcore-bundle-hdd-trace.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sc-callcore-bundle-hdd-time.txt": {
+      "bytes": 1093,
+      "sha256": "4b19454fd97568fe01fb148dd3140b22567a87cc174c3da5c2e2f0a408e01edc"
+    },
+    "sc-callcore-bundle-hdd-mount.txt": {
+      "bytes": 105,
+      "sha256": "b8060c38619f3177bf37f113141be1b73b2003ad616396ef71ab8c01c7737508"
+    },
+    "sc-callcore-temp-runner.rs": {
+      "bytes": 2163,
+      "sha256": "ee74b0395c8f61acb8b353feb7b67608f84b6dd1995d7c7ca390553be2c511d3"
+    },
+    "sc-callcore-runner-identity.sha256": {
+      "bytes": 243,
+      "sha256": "22fa09eff0776fb5580587df62b8447622d8e9090ba7979d9082eaa8d18b33f1"
+    },
+    "sc-callcore-runner-controls.json": {
+      "bytes": 330,
+      "sha256": "641b9d71a7ef975bef196e3c662147ae2344ea13ec344c653cec196bf555b2fc"
+    },
+    "sc-callcore-runner-compile-time.txt": {
+      "bytes": 913,
+      "sha256": "a17fbba499b82d3e99b44f4d4cf1cbf9167437ea108bdc624fbde384e253fcf2"
+    },
+    "sc-callcore-focused1-library_only_surface-preparing_the_guest_runtime_cold_never_runs_the_toolchain-time.txt": {
+      "bytes": 906,
+      "sha256": "64193164d33d5b29ec903c2e3d2ad1dfe4033c295dad4d5b7f3c2437214aa8fb"
+    },
+    "sc-callcore-focused1-mvm_agentd-vsock-rpc-tests-retained_entrypoint_-time.txt": {
+      "bytes": 866,
+      "sha256": "12b0087e7d656405a799e72f92e80052212f64004e54da9acd4900859ce0fa12"
+    },
+    "sc-callcore-focused1-mvm_agentd-vsock-rpc-tests-test_require_capabilities_-time.txt": {
+      "bytes": 872,
+      "sha256": "61f632f37b335c99406e81ef148be62fc347e1c2f5da21536df1b76fe6d67642"
+    },
+    "sc-callcore-focused1-mvm_backends-driver-fc-entrypoint-tests--time.txt": {
+      "bytes": 862,
+      "sha256": "008f82bd260a5a5bc44d87cb19d81e0edbef175feee0b11aed229d28474cde01"
+    },
+    "sc-callcore-focused1-mvm_build-guest_bins-tests-the_producer_records_the_producing_tree_and_every_member-time.txt": {
+      "bytes": 916,
+      "sha256": "0da33a180bbdabe43b319d160c901d9f0c8e63511f9f5f1156830885a6c8ad87"
+    },
+    "sc-callcore-focused1-mvm_client-admission-cli_dispatch-tests--time.txt": {
+      "bytes": 859,
+      "sha256": "d18bbe4259fc73a1a8c1ce6e725495e6a2908b2fe9bd97ee1986f36943e84922"
+    },
+    "sc-callcore-focused1-mvm_client-boot-tests-persistent_dispatch_-time.txt": {
+      "bytes": 860,
+      "sha256": "59230c951341be704d357753e62807594ce2ea7cb3a4b8d7a8925d10b6822489"
+    },
+    "sc-callcore-focused1-mvm_client-launch-bundle_runtime-tests--time.txt": {
+      "bytes": 858,
+      "sha256": "83f4f3af9c6239847d60a63b1814bf2e4c98ebd14af81d18079ac372303ab396"
+    },
+    "sc-callcore-focused1-mvm_client-launch-persistent-journal--time.txt": {
+      "bytes": 856,
+      "sha256": "b93aa3b7d27b38ac1f0ed36c638a7c2708f84d7cef63934af77ca352b0c509e9"
+    },
+    "sc-callcore-focused1-mvm_client-launch-persistent-persistent_oci_boot_tests--time.txt": {
+      "bytes": 875,
+      "sha256": "104e1a8e3e01117f2b8f149e68da34feb01132ab81cb9b13e947269ada3af29e"
+    },
+    "sc-callcore-focused1-mvm_core-mailbox-conversation-tests--time.txt": {
+      "bytes": 855,
+      "sha256": "66b1381d660f8682519874b128b6b97bbd83b17a100da2ad04675b08b59bf5f1"
+    },
+    "sc-callcore-focused1-mvm_hostd-installed_endpoint-audit-tests--time.txt": {
+      "bytes": 860,
+      "sha256": "5045b215afbafb20e7a187c3a4fc586ceea0e50cd458de5a3639dbd27983fc7f"
+    },
+    "sc-callcore-focused1-mvm_hostd-plan_admission-start_tests-cli_transient_-time.txt": {
+      "bytes": 869,
+      "sha256": "8944f488e6e2429fd8a7208e6479497070637a8d1c0e1d3e8c1a5da4544d2975"
+    },
+    "sc-callcore-focused1-mvm_hostd-plan_admission-start_tests-dispatch_without_verified_owner_refuses_signed_runtime_identity_before_effects-time.txt": {
+      "bytes": 932,
+      "sha256": "f6932165711400f56325456bb4dae41c65b1138da950b5a966e20411e7a58860"
+    },
+    "sc-callcore-focused1-mvm_hostd-plan_admission-start_tests-ordinary_cli_and_persistent_dispatch_refuse_a_selected_pair_before_backend_effects-time.txt": {
+      "bytes": 937,
+      "sha256": "cf956e622136c305d80f9f7fa3e22453184867081078baccfff43cc50c18b148"
+    },
+    "sc-callcore-focused1-mvm_hostd-plan_admission-start_tests-persistent_dispatch_-time.txt": {
+      "bytes": 875,
+      "sha256": "aeff87111be375385696ef13b74e27178a58071dbd034105892ce5a6e70272b8"
+    },
+    "sc-callcore-focused1-mvm_hostd-supervisor-endpoint-flowmux-decision_audit--time.txt": {
+      "bytes": 874,
+      "sha256": "ffb23859a62efb90f3c931f032353450a98b473f7e939f4eed1eb31aec0fb7c0"
+    },
+    "sc-callcore-focused1-mvm_runtime-bundle_runtime-tests--time.txt": {
+      "bytes": 854,
+      "sha256": "a064d81ef2d9983ed537887045080244f28c0ed0300701a0511ebbad14926884"
+    },
+    "sc-callcore-focused1-mvm_runtime-kernel_custody--time.txt": {
+      "bytes": 847,
+      "sha256": "598037e48c8b75015e95a8c4ce4b6532e63f0553159a7796b52f427c51ca400d"
+    },
+    "sc-callcore-focused1-mvm_runtime-legacy_portable_runtime-tests--time.txt": {
+      "bytes": 865,
+      "sha256": "69c19242d635796d80303181def803df8380bf2291a50dfdc4bd22d447f137ec"
+    },
+    "sc-callcore-focused1-registered_direct_tcp-worker_budget_tests--time.txt": {
+      "bytes": 865,
+      "sha256": "472866a956d1f2aa0df883a8c1c59c3db021967333dff8a4d0d164c8e753b598"
+    }
+  },
+  "publication": {
+    "pr": 327,
+    "reviewed_ci_head": "f645249f82c5adbb5d2daa4c9cc39f4842e216be",
+    "merge_commit": "67101e6b3bb53f5785ba8c009c2ce4752fd13bab",
+    "tree": "20a5c4e5986a12943f3c7254469f856757c1fee7",
+    "reviewed_ci_release_tree_equal": true,
+    "native_run": 44118810800
+  }
+}
