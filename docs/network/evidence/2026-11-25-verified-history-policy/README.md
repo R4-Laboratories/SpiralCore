@@ -19,8 +19,9 @@ retention and retirement checks. The verified CLI command runs in the early read
 
 Linux x86-64 passed **120 tests** across five scopes. The counts were 13 verified-output, 96 stream,
 one CLI early dispatch, one genuine compiled-checkout identity and nine existing output-binding
-tests. The first stream run had 71 passes and 25 refusals because the SSH umask of `0002` made the
-legacy fixtures group-writable. The identical ELF and 96-test selection passed under private
+tests. In the first stream run, 71 tests passed and 25 failed with exit 101 after permission checks
+refused the group-writable legacy fixtures created under SSH umask `0002`. The identical ELF and
+96-test selection passed under private
 fixture umask `077`. The first run also recorded an empty selector that supplied no executed test.
 Product checks and assertions were retained. The compiled-checkout case used a genuine Git
 checkout with the candidate HEAD and index, verified separately against the source contents.
