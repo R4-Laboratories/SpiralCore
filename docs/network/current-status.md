@@ -1,5 +1,15 @@
 # Networking delivery status
 
+## Watcher-owned shutdown under audit contention
+
+On development MVM `9bc1447b`, the canonical watcher invokes a fixture callback
+that shuts down the original carrier while an earlier write holds the bound
+audit recorder. Replacement and quarantine each close the authenticated carrier
+and TCP relay, then preserve the signed audit chain and append the original
+plan's revocation. The executable stop path, installed audit interface,
+compatible signed runtime, original readiness and #258 remain open.
+[Measurements and scope](evidence/2026-11-25-watcher-owned-flow-closure/README.md).
+
 ## Ledger-triggered FlowMux closure and signed audit fixture
 
 Development MVM `2b2bd663` verifies that replacement and quarantine refuse the
