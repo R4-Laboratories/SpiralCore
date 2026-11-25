@@ -1,5 +1,17 @@
 # Networking delivery status
 
+## Canonical workload epoch admission checkpoint
+
+Development MVM `abd5155f` imports the coordinator-owned workload ledger, the typed epoch,
+and Ari's startup and per-decision egress admission into the ordinary endpoint. Independent
+review and 135 focused Linux checks passed. The live-flow watcher remains a separate
+development candidate. Review found that its bound audit write can delay transport closure
+after the epoch is refused. [Source, costs and qualification](evidence/2026-11-25-epoch-admission/README.md).
+
+Installed consumers remain **MVM `f2ddbcbf` / core `8994951b`**. Ari's audit-interface reply,
+the compatible signed runtime, unchanged installed readiness and both #258 criteria remain
+open. [Full MVM roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42).
+
 ## Canonical pack health and signed mailbox intent checkpoints
 
 Development MVM `ab161fda` wires the exact verified release evidence into pack-health admission.
