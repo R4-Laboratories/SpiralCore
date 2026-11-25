@@ -1,5 +1,20 @@
 # Networking delivery status
 
+## Canonical pack health and signed mailbox intent checkpoints
+
+Development MVM `ab161fda` wires the exact verified release evidence into pack-health admission.
+Development MVM `c515f382` integrates canonical #5668’s signed intent and durable receipt recovery
+with the original installed and directed mailbox paths. Unsupported V3 refuses before dispatch.
+Local completion retains the exact signed receipt under the combined journal and checkpoint bounds.
+Focused Linux execution passed 36 tests for the pack-health slice and 154 for the signed-intent slice.
+[Reviewed source and Linux component measurements](evidence/2026-11-25-signed-mailbox-intent/README.md).
+
+Canonical MVM now supports Linux/KVM with Firecracker and Apple Silicon macOS 26+ with HVF.
+The platform issue retains native Windows client and gateway execution. Installed consumers remain
+**MVM `f2ddbcbf` / core `8994951b`** while the audit interface, compatible signed runtime,
+original installed readiness, #258 and full #42 delivery gates remain open.
+[Current role matrix](https://github.com/R4-Laboratories/SpiralCore/issues/46).
+
 ## Canonical verified history and committed-policy checkpoints
 
 Development MVM `ceae7dd9` adds canonical verified sealed-history readback and the genuine
