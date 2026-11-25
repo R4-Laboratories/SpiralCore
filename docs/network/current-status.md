@@ -1,5 +1,20 @@
 # Networking delivery status
 
+## Canonical original-instance lifecycle checkpoint
+
+Development [MVM `f8a1c1cd`](https://github.com/Casey-allard/mvm/commit/f8a1c1cd9d63ec1ec3e2915b9dcde793bcb67bd4)
+integrates canonical [MVM #5658](https://github.com/tinylabscom/mvm/pull/5658) with the original
+installed mailbox owner. It holds the named lifecycle guard through confirmed rollback and retains
+the original definition and state after an unresolved stop. Focused Linux execution passed
+**83 tests across 12 scopes**, with strict all-target Clippy for the four affected crates and
+independent review. [Source, measurements and scope](evidence/2026-11-25-original-instance-lifecycle/README.md).
+
+The installed consumer selection remains **MVM `f2ddbcbf` / core `8994951b`**. The later canonical
+signed-intent and durable-receipt work in MVM #5668 has merged and remains to be reconciled. Ari's
+coordinator observation path uses the detached coordinator directly. The audit-interface reply,
+compatible signed guest runtime, original installed readiness, both #258 criteria and #42 acceptance
+remain open. [Ari's coordinator update](https://github.com/tinylabscom/mvm/issues/5255#issuecomment-7056911902).
+
 ## Canonical release and output/history slice qualified
 
 Development [MVM
@@ -28,7 +43,7 @@ independently verified.
 
 Selected consumers remain **MVM f2ddbcbf / core 8994951b**. Original readiness still refuses before Ready because its bound audit sink is missing;
 Ari's confined epoch-health/original-deadline interface reply and compatible published signed runtime remain
-absent. #5668 stays open/unmerged and unimported. Both #258 criteria, all five #42 outcomes, private MVMD,
+absent at this checkpoint, when #5668 was still open and unimported. Both #258 criteria, all five #42 outcomes, private MVMD,
 supported platform/WAN and measured capacity remain open. All large artifacts and exact scratch archives stay
 on HDD; no final upstream contribution is submitted.
 
