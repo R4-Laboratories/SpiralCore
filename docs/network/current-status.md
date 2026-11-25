@@ -1,5 +1,19 @@
 # Networking delivery status
 
+## Canonical verified history and committed-policy checkpoints
+
+Development MVM `ceae7dd9` adds canonical verified sealed-history readback and the genuine
+compiled-checkout identity witness. Development MVM `6266ee94` then integrates canonical
+committed-project activation with the original named and paired launch owners. Focused Linux
+execution passed **120** and **160** tests on the respective reviewed sources. The second
+candidate protects delayed original HVF activation at native start and adds only the first-party
+`mvm-policy` package to the measured dependency graphs.
+[Source, component costs and qualification scope](evidence/2026-11-25-verified-history-policy/README.md).
+
+Installed selection remains **MVM `f2ddbcbf` / core `8994951b`**. The audit-interface reply,
+compatible signed guest runtime, original installed readiness, both #258 criteria and #42
+delivery acceptance remain open.
+
 ## Canonical original-instance lifecycle checkpoint
 
 Development [MVM `f8a1c1cd`](https://github.com/Casey-allard/mvm/commit/f8a1c1cd9d63ec1ec3e2915b9dcde793bcb67bd4)
