@@ -1,5 +1,14 @@
 # Networking delivery status
 
+## FlowMux closure before audit-health completion
+
+On development MVM `df5941ba`, an authenticated local TCP flow and its encrypted
+carrier both reached EOF before a held test audit-health flush was released.
+The one-second component assertion passed in 32 additional runs. The live-flow
+watcher still needs bound audit custody and a ledger-triggered closure witness.
+The installed audit interface, compatible signed runtime, original readiness
+and #258 remain open. [Measurements and scope](evidence/2026-11-25-flowmux-audit-flush-closure/README.md).
+
 ## Canonical workload epoch admission checkpoint
 
 Development MVM `abd5155f` imports the coordinator-owned workload ledger, the typed epoch,
