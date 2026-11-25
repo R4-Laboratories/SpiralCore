@@ -1,5 +1,15 @@
 # Networking delivery status
 
+## Ledger-triggered FlowMux closure and signed audit fixture
+
+Development MVM `2b2bd663` verifies that replacement and quarantine refuse the
+original epoch, and that a fixture-owned stop closes both the authenticated
+carrier and TCP relay while the original plan-bound audit append is held.
+The signer subsequently appends one verified revocation record for that plan.
+The executable watcher still needs independent stop and signed audit custody.
+Original installed readiness and #258 await the audit interface and compatible
+signed runtime. [Measurements and scope](evidence/2026-11-25-ledger-flow-closure/README.md).
+
 ## FlowMux closure before audit-health completion
 
 On development MVM `df5941ba`, an authenticated local TCP flow and its encrypted
