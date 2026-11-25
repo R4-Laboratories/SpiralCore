@@ -13,7 +13,7 @@ into the previously qualified `853bfeac` development source. The tested tree is
   original paired-mailbox reservation. Confirmed rollback reuses the held guard. Initial launch can
   proceed when the runtime namespace has never been created.
 - Automatic HVF recovery checks the expected instance before effects. If the name refers to an
-  installed original-owner slot, automatic stop refuses before touching the slot or attaching
+  installed original-owner slot, automatic stop refuses before invoking its stop path or attaching
   to the driver. Installed retirement remains bound to the original native handle.
 - Mailbox startup retains both the startup cause and the result of stopping the original VM.
   An unresolved stop retains the persistent volume preparation, definition and state and returns
@@ -43,8 +43,9 @@ bits matched the staged Git index. The verified manifest of all 4,845 file conte
 | CLI machine lifecycle | 6 | 0 |
 | **Total across 12 scopes** | **83** | **0** |
 
-The test build completed in 53.32 s. Strict all-target Clippy for `mvm-client`, `mvm-hostd`,
-`mvm-runtime`, and `mvm-cli` with test support completed in 39.72 s. Formatting and staged
+Cargo reported 53.32 s for the test build and 39.72 s for strict all-target Clippy on `mvm-client`,
+`mvm-hostd`, `mvm-runtime`, and `mvm-cli` with test support. Complete command wall times were
+53.36 s and 39.98 s, respectively. Formatting and staged
 whitespace checks passed. The serial test processes summed to 2.31 s wall, 1.04 s user CPU and
 0.16 s system CPU. The highest process RSS was 64,604 KiB. These are local component costs.
 End-to-end transfer time, network traffic bytes and sender/receiver transfer CPU were unmeasured.
